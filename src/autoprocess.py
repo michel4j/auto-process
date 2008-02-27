@@ -24,9 +24,9 @@ import sys
 import os
 import getopt
 
-dpm_path = os.environ.get('DPMPATH',None)
+dpm_path = os.environ.get('DPM_PATH',None)
 if dpm_path is None:
-    print 'ERROR: DPMPATH environment variable not set.'
+    print 'ERROR: DPM_PATH environment variable not set.'
     sys.exit(1)
 else:
     sys.path.append(dpm_path)

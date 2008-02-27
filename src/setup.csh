@@ -1,5 +1,5 @@
 #!/bin/csh
 
-# Set DPMPATH to the top-level directory containing the DPM modules
-setenv DPMPATH /home/michel/DataProcessor/src
+# Set DPM_PATH to the top-level directory containing the DPM modules
+setenv DPM_PATH /home/michel/DataProcessor/src
 

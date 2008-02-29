@@ -42,6 +42,6 @@ def parse_distl(filename):
     
     sum_vals, pos = utils.scanf(_distl.summary, data)
     if sum_vals:
-        info = utilscast_params(_distl.summary_vars, sum_vals)
+        info = utils.cast_params(_distl.summary_vars, sum_vals)
     
     return info

@@ -47,6 +47,8 @@ def main():
             
     # Parse options
     options = {}
+    options['directory'] = os.path.abspath('./')
+    options['prefix'] = []
     for o, a in opts:
         if o in ("-h","--help"):
             usage()
@@ -60,8 +62,6 @@ def main():
             options['command'] = 'screen'
         if o in ('--dir'):
             options['directory'] = a
-                    
-        options['prefix'] = []
         if o in ('--prefix'):
             options['prefix'] = a.split(',')
         if len(options['prefix']) < len(args):

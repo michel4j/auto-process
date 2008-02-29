@@ -319,6 +319,7 @@ def parse_xscale(filename, output_file='XSCALE.HKL'):
     wilson_st = 'WILSON STATISTICS OF SCALED DATA SET: %s' % output_file
     wilson_end = 'HIGHER ORDER MOMENTS OF WILSON DISTRIBUTION' 
     wilson_section, pos = utils.cut_section(wilson_st, wilson_end, data)
+    print wilson_section
     wilson_line, pos = utils.scanf(_correct.wilson_line, wilson_section)
     info['wilson_line'] = utils.cast_params(_correct.wilson_line_vars, wilson_line)    
     wilson, w_pos = utils.scanf(_correct.wilson, wilson_section)

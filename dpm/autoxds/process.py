@@ -42,11 +42,11 @@ class AutoXDS:
             file_text += "Standard deviation of spindle position: %5.3f (deg)\n" % dset['autoindex']['stdev_spindle']
             file_text += "Mosaicity:  %5.3f\n" % dset['autoindex']['mosaicity']
             file_text += "\n--- Likely Lattice Types ---\n"
-            file_text += "\n%15s %11s %7s %41s %8s %s\n" % (
+            file_text += "\n%15s %11s %7s %35s %8s %s\n" % (
                 'Lattice Type',
                 'PointGroup',
                 'Quality',
-                '_________ Unit Cell Parameters _________',
+                '______ Unit Cell Parameters ______',
                 'Cell Vol',
                 'Reindex',
                 )
@@ -58,7 +58,7 @@ class AutoXDS:
                 txt_subst = (descr, sg, sg_name, l['quality'])
                 reindex = '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % l['reindex_matrix']
                 txt_subst += utils.tidy_cell(l['unit_cell'], l['character']) + (vol, reindex)
-                file_text += "%15s %3d %7s %7.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %8d %s\n" % txt_subst
+                file_text += "%15s %3d %7s %7.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %8d %s\n" % txt_subst
             
             file_text += "\n--- SPACEGROUP SELECTION ---\n\n"
             file_text  += '--- Likely Space Groups ---\n'

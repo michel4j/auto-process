@@ -44,7 +44,7 @@ class AutoXDS:
                 file_text += "%20s:  %8d\n" % ('Total Spots', img_anal_res['total_spots'] )
                 file_text += "%20s:  %7.0f%%\n" % ('% Good Spots', good_percent )
                 file_text += "%20s:  %8d\n" % ('Ice Rings', img_anal_res['ice_rings'] )
-                file_text += "%20s:  %8.2f\n" % ('Apparent Resolution', img_anal_res['resolution'] )
+                file_text += "%20s:  %8.2f\n" % ('Estimated Resolution', img_anal_res['resolution'] )
                 file_text += "%20s:  %7.0f%%\n\n" % ('Saturation(top %d)' % img_anal_res['peaks'], img_anal_res['saturation'] )
 
 

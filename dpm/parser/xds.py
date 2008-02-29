@@ -134,7 +134,7 @@ _correct.summary = """
  COORDINATES OF UNIT CELL C-AXIS %9f %9f %9f
  REC. CELL PARAMETERS  %9f %9f %9f %7f %7f %7f
  UNIT CELL PARAMETERS  %9f %9f %9f %7f %7f %7f
- E.S.D. OF CELL PARAMETERS  %7e %7e %7e %7e %7e %7e
+ E.S.D. OF CELL PARAMETERS %8e%8e%8e%8e%8e%8e
  SPACE GROUP NUMBER %6d
 """
 _correct.summary_start = "REFINEMENT OF DIFFRACTION PARAMETERS USING ALL IMAGES"

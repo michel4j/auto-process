@@ -298,10 +298,9 @@ def parse_xscale(filename, output_file='XSCALE.HKL'):
 
     data = utils.load_file(filename)
     
-    
     #read final statistics table
     final_start = 'STATISTICS OF SCALED OUTPUT DATA SET : %s' % output_file
-    final_end = 'WILSON STATISTICS OF SCALED DATA SET: %s' % output_file
+    final_end = 'elapsed wall-clock'
     stat_end = 'WITH SIGNAL/NOISE >=  1.0 AS FUNCTION OF RESOLUTION'
     fin_section, pos = utils.cut_section(final_start, final_end, data)
     stat_section, pos = utils.cut_section(_correct.statistics_start, stat_end, fin_section)
@@ -317,10 +316,12 @@ def parse_xscale(filename, output_file='XSCALE.HKL'):
             info[k] = v
         
     #then read wilson statistics information
-    wilson_section, pos = utils.cut_section(final_end, _correct.wilson_end, data)
+    wilson_st = 'WILSON STATISTICS OF SCALED DATA SET: %s' % output_file
+    wilson_end = 'HIGHER ORDER MOMENTS OF WILSON DISTRIBUTION' 
+    wilson_section, pos = utils.cut_section(wilson_st, wilson_end, data)
     wilson_line, pos = utils.scanf(_correct.wilson_line, wilson_section)
     info['wilson_line'] = utils.cast_params(_correct.wilson_line_vars, wilson_line)    
-    wilson, w_pos =utils.scanf(_correct.wilson, wilson_section)
+    wilson, w_pos = utils.scanf(_correct.wilson, wilson_section)
     while wilson:
         info['wilson_table'].append(utils.cast_params(_correct.wilson_vars,wilson))
         wilson, w_pos =utils.scanf(_correct.wilson, wilson_section, w_pos)

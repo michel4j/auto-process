@@ -89,8 +89,8 @@ def main():
            
     app = AutoXDS( options )
     app.run()      
-    app.save_xml('autoxds.xml')
-    app.save_log('autoxds.log')
+    app.save_xml('process.xml')
+    app.save_log('process.log')
        
 if __name__ == "__main__":
     main()

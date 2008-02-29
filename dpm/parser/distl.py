@@ -16,7 +16,7 @@ _distl.summary = """
       Method 1 Resolution : %6f
       Method 2 Resolution : %6f
         Maximum unit cell : %6f
-%Saturation, Top 50 Peaks : %6f
+%Saturation, Top %d Peaks : %6f
 """
 _distl.summary_vars = [
     ('file',1),
@@ -27,6 +27,7 @@ _distl.summary_vars = [
     ('alt_resolution',1),
     ('resolution',1),
     ('max_cell',1),
+    ('peaks',1),
     ('saturation',1),
     ]
 

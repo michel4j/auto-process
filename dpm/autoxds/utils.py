@@ -111,8 +111,8 @@ def get_dataset_params(img_file, screen=False):
     returns a dictionary of results
     
     """
-    
-    directory, filename = os.path.split( os.path.abspath(img_file) )
+    reference_image = os.path.abspath(img_file)
+    directory, filename = os.path.split(reference_image)
 
     file_pattern = re.compile('^(.*)([_.])(\d+)(\..+)?$')
     fm = file_pattern.search(filename)
@@ -173,6 +173,7 @@ def get_dataset_params(img_file, screen=False):
     info['unit_cell'] = (0,0,0,0,0,0)
     info['space_group'] = 0
     info['cpu_count'] = get_cpu_count()
+    info['reference_image'] = reference_image
     
     return info
 
@@ -293,6 +294,9 @@ def execute_best(time, anomalous=False):
     sts = os.system(command)
     return sts
 
+def execute_distl(filename):
+    sts = os.system('labelit.distl %s > distl.log' % filename)
+    return sts
 
 def save_files(prefix):
     shutil.move('XDS.INP','%s-XDS.INP' % prefix)

@@ -21,7 +21,6 @@ class AutoXDS:
             run_info = utils.get_dataset_params(img, is_screening)
             run_info['prefix'] = prefix
             self.dataset_info.append( run_info ) 
-        
         self.work_directory = utils.prepare_work_dir(
                 self.options.get('directory', './')
                 )
@@ -37,12 +36,24 @@ class AutoXDS:
         file_text = ""
         for dset in self.results:
             file_text += "###--- Results for data in %s\n" % dset['parameters']['file_template']
+            img_anal_res = dset.get('image_analysis', None)
+            if img_anal_res is not None:
+                file_text  = '\n--- Image Analysis ---\n\n'
+                good_percent = 100.0 * (img_anal_res['bragg_spots'])/img_anal_res['resolution_spots']
+                file_text += "%20s:  %s\n" % ('File', img_anal_res['file'] )
+                file_text += "%20s:  %8d\n" % ('Total Spots', img_anal_res['total_spots'] )
+                file_text += "%20s:  %7.0f%%\n" % ('% Good Spots', good_percent )
+                file_text += "%20s:  %8d\n" % ('Ice Rings', img_anal_res['ice_rings'] )
+                file_text += "%20s:  %8.2f\n" % ('Apparent Resolution', img_anal_res['resolution'] )
+                file_text += "%20s:  %7.0f%%\n\n" % ('Saturation (top %d peaks)' % img_anal_res['peaks'], img_anal_res['saturation'] )
+
+
             file_text += "\n--- AUTOINDEXING ---\n"
             file_text += "Standard deviation of spot position:    %5.3f (pix)\n" % dset['autoindex']['stdev_spot']
             file_text += "Standard deviation of spindle position: %5.3f (deg)\n" % dset['autoindex']['stdev_spindle']
             file_text += "Mosaicity:  %5.3f\n" % dset['autoindex']['mosaicity']
             file_text += "\n--- Likely Lattice Types ---\n"
-            file_text += "\n%15s %11s %7s %35s %8s %s\n" % (
+            file_text += "\n%15s %10s %7s %35s %8s %s\n" % (
                 'Lattice Type',
                 'PointGroup',
                 'Quality',
@@ -58,7 +69,7 @@ class AutoXDS:
                 txt_subst = (descr, sg, sg_name, l['quality'])
                 reindex = '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % l['reindex_matrix']
                 txt_subst += utils.tidy_cell(l['unit_cell'], l['character']) + (vol, reindex)
-                file_text += "%15s %3d %7s %7.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %8d %s\n" % txt_subst
+                file_text += "%15s %3d %6s %7.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %8d %s\n" % txt_subst
             
             file_text += "\n--- SPACEGROUP SELECTION ---\n\n"
             file_text  += '--- Likely Space Groups ---\n'
@@ -126,54 +137,55 @@ class AutoXDS:
             resol = utils.select_resolution( dset['integration']['statistics_table'] )
             file_text += "\nResolution cut-off based on preliminary statistics (I/Sigma > 1.5):  %5.2f\n\n" % resol
             
-            # Print out strategy information   
-            file_text  += "\n--- STRATEGY ---\n\n"
-            file_text  += '--- Recommended Strategy for Data Collection ---\n\n'
-            all_runs = []
-            data_labels = []
-            data_labels.append('%20s:' % 'Run Number')
-            data_labels.append('%20s:' % 'Attenuation')
-            data_labels.append('%20s:' % 'Distance')
-            data_labels.append('%20s:' % 'Start Angle')
-            data_labels.append('%20s:' % 'Delta')
-            data_labels.append('%20s:' % 'Frames')
-            data_labels.append('%20s:' % 'Total Angle')
-            data_labels.append('%20s:' % 'Exposure Time')
-            data_labels.append('%20s' % 'Overlaps?')
-    
-            for run in dset['strategy']['runs']:
-                run_data = []
-                run_data.append('%8d' % run['number'])
-                run_data.append('%7.0f%%' % dset['strategy']['attenuation'])
-                run_data.append('%8.1f' % run['distance'])
-                run_data.append('%8.1f' % run['phi_start'])
-                run_data.append('%8.2f' % run['phi_width'])
-                run_data.append('%8.0f' % run['number_of_images'])
-                run_data.append('%8.2f' % (run['phi_width'] * run['number_of_images']) )
-                run_data.append('%8.1f' % run['exposure_time'])
-                run_data.append('%8s' % run['overlaps'])
-                all_runs.append(run_data)
-            
-            for i in range(len(data_labels)):
-                line = data_labels[i]
-                for run_data in all_runs:
-                    line += run_data[i]
-                file_text += "%s\n" % line
+            # Print out strategy information  
+            if dset.get('strategy', None):
+                file_text  += "\n--- STRATEGY ---\n\n"
+                file_text  += '--- Recommended Strategy for Data Collection ---\n\n'
+                all_runs = []
+                data_labels = []
+                data_labels.append('%20s:' % 'Run Number')
+                data_labels.append('%20s:' % 'Attenuation')
+                data_labels.append('%20s:' % 'Distance')
+                data_labels.append('%20s:' % 'Start Angle')
+                data_labels.append('%20s:' % 'Delta')
+                data_labels.append('%20s:' % 'Frames')
+                data_labels.append('%20s:' % 'Total Angle')
+                data_labels.append('%20s:' % 'Exposure Time')
+                data_labels.append('%20s' % 'Overlaps?')
+        
+                for run in dset['strategy']['runs']:
+                    run_data = []
+                    run_data.append('%8d' % run['number'])
+                    run_data.append('%7.0f%%' % dset['strategy']['attenuation'])
+                    run_data.append('%8.1f' % run['distance'])
+                    run_data.append('%8.1f' % run['phi_start'])
+                    run_data.append('%8.2f' % run['phi_width'])
+                    run_data.append('%8.0f' % run['number_of_images'])
+                    run_data.append('%8.2f' % (run['phi_width'] * run['number_of_images']) )
+                    run_data.append('%8.1f' % run['exposure_time'])
+                    run_data.append('%8s' % run['overlaps'])
+                    all_runs.append(run_data)
                 
-            file_text += '\n--- Expected data quality ---\n\n'
-            file_text += ' %20s: %8.2f\n' % ('Resolution', dset['strategy']['resolution'] )
-            file_text += ' %20s: %7.1f%%\n' % ('Completeness', dset['strategy']['completeness'])
-            file_text += ' %20s: %8.1f\n' % ('Redundancy', dset['strategy']['redundancy'])
-            file_text += ' %20s: %8.1f (%0.1f)\n' % (
-                'I/Sigma (hires)', 
-                dset['strategy']['prediction_all']['average_i_over_sigma'],
-                dset['strategy']['prediction_hi']['average_i_over_sigma'])
-            file_text += ' %20s: %7.1f%% (%0.1f%%)\n' % (
-                'R-factor (hires)', 
-                dset['strategy']['prediction_all']['R_factor'],
-                dset['strategy']['prediction_hi']['R_factor'])
-            file_text += '\n\n'
-            
+                for i in range(len(data_labels)):
+                    line = data_labels[i]
+                    for run_data in all_runs:
+                        line += run_data[i]
+                    file_text += "%s\n" % line
+                    
+                file_text += '\n--- Expected data quality ---\n\n'
+                file_text += ' %20s: %8.2f\n' % ('Resolution', dset['strategy']['resolution'] )
+                file_text += ' %20s: %7.1f%%\n' % ('Completeness', dset['strategy']['completeness'])
+                file_text += ' %20s: %8.1f\n' % ('Redundancy', dset['strategy']['redundancy'])
+                file_text += ' %20s: %8.1f (%0.1f)\n' % (
+                    'I/Sigma (hires)', 
+                    dset['strategy']['prediction_all']['average_i_over_sigma'],
+                    dset['strategy']['prediction_hi']['average_i_over_sigma'])
+                file_text += ' %20s: %7.1f%% (%0.1f%%)\n' % (
+                    'R-factor (hires)', 
+                    dset['strategy']['prediction_all']['R_factor'],
+                    dset['strategy']['prediction_hi']['R_factor'])
+                file_text += '\n\n'
+           
         fh.write(file_text)    
         fh.close()
         
@@ -235,6 +247,10 @@ class AutoXDS:
                 utils.execute_best(run_info['exposure_time'], self.options.get('anomalous', False))
                 info = parser.parse_best('best.xml')
                 run_result['strategy'] = info
+                utils.execute_distl(run_info['reference_image'])
+                info = parser.parse_distl('distl.log')
+                run_result['image_analysis'] = info
+                
             
             run_result['files'] = utils.save_files(run_info['prefix'])
             self.results.append( run_result )

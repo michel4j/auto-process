@@ -135,21 +135,23 @@ def load_file(filename):
         data = ''
     return data
 
-def cut_section(start, end, data, position=0):
+def cut_section(start, end, s, position=0):
     """
     extract the piece of text between start pattern and end pattern starting at
     position <position>
     returns a tuple (subsection, end-position)
     
     """
+    result = (None, 0)        
     start_re = re.compile(start)
     end_re = re.compile(end)
-    start_m = start_re.search(data, position)
-    end_m = end_re.search(data, position)
-    if start_m and end_m:
-        result = (data[start_m.start():end_m.start()], end_m.end())
-    else:
-        result = (None, 0)
+
+    start_m = start_re.search(s, position)
+    if start_m:
+        position = start_m.start()
+        end_m = end_re.search(s, position)
+        if end_m:
+            result = (s[start_m.start():end_m.start()], end_m.end())
     return result
    
 def cast_params(param_list, values):

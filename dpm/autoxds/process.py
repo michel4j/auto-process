@@ -291,7 +291,7 @@ class AutoXDS:
         
         # SCALE data set(s) if we are not screening
         command = self.options.get('command', None)
-        ouput_file_list = []
+        output_file_list = []
         if command != 'screen':
             if command == 'mad':
                 sections = []

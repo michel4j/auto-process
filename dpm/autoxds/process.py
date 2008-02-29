@@ -217,8 +217,7 @@ class AutoXDS:
                     'R-factor (hires)', 
                     dset['strategy']['prediction_all']['R_factor'],
                     dset['strategy']['prediction_hi']['R_factor'])
-                file_text += '\n\n'
-           
+        file_text += '\n\n'   
         fh.write(file_text)    
         fh.close()
         

@@ -38,7 +38,7 @@ class AutoXDS:
             file_text += "###--- Results for data in %s\n" % dset['parameters']['file_template']
             img_anal_res = dset.get('image_analysis', None)
             if img_anal_res is not None:
-                file_text  = '\n--- Image Analysis ---\n\n'
+                file_text += '\n--- IMAGE ANALYSIS ---\n\n'
                 good_percent = 100.0 * (img_anal_res['bragg_spots'])/img_anal_res['resolution_spots']
                 file_text += "%20s:  %s\n" % ('File', img_anal_res['file'] )
                 file_text += "%20s:  %8d\n" % ('Total Spots', img_anal_res['total_spots'] )
@@ -48,7 +48,7 @@ class AutoXDS:
                 file_text += "%20s:  %7.0f%%\n\n" % ('Saturation(top %d)' % img_anal_res['peaks'], img_anal_res['saturation'] )
 
 
-            file_text += "\n--- AUTOINDEXING ---\n"
+            file_text += "\n--- AUTOINDEXING ---\n\n"
             file_text += "Standard deviation of spot position:    %5.3f (pix)\n" % dset['autoindex']['stdev_spot']
             file_text += "Standard deviation of spindle position: %5.3f (deg)\n" % dset['autoindex']['stdev_spindle']
             file_text += "Mosaicity:  %5.3f\n" % dset['autoindex']['mosaicity']
@@ -57,7 +57,7 @@ class AutoXDS:
                 'Lattice Type',
                 'PointGroup',
                 'Quality',
-                '______ Unit Cell Parameters ______',
+                '_______ Unit Cell Parameters ______',
                 'Cell Vol',
                 'Reindex',
                 )

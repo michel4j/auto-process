@@ -42,24 +42,23 @@ class AutoXDS:
             file_text += "Standard deviation of spindle position: %5.3f (deg)\n" % dset['autoindex']['stdev_spindle']
             file_text += "Mosaicity:  %5.3f\n" % dset['autoindex']['mosaicity']
             file_text += "\n--- Likely Lattice Types ---\n"
-            file_text += "\n%8s %12s %11s %7s %47s %8s %s\n" % (
-                'Bravais',
+            file_text += "\n%15s %11s %7s %41s %8s %s\n" % (
                 'Lattice Type',
                 'PointGroup',
                 'Quality',
-                '____________ Unit Cell Parameters ____________',
+                '_________ Unit Cell Parameters _________',
                 'Cell Vol',
                 'Reindex',
                 )
             for l in utils.select_lattices(dset['autoindex']['lattice_table']):
                 vol = utils.cell_volume( l['unit_cell'] )
-                descr = utils.CRYSTAL_SYSTEMS[ l['character'][0] ]
+                descr = "%s(%s)" % (utils.CRYSTAL_SYSTEMS[ l['character'][0] ], l['character'])
                 sg = utils.POINT_GROUPS[ l['character'] ][0]
                 sg_name = utils.SPACE_GROUP_NAMES[ sg ]
-                txt_subst = (l['character'], descr, sg, sg_name, l['quality'])
+                txt_subst = (descr, sg, sg_name, l['quality'])
                 reindex = '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % l['reindex_matrix']
                 txt_subst += utils.tidy_cell(l['unit_cell'], l['character']) + (vol, reindex)
-                file_text += "%8s %12s %3d %7s %7.1f %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f %8d %s\n" % txt_subst
+                file_text += "%15s %3d %7s %7.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %8d %s\n" % txt_subst
             
             file_text += "\n--- SPACEGROUP SELECTION ---\n\n"
             file_text  += '--- Likely Space Groups ---\n'
@@ -75,7 +74,7 @@ class AutoXDS:
                     sol['probability']
                     )
             sg_name = utils.SPACE_GROUP_NAMES[ dset['space_group']['group_number'] ]
-            file_text += "\nSelected Space Group is:    %s %s\n" % ( 
+            file_text += "\nSelected Group is:    %s %s\n" % ( 
                 sg_name, dset['space_group']['group_number'] )
             u_cell = utils.tidy_cell(dset['space_group']['unit_cell'], dset['space_group']['character'])
             file_text += "\nUnit Cell:    %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n" % u_cell
@@ -125,7 +124,7 @@ class AutoXDS:
                     dset['integration']['cor_ano']
                     )
             resol = utils.select_resolution( dset['integration']['statistics_table'] )
-            file_text += "\nResolution cut-off based on statistics (I/Sigma > 1.5):  %8.2f\n\n" % resol
+            file_text += "\nResolution cut-off based on preliminary statistics (I/Sigma > 1.5):  %5.2f\n\n" % resol
             
             # Print out strategy information   
             file_text  += "\n--- STRATEGY ---\n\n"
@@ -192,7 +191,8 @@ class AutoXDS:
             adj = 'MAD'
         elif self.options.get('anomalous', False):
             adj = 'anomalous'
-        print 'AutoXDS: %s %d %s dataset(s) ... ' % (description, len(self.dataset_info), adj)
+        print "AutoXDS: %s %d %s dataset(s) in directory '%s'... " % (
+            description, len(self.dataset_info), adj, self.work_directory )
         
         for run_info in self.dataset_info:
             run_result = {}

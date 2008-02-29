@@ -285,7 +285,7 @@ def parse_correct(filename):
         
     return info
 
-def parse_xscale(filename, ouput_file='XSCALE.HKL'):
+def parse_xscale(filename, output_file='XSCALE.HKL'):
     """
     Parse XDS XSCALE.LP file and return a dictionary containing all parameters
     

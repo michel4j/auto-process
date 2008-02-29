@@ -285,7 +285,7 @@ def parse_correct(filename):
         
     return info
 
-def parse_xscale(filename):
+def parse_xscale(filename, ouput_file='XSCALE.HKL'):
     """
     Parse XDS XSCALE.LP file and return a dictionary containing all parameters
     
@@ -300,8 +300,8 @@ def parse_xscale(filename):
     
     
     #read final statistics table
-    final_start = 'STATISTICS OF SCALED OUTPUT DATA SET :'
-    final_end = 'WILSON STATISTICS OF SCALED DATA SET:'
+    final_start = 'STATISTICS OF SCALED OUTPUT DATA SET : %s' % output_file
+    final_end = 'WILSON STATISTICS OF SCALED DATA SET: %s' % output_file
     stat_end = 'WITH SIGNAL/NOISE >=  1.0 AS FUNCTION OF RESOLUTION'
     fin_section, pos = utils.cut_section(final_start, final_end, data)
     stat_section, pos = utils.cut_section(_correct.statistics_start, stat_end, fin_section)

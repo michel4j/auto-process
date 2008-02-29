@@ -136,6 +136,39 @@ class AutoXDS:
                     )
             resol = utils.select_resolution( dset['integration']['statistics_table'] )
             file_text += "\nResolution cut-off based on preliminary statistics (I/Sigma > 1.5):  %5.2f\n\n" % resol
+
+            # Print out scaling results
+            file_text += "\n--- SCALING ---\n\n"
+            file_text += '\n--- Statistics ---\n'
+            file_text += '\n%8s %8s %8s %8s %8s %8s %8s\n' % (
+                'Shell',
+                'Complete',
+                'R_meas',
+                'R_mrgd-F',
+                'I/Sigma',
+                'SigAno',
+                'AnoCorr'
+                )
+            if dset.get('scaling',None):
+                for l in dset['scaling']['statistics_table']:
+                    file_text += '%8.2f %7.2f%% %7.2f%% %7.2f%% %8.2f %8.2f %8.1f\n' % (
+                        l['shell'],
+                        l['completeness'],
+                        l['r_meas'],
+                        l['r_mrgdf'],
+                        l['i_sigma'],
+                        l['sig_ano'],
+                        l['cor_ano']
+                        )
+                file_text += '%8s %7.2f%% %7.2f%% %7.2f%% %8.2f %8.2f %8.1f\n' % (
+                        'Total',
+                        dset['scaling']['completeness'],
+                        dset['scaling']['r_meas'],
+                        dset['scaling']['r_mrgdf'],
+                        dset['scaling']['i_sigma'],
+                        dset['scaling']['sig_ano'],
+                        dset['scaling']['cor_ano']
+                        )
             
             # Print out strategy information  
             if dset.get('strategy', None):
@@ -258,6 +291,7 @@ class AutoXDS:
         
         # SCALE data set(s) if we are not screening
         command = self.options.get('command', None)
+        ouput_file_list = []
         if command != 'screen':
             if command == 'mad':
                 sections = []
@@ -270,6 +304,7 @@ class AutoXDS:
                          'inputs': [{'input_file': in_file, 'resolution': resol}],
                         }
                         )
+                    output_file_list.append("%s-XSCALE.HKL" % rres['files']['prefix'])
             else:
                 inputs = []
                 for rres in self.results:
@@ -282,6 +317,7 @@ class AutoXDS:
                          'inputs': inputs,
                         }
                         ]
+                output_file_list.append("XSCALE.HKL")
         
             print 'AutoXDS: Scaling data set(s) ...'
             xscale_options = {
@@ -292,8 +328,13 @@ class AutoXDS:
             
             io.write_xscale_input(xscale_options)
             utils.execute_xscale()
-            info = parser.parse_xscale('XSCALE.LP')
-            run_result['scaling'] = info
+            if len(output_file_list) == 1:
+                info = parser.parse_xscale('XSCALE.LP', output_file_list[0])
+                self.results[-1]['scaling'] = info
+            else:
+                for ofile, rres in zip(output_file_list, self.results):
+                    info = parser.parse_xscale('XSCALE.LP', ofile)
+                    rres['scaling'] = info
             
         elapsed = time.time() - t1
         print "AutoXDS: Done. Total time used:  %d min %d sec"  % (int(elapsed/60), int(elapsed % 60))          

@@ -138,18 +138,18 @@ class AutoXDS:
             file_text += "\nResolution cut-off based on preliminary statistics (I/Sigma > 1.5):  %5.2f\n\n" % resol
 
             # Print out scaling results
-            file_text += "\n--- SCALING ---\n\n"
-            file_text += '\n--- Statistics ---\n'
-            file_text += '\n%8s %8s %8s %8s %8s %8s %8s\n' % (
-                'Shell',
-                'Complete',
-                'R_meas',
-                'R_mrgd-F',
-                'I/Sigma',
-                'SigAno',
-                'AnoCorr'
-                )
             if dset.get('scaling',None):
+                file_text += "\n--- SCALING ---\n\n"
+                file_text += '\n--- Statistics ---\n'
+                file_text += '\n%8s %8s %8s %8s %8s %8s %8s\n' % (
+                    'Shell',
+                    'Complete',
+                    'R_meas',
+                    'R_mrgd-F',
+                    'I/Sigma',
+                    'SigAno',
+                    'AnoCorr'
+                    )
                 for l in dset['scaling']['statistics_table']:
                     file_text += '%8.2f %7.2f%% %7.2f%% %7.2f%% %8.2f %8.2f %8.1f\n' % (
                         l['shell'],

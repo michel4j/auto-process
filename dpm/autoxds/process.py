@@ -94,8 +94,8 @@ class AutoXDS:
                 file_text += "Space Group selection ambiguous. Current selection is not final!\n"  
             
             # Print out integration results
-            file_text += "\n--- INTEGRATION ---\n\n"
-            file_text  += '--- Summary ---\n'
+            file_text += "\n--- INTEGRATION ---\n"
+            file_text  += '\n--- Summary ---\n'
             file_text += 'Observed Reflections: %11d\n' %  dset['integration']['observed']
             file_text += 'Unique Reflections:   %11d\n' %  dset['integration']['unique']
             file_text += 'Redundancy: %7.1f\n' %  ( float(dset['integration']['observed'])/dset['integration']['unique'] )
@@ -139,7 +139,7 @@ class AutoXDS:
 
             # Print out scaling results
             if dset.get('scaling',None):
-                file_text += "\n--- SCALING ---\n\n"
+                file_text += "\n--- SCALING ---\n"
                 file_text += '\n--- Statistics ---\n'
                 file_text += '\n%8s %8s %8s %8s %8s %8s %8s\n' % (
                     'Shell',

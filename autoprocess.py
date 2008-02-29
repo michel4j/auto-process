@@ -64,9 +64,10 @@ def main():
             options['directory'] = a
         if o in ('--prefix'):
             options['prefix'] = a.split(',')
-        if len(options['prefix']) < len(args):
-            for i in xrange(len(options['prefix']), len(args)):
-                options['prefix'].append("%d" % (i+1))
+            
+    if len(options['prefix']) < len(args):
+        for i in xrange(len(options['prefix']), len(args)):
+            options['prefix'].append("%d" % (i+1))
                 
     if len(args) == 0:
         print "ERROR: no image sets provided."

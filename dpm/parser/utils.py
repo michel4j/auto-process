@@ -25,7 +25,7 @@ scanf_translate = [
     ("%f", "(\d+\.\d+)", float),
     ("%[geE]", "(\s*-?\d+\.\d+[eE][-+]?\d+])", float),
     ("%(\d+)f", "([-+ \d.]{%s})", float),
-    ("%(\d+)[geE]", "([-+\d\.eE]{%s})", float),
+    ("%(\d+)e", "([-+ \d\.eE]{%s})", float),
     ("%s", "(\S+)", lambda x:x),
     ("%([xX])", "(0%s[\dA-Za-f]+)", lambda x:int(x, 16)),
     ("%o", "(0[0-7]*)", lambda x:int(x, 7)),

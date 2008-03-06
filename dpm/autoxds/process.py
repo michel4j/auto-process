@@ -37,6 +37,7 @@ class AutoXDS:
         for dset in self.results:
             file_text += "###--- Results for data in %s\n" % dset['parameters']['file_template']
             img_anal_res = dset.get('image_analysis', None)
+            file_text += '\n CRYSTAL SCORE %8.3f \n' % dset['crystal_score']
             if img_anal_res is not None:
                 file_text += '\n--- IMAGE ANALYSIS ---\n\n'
                 good_percent = 100.0 * (img_anal_res['bragg_spots'])/img_anal_res['resolution_spots']
@@ -291,49 +292,66 @@ class AutoXDS:
         # SCALE data set(s) if we are not screening
         command = self.options.get('command', None)
         output_file_list = []
-        if command != 'screen':
-            if command == 'mad':
-                sections = []
-                for rres in self.results:
-                    resol = utils.select_resolution( rres['integration']['statistics_table'] )
-                    in_file = rres['files']['correct']
-                    sections.append(
-                        {'anomalous': self.options.get('anomalous', False),
-                         'output_file': "%s-XSCALE.HKL" % rres['files']['prefix'],
-                         'inputs': [{'input_file': in_file, 'resolution': resol}],
-                        }
-                        )
-                    output_file_list.append("%s-XSCALE.HKL" % rres['files']['prefix'])
-            else:
-                inputs = []
-                for rres in self.results:
-                    resol = utils.select_resolution( rres['integration']['statistics_table'] )
-                    in_file = rres['files']['correct']
-                    inputs.append( {'input_file': in_file, 'resolution': resol} )
-                sections = [
-                        {'anomalous': self.options.get('anomalous', False),
-                         'output_file': "XSCALE.HKL",
-                         'inputs': inputs,
-                        }
-                        ]
-                output_file_list.append("XSCALE.HKL")
+        if command == 'mad':
+            sections = []
+            for rres in self.results:
+                resol = utils.select_resolution( rres['integration']['statistics_table'] )
+                in_file = rres['files']['correct']
+                sections.append(
+                    {'anomalous': self.options.get('anomalous', False),
+                     'output_file': "%s-XSCALE.HKL" % rres['files']['prefix'],
+                     'inputs': [{'input_file': in_file, 'resolution': resol}],
+                    }
+                    )
+                output_file_list.append("%s-XSCALE.HKL" % rres['files']['prefix'])
+        else:
+            inputs = []
+            for rres in self.results:
+                resol = utils.select_resolution( rres['integration']['statistics_table'] )
+                in_file = rres['files']['correct']
+                inputs.append( {'input_file': in_file, 'resolution': resol} )
+            sections = [
+                    {'anomalous': self.options.get('anomalous', False),
+                     'output_file': "XSCALE.HKL",
+                     'inputs': inputs,
+                    }
+                    ]
+            output_file_list.append("XSCALE.HKL")
+    
+        print 'AutoXDS: Scaling data set(s) ...'
+        xscale_options = {
+            'unit_cell': self.results[0]['integration']['unit_cell'],
+            'space_group': self.results[0]['integration']['space_group'],
+            'sections': sections
+            }
         
-            print 'AutoXDS: Scaling data set(s) ...'
-            xscale_options = {
-                'unit_cell': self.results[0]['integration']['unit_cell'],
-                'space_group': self.results[0]['integration']['space_group'],
-                'sections': sections
-                }
-            
-            io.write_xscale_input(xscale_options)
-            utils.execute_xscale()
-            if len(output_file_list) == 1:
-                info = parser.parse_xscale('XSCALE.LP', output_file_list[0])
-                self.results[-1]['scaling'] = info
+        io.write_xscale_input(xscale_options)
+        utils.execute_xscale()
+        if len(output_file_list) == 1:
+            info = parser.parse_xscale('XSCALE.LP', output_file_list[0])
+            self.results[-1]['scaling'] = info
+        else:
+            for ofile, rres in zip(output_file_list, self.results):
+                info = parser.parse_xscale('XSCALE.LP', ofile)
+                rres['scaling'] = info
+        
+        # Calculate SCORE
+        for rres in self.results:
+            resolution = utils.select_resolution( rres['scaling']['statistics_table'] )
+            mosaicity = rres['integration']['mosaicity']
+            std_spot = rres['integration']['stdev_spot']
+            std_spindle= rres['integration']['stdev_spindle']
+            r_meas= rres['scaling']['r_meas']
+            st_table = rres['autoindex']['subtree_table']
+            subtree_skew = st_table[1]['population'] / float(st_table[0]['population'])
+            if rres.has_key('image_analysis'):
+                ice_rings = rres['image_analysis']['ice_rings']
             else:
-                for ofile, rres in zip(output_file_list, self.results):
-                    info = parser.parse_xscale('XSCALE.LP', ofile)
-                    rres['scaling'] = info
+                ice_rings = 0
+            score = utils.score_crystal(resolution, mosaicity, r_meas,
+                                std_spot, std_spindle,
+                                subtree_skew, ice_rings)
+            rres['crystal_score'] = score
             
         elapsed = time.time() - t1
         print "AutoXDS: Done. Total time used:  %d min %d sec"  % (int(elapsed/60), int(elapsed % 60))          

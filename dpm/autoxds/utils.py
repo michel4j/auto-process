@@ -236,7 +236,7 @@ def select_resolution(table):
     """
     resol = table[-1]['shell']
     pos = 0
-    while  pos < len(table) and table[pos]['i_sigma'] >= 1.5:
+    while  pos < len(table) and abs(table[pos]['i_sigma']) >= 1.5:
             resol = table[pos]['shell']
             pos +=1
     
@@ -311,4 +311,14 @@ def save_files(prefix):
         'prefix': prefix
         }
     return files
-             
+
+def score_crystal(resolution, mosaicity, r_meas, std_spot, std_spindle, subtree_skew, ice_rings):
+    score = 1.0
+    score -= 0.7 * exp(-4.0 / resolution)
+    score -= 0.7 * spot_delta
+    score -= 0.8 * spindle_delta
+    score -= 0.2 * mosaicity
+    score -= 0.1 * r_meas
+    score -= 0.1 * ice_rings
+    score -= 0.4 * subtree_skew
+    return score

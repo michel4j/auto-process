@@ -214,7 +214,7 @@ def parse_idxref(filename):
     
     #first read the refinement summary information
     sum_section, pos = utils.cut_section(_idxref.summary_start, _idxref.summary_end, data)
-    sum_vals, pos = utils.scanf(_idxref.summary, data)
+    sum_vals, pos = utils.scanf(_idxref.summary, sum_section)
     if sum_vals:
         for k,v in utils.cast_params(_idxref.summary_vars, sum_vals).items():
             info[k] = v

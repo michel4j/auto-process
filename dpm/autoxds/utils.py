@@ -321,5 +321,5 @@ def score_crystal(resolution, mosaicity, r_meas, std_spot, std_spindle, subtree_
     score -= 0.05 * r_meas
     score -= 0.1 * ice_rings
     score -= 0.5 * subtree_skew
-    print resolution, mosaicity, r_meas, std_spot, std_spindle, subtree_skew, ice_rings
+    #print resolution, mosaicity, r_meas, std_spot, std_spindle, subtree_skew, ice_rings
     return score

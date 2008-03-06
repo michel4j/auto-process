@@ -237,7 +237,7 @@ def select_resolution(table):
     """
     resol = table[-1]['shell']
     pos = 0
-    while  pos < len(table) and abs(table[pos]['i_sigma']) >= 1.5:
+    while  pos < len(table) and table[pos]['i_sigma'] >= 1.5:
             resol = table[pos]['shell']
             pos +=1
     

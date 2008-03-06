@@ -240,7 +240,7 @@ def select_resolution(table, default=-99.0):
     while  pos < len(table) and table[pos]['i_sigma'] >= 1.5:
         resol = table[pos]['shell']
         pos +=1
-    if pos < len(table) and table[pos]['i_sigma'] < -99.0:
+    if pos < len(table) and table[pos]['i_sigma'] <= -99.0:
         resol = default
     
     return resol

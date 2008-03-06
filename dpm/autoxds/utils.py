@@ -161,7 +161,6 @@ def get_dataset_params(img_file, screen=False):
         while r_e < (first_frame + frame_count) and (r_e - r_s)*info['oscillation_range'] <= 5.0:
             r_e += 1
         spot_range.append( (r_s, r_e) )
-    
     info['spot_range'] = spot_range
     if screen:
         info['data_range'] = spot_range[0]

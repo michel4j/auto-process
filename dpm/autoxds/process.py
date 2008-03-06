@@ -317,7 +317,11 @@ class AutoXDS:
         else:
             inputs = []
             for rres in self.results:
-                resol = utils.select_resolution( rres['integration']['statistics_table'] )
+                if rres.has_key('image_analysis'):
+                    default_res = rres['image_analysis']['resolution']
+                else:
+                    default_res = rres['integration']['statistics_table'][-1]['shell']
+                resol = utils.select_resolution( rres['integration']['statistics_table'], default_res )
                 in_file = rres['files']['correct']
                 inputs.append( {'input_file': in_file, 'resolution': resol} )
             sections = [

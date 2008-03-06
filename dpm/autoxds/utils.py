@@ -67,7 +67,9 @@ CRYSTAL_SYSTEMS = {
     'h':'rhombohedral',
     'c':'cubic'
     }                    
-
+def get_character(sg_number=1):
+    return [k for k, v in POINT_GROUPS.items() if sg_number in v][0]
+    
 def _all_files(root, patterns='*'):
     """ 
     Return a list of all the files in a directory matching the pattern

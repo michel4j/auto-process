@@ -3,6 +3,7 @@ Parsers for POINTLESS output xml files
 
 """
 import xml.dom.minidom
+import dpm.autoxds.utils
 
 def parse_pointless(filename):
     """
@@ -92,15 +93,14 @@ def parse_pointless(filename):
     # extract the lattice character
     group_list = doc.getElementsByTagName('LaueGroupScoreList')[0]
     lattice_character = 'aP'
-    lattice_probability = 0.0
-    for group_el in group_list.getElementsByTagName('LaueGroupScore'):
-        if group_el.getAttribute('Accept') == 'Accepted':
-            lattice_character = group_el.getElementsByTagName('LatticeType')[0].firstChild.nodeValue
-            lattice_probability = float(group_el.getElementsByTagName('Likelihood')[0].firstChild.nodeValue)
-        break
+    #for group_el in group_list.getElementsByTagName('LaueGroupScore'):
+    #    if group_el.getAttribute('Accept') == 'Accepted':
+    #        lattice_character = group_el.getElementsByTagName('LatticeType')[0].firstChild.nodeValue
+    #        lattice_probability = float(group_el.getElementsByTagName('Likelihood')[0].firstChild.nodeValue)
+    #    break
+    
         
-    summary['character'] = lattice_character.strip()
-    summary['likelihood'] = lattice_probability
+    summary['character'] = dpm.autoxds.utils.get_character( summary['group_number'] )
     summary['candidates'] = sg_candidates
     
     return summary

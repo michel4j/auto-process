@@ -314,7 +314,7 @@ def save_files(prefix):
 
 def score_crystal(resolution, mosaicity, r_meas, std_spot, std_spindle, subtree_skew, ice_rings):
     score = 1.0
-    score -= 0.7 * exp(-4.0 / resolution)
+    score -= 0.7 * math.exp(-4.0 / resolution)
     score -= 0.7 * spot_delta
     score -= 0.8 * spindle_delta
     score -= 0.2 * mosaicity

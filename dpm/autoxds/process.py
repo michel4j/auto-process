@@ -338,7 +338,7 @@ class AutoXDS:
         
         # Calculate SCORE
         for rres in self.results:
-            print "AutoXDS: Scaling data set '%s'..." % rres['files']['prefix'],
+            print "AutoXDS: Scoring data set '%s'..." % rres['files']['prefix'],
             resolution = utils.select_resolution( rres['scaling']['statistics_table'] )
             mosaicity = rres['integration']['mosaicity']
             std_spot = rres['integration']['stdev_spot']

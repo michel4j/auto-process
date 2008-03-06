@@ -337,6 +337,7 @@ class AutoXDS:
         
         # Calculate SCORE
         for rres in self.results:
+            print "AutoXDS: Scaling data set '%s'..." % rres['files']['prefix'],
             resolution = utils.select_resolution( rres['scaling']['statistics_table'] )
             mosaicity = rres['integration']['mosaicity']
             std_spot = rres['integration']['stdev_spot']
@@ -351,6 +352,7 @@ class AutoXDS:
             score = utils.score_crystal(resolution, mosaicity, r_meas,
                                 std_spot, std_spindle,
                                 subtree_skew, ice_rings)
+            print '%8.3f' % score
             rres['crystal_score'] = score
             
         elapsed = time.time() - t1

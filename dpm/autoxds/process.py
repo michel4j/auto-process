@@ -344,8 +344,9 @@ class AutoXDS:
             std_spot = rres['integration']['stdev_spot']
             std_spindle= rres['integration']['stdev_spindle']
             r_meas= rres['scaling']['r_meas']
-            st_table = rres['autoindex']['subtree_table']
-            subtree_skew = st_table[1]['population'] / float(st_table[0]['population'])
+            st_table = rres['autoindex']['subtree_table']            
+            st_array = [i['population'] for i in st_table]
+            subtree_skew = sum(st_array[1:]) / float(sum(st_array))
             if rres.has_key('image_analysis'):
                 ice_rings = rres['image_analysis']['ice_rings']
             else:

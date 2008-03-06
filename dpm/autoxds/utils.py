@@ -224,7 +224,7 @@ def cell_volume(unit_cell):
     return v 
 
 
-def select_resolution(table):
+def select_resolution(table, default=-99.0):
     """
     Takes a table of statistics and determines the optimal resolution
     The table is a list of dictionaries each with at least the following fields
@@ -238,8 +238,10 @@ def select_resolution(table):
     resol = table[-1]['shell']
     pos = 0
     while  pos < len(table) and table[pos]['i_sigma'] >= 1.5:
-            resol = table[pos]['shell']
-            pos +=1
+        resol = table[pos]['shell']
+        pos +=1
+    if pos < len(table) and table[pos]['i_sigma'] < -99.0:
+        resol = default
     
     return resol
 

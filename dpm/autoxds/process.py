@@ -86,7 +86,7 @@ class AutoXDS:
                     sol['probability']
                     )
             sg_name = utils.SPACE_GROUP_NAMES[ dset['space_group']['group_number'] ]
-            file_text += "\nSelected Group is:    %s %s\n" % ( 
+            file_text += "\nSelected Group is:    %s,  #%s\n" % ( 
                 sg_name, dset['space_group']['group_number'] )
             u_cell = utils.tidy_cell(dset['space_group']['unit_cell'], dset['space_group']['character'])
             file_text += "\nUnit Cell:    %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n" % u_cell
@@ -135,8 +135,13 @@ class AutoXDS:
                     dset['integration']['sig_ano'],
                     dset['integration']['cor_ano']
                     )
-            resol = utils.select_resolution( dset['integration']['statistics_table'] )
-            file_text += "\nResolution cut-off based on preliminary statistics (I/Sigma > 1.5):  %5.2f\n\n" % resol
+            if dset.has_key('image_analysis'):
+                default_res = dset['image_analysis']['resolution']
+            else:
+                default_res = dset['integration']['statistics_table'][-1]['shell']
+            resol = utils.select_resolution( dset['integration']['statistics_table'], default_res )
+            file_text += "\nResolution cut-off from preliminary analysis (I/SigI>1.5):  %5.2f\n\n" % (resol)
+            
 
             # Print out scaling results
             if dset.get('scaling',None):
@@ -295,7 +300,12 @@ class AutoXDS:
         if command == 'mad':
             sections = []
             for rres in self.results:
-                resol = utils.select_resolution( rres['integration']['statistics_table'] )
+                if rres.has_key('image_analysis'):
+                    default_res = rres['image_analysis']['resolution']
+                else:
+                    default_res = rres['integration']['statistics_table'][-1]['shell']
+                resol = utils.select_resolution( rres['integration']['statistics_table'], default_res )
+
                 in_file = rres['files']['correct']
                 sections.append(
                     {'anomalous': self.options.get('anomalous', False),

@@ -227,7 +227,7 @@ class AutoXDS:
         
         t1 = time.time()
         print 'AutoXDS: Using %d CPUs.' % self.dataset_info[0]['cpu_count']
-        
+        print "AutoXDS: Output in directory '%s'." % self.work_directory
         description = 'Processing'
         adj = 'native'
         if self.options.get('command',None) == 'screen':
@@ -236,8 +236,8 @@ class AutoXDS:
             adj = 'MAD'
         elif self.options.get('anomalous', False):
             adj = 'anomalous'
-        print "AutoXDS: %s %d %s dataset(s) in directory '%s'... " % (
-            description, len(self.dataset_info), adj, self.work_directory )
+        print "AutoXDS: %s %d %s dataset(s)... " % (
+            description, len(self.dataset_info), adj)
         
         for run_info in self.dataset_info:
             run_result = {}
@@ -320,6 +320,7 @@ class AutoXDS:
     
         print 'AutoXDS: Scaling data set(s) ...'
         xscale_options = {
+            'cpu_count': self.dataset_info[0]['cpu_count'],
             'unit_cell': self.results[0]['integration']['unit_cell'],
             'space_group': self.results[0]['integration']['space_group'],
             'sections': sections

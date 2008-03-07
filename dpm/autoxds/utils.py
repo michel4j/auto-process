@@ -327,7 +327,7 @@ def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle,
         -0.5 * subtree_skew]
     
     names = ['Root', 'Resolution', 'Spindle', 'Spot', 'Mosaicity','R_meas', 'I/Sigma', 'Ice','Satellites']
-    for name, contrib in zip(names,score):
-        print '\t\t%s : %0.3f' % (name, contrib)
+    #for name, contrib in zip(names,score):
+    #    print '\t\t%s : %0.3f' % (name, contrib)
         
     return sum(score)

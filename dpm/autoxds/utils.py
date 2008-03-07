@@ -317,12 +317,11 @@ def save_files(prefix):
 
 def score_crystal(resolution, mosaicity, r_meas, std_spot, std_spindle, subtree_skew, ice_rings):
     score = 1.0
-    score -= 0.7 * math.exp(-4.0 / resolution) # subtracts 0.2 for limit resolution of 3.2A
-    score -= 0.1 * std_spindle 
+    score -= 0.7 * math.exp(-4.0 / resolution) 
+    score -= 0.2 * std_spindle 
     score -= 0.05 * std_spot 
     score -= 0.2 * mosaicity
-    score -= 0.01 * r_meas
-    #score -= 0.1 * ice_rings
-    score -= 0.5 * subtree_skew
-    #print resolution, mosaicity, r_meas, std_spot, std_spindle, subtree_skew, ice_rings
+    score -= 0.02 * r_meas
+    score -= 0.05 * ice_rings
+    score -= 0.5 * subtree_skew   
     return score

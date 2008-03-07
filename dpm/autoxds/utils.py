@@ -321,8 +321,8 @@ def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle,
         -0.2 * std_spindle ,
         -0.05 * std_spot ,
         -0.2 * mosaicity,
-        -0.01 * r_meas,
-        -0.2 * (2.0 / i_sigma),
+        -0.01 * abs(r_meas),
+        -0.2 * 2.0 / i_sigma,
         -0.05 * ice_rings,
         -0.5 * subtree_skew]
     

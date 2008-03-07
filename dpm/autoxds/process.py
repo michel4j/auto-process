@@ -135,11 +135,7 @@ class AutoXDS:
                     dset['integration']['sig_ano'],
                     dset['integration']['cor_ano']
                     )
-            if dset.has_key('image_analysis'):
-                default_res = dset['image_analysis']['resolution']
-            else:
-                default_res = dset['integration']['statistics_table'][-1]['shell']
-            resol = utils.select_resolution( dset['integration']['statistics_table'], default_res )
+            resol = dset['integration']['resolution']
             file_text += "\nResolution cut-off from preliminary analysis (I/SigI>1.5):  %5.2f\n\n" % (resol)
             
 
@@ -293,19 +289,23 @@ class AutoXDS:
             run_result['files'] = utils.save_files(run_info['prefix'])
             self.results.append( run_result )
                
-        
+            # Select Cut-off resolution
+            # if image analysis has been performed use estimated resolution as fallback value
+            # otherwise use everything
+            if rres.has_key('image_analysis'):
+                default_res = run_result['image_analysis']['resolution']
+            else:
+                default_res =run_result['integration']['statistics_table'][-1]['shell']
+            resol = utils.select_resolution( run_result['integration']['statistics_table'], default_res )
+            run_result['integration']['resolution'] = resol
+
         # SCALE data set(s) if we are not screening
         command = self.options.get('command', None)
         output_file_list = []
         if command == 'mad':
             sections = []
             for rres in self.results:
-                if rres.has_key('image_analysis'):
-                    default_res = rres['image_analysis']['resolution']
-                else:
-                    default_res = rres['integration']['statistics_table'][-1]['shell']
-                resol = utils.select_resolution( rres['integration']['statistics_table'], default_res )
-
+                resol = rres['integration']['resolution']
                 in_file = rres['files']['correct']
                 sections.append(
                     {'anomalous': self.options.get('anomalous', False),
@@ -317,11 +317,7 @@ class AutoXDS:
         else:
             inputs = []
             for rres in self.results:
-                if rres.has_key('image_analysis'):
-                    default_res = rres['image_analysis']['resolution']
-                else:
-                    default_res = rres['integration']['statistics_table'][-1]['shell']
-                resol = utils.select_resolution( rres['integration']['statistics_table'], default_res )
+                resol = rres['integration']['resolution']
                 in_file = rres['files']['correct']
                 inputs.append( {'input_file': in_file, 'resolution': resol} )
             sections = [
@@ -353,7 +349,7 @@ class AutoXDS:
         # Calculate SCORE
         for rres in self.results:
             print "AutoXDS: Scoring data set '%s'..." % rres['files']['prefix'],
-            resolution = utils.select_resolution( rres['scaling']['statistics_table'] )
+            resolution = utils.select_resolution( rres['scaling']['statistics_table'],  )
             mosaicity = rres['integration']['mosaicity']
             std_spot = rres['integration']['stdev_spot']
             std_spindle= rres['integration']['stdev_spindle']

@@ -292,7 +292,7 @@ class AutoXDS:
             # Select Cut-off resolution
             # if image analysis has been performed use estimated resolution as fallback value
             # otherwise use everything
-            if rres.has_key('image_analysis'):
+            if run_result.has_key('image_analysis'):
                 default_res = run_result['image_analysis']['resolution']
             else:
                 default_res =run_result['integration']['statistics_table'][-1]['shell']

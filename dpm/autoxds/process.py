@@ -290,13 +290,7 @@ class AutoXDS:
             self.results.append( run_result )
                
             # Select Cut-off resolution
-            # if image analysis has been performed use estimated resolution as fallback value
-            # otherwise use everything
-            if run_result.has_key('image_analysis'):
-                default_res = run_result['image_analysis']['resolution']
-            else:
-                default_res =run_result['integration']['statistics_table'][-1]['shell']
-            resol = utils.select_resolution( run_result['integration']['statistics_table'], default_res )
+            resol = utils.select_resolution( run_result['integration']['statistics_table'])
             run_result['integration']['resolution'] = resol
 
         # SCALE data set(s) if we are not screening
@@ -349,11 +343,16 @@ class AutoXDS:
         # Calculate SCORE
         for rres in self.results:
             print "AutoXDS: Scoring data set '%s'..." % rres['files']['prefix'],
-            resolution = utils.select_resolution( rres['scaling']['statistics_table'],  )
+            resolution = rres['integration']['resolution']
             mosaicity = rres['integration']['mosaicity']
             std_spot = rres['integration']['stdev_spot']
             std_spindle= rres['integration']['stdev_spindle']
+            i_sigma = rres['scaling']['i_sigma']
+            if i_sigma < -99: 
+                i_sigma = rres['integration']['i_sigma']
             r_meas= rres['scaling']['r_meas']
+            if r_meas < -99:
+                r_meas = rres['integration']['r_meas']
             st_table = rres['autoindex']['subtree_table']            
             st_array = [i['population'] for i in st_table]
             subtree_skew = sum(st_array[1:]) / float(sum(st_array))
@@ -361,7 +360,7 @@ class AutoXDS:
                 ice_rings = rres['image_analysis']['ice_rings']
             else:
                 ice_rings = 0
-            score = utils.score_crystal(resolution, mosaicity, r_meas,
+            score = utils.score_crystal(resolution, mosaicity, r_meas, i_sigma,
                                 std_spot, std_spindle,
                                 subtree_skew, ice_rings)
             print '%8.3f' % score

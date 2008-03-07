@@ -224,7 +224,7 @@ def cell_volume(unit_cell):
     return v 
 
 
-def select_resolution(table, default=-99.0):
+def select_resolution(table):
     """
     Takes a table of statistics and determines the optimal resolution
     The table is a list of dictionaries each with at least the following fields
@@ -241,7 +241,7 @@ def select_resolution(table, default=-99.0):
         resol = table[pos]['shell']
         pos +=1
     if pos < len(table) and table[pos]['i_sigma'] <= -99.0:
-        resol = default
+        resol = table[-1]['shell']
     
     return resol
 
@@ -315,13 +315,19 @@ def save_files(prefix):
         }
     return files
 
-def score_crystal(resolution, mosaicity, r_meas, std_spot, std_spindle, subtree_skew, ice_rings):
-    score = 1.0
-    score -= 0.7 * math.exp(-4.0 / resolution) 
-    score -= 0.2 * std_spindle 
-    score -= 0.05 * std_spot 
-    score -= 0.2 * mosaicity
-    score -= 0.02 * r_meas
-    score -= 0.05 * ice_rings
-    score -= 0.5 * subtree_skew   
-    return score
+def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
+    score = [ 1.0,
+        -0.7 * math.exp(-4.0 / resolution),
+        -0.2 * std_spindle ,
+        -0.05 * std_spot ,
+        -0.2 * mosaicity,
+        -0.02 * r_meas,
+        -0.2 * (2.0 / i_sigma),
+        -0.05 * ice_rings,
+        -0.5 * subtree_skew]
+    
+    names = ['Root', 'Resolution', 'Spindle', 'Spot', 'Mosaicity','R_meas', 'I/Sigma', 'Ice','Satellites']
+    for name, contrib in zip(names,score):
+        print '\t\t%s : %0.3f' % (name, contrib)
+        
+    return sum(score)

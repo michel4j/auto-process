@@ -188,6 +188,7 @@ class AutoXDS:
                 data_labels.append('%20s:' % 'Exposure Time')
                 data_labels.append('%20s' % 'Overlaps?')
         
+                file_text  += 'NOTE: Recommended exposure time does not take into account overloads at low resolution!\n\n'
                 for run in dset['strategy']['runs']:
                     run_data = []
                     run_data.append('%8d' % run['number'])

@@ -4,6 +4,7 @@ MarCCD TIFF format readers
 """
 
 import struct
+import math
 
 def read_header(filename):
     """
@@ -44,6 +45,7 @@ def read_header(filename):
     info['detector_size'] = (header_pars[17], header_pars[18])
     info['pixel_size'] = (detector_pars[1]/1e6, detector_pars[2]/1e6)
     info['starting_angle'] = goniostat_pars[8] / 1e3
+    info['two_theta'] = (goniostat_pars[7] / 1e3) * math.pi /180.0
     info['file_format'] = 'TIFF'
     
     return info

@@ -257,7 +257,7 @@ class AutoXDS:
             print "AutoXDS: Integrating '%s'" % run_info['prefix']
             jobs = "DEFPIX INTEGRATE CORRECT"
             io.write_xds_input(jobs, run_info)
-            utils.execute_xds()
+            utils.execute_xds_par()
             print "AutoXDS: Selecting spacegroup for '%s' ..." % run_info['prefix'],
             utils.execute_pointless()
             
@@ -273,7 +273,7 @@ class AutoXDS:
             print "AutoXDS: Merging reflections in '%s'" % run_info['prefix']
             jobs = "CORRECT"
             io.write_xds_input(jobs, run_info)
-            utils.execute_xds()
+            utils.execute_xds_par()
             info = parser.parse_correct('CORRECT.LP')
             run_result['integration'] = info
 

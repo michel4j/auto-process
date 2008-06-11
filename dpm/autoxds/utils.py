@@ -273,8 +273,13 @@ def select_lattices(table):
     
 
 def execute_xds():
+    sts, output = commands.getstatusoutput('xds >> xds.log')
+    return sts
+
+def execute_xds_par():
     sts, output = commands.getstatusoutput('xds_par >> xds.log')
     return sts
+
 
 def execute_xscale():
     sts, output = commands.getstatusoutput('xscale_par >> xds.log')

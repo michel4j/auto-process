@@ -282,9 +282,12 @@ class AutoXDS:
                 utils.execute_best(run_info['exposure_time'], self.options.get('anomalous', False))
                 info = parser.parse_best('best.xml')
                 run_result['strategy'] = info
-                utils.execute_distl(run_info['reference_image'])
-                info = parser.parse_distl('distl.log')
-                run_result['image_analysis'] = info
+                sts = utils.execute_distl(run_info['reference_image'])
+                if sts == 0:
+                    info = parser.parse_distl('distl.log')
+                    run_result['image_analysis'] = info
+                else:
+                    run_result['image_analysis'] = {}
                 
             
             run_result['files'] = utils.save_files(run_info['prefix'])

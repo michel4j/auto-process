@@ -10,6 +10,7 @@ import math
 import fnmatch
 import shutil
 import tempfile
+import commands
 from dpm.imageio import marccd
 
 
@@ -272,18 +273,18 @@ def select_lattices(table):
     
 
 def execute_xds():
-    sts = os.system('xds_par >> xds.log')
+    sts, output = commands.getstatusoutput('xds_par >> xds.log')
     return sts
 
 def execute_xscale():
-    sts = os.system('xscale_par >> xds.log')
+    sts, output = commands.getstatusoutput('xscale_par >> xds.log')
     return sts
 
 def execute_xdsconv():
-    return os.system('xdsconv >> xds.log')
+    sts, output = commands.getstatusoutput('xdsconv >> xds.log')
        
 def execute_pointless():
-    sts = os.system('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> pointless.log')
+    sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> pointless.log')
     return sts
 
 def execute_best(time, anomalous=False):
@@ -294,11 +295,11 @@ def execute_best(time, anomalous=False):
     command += " -e none -M 1 -w 0.2 %s -dna best.xml" % anom_flag
     command += " -xds CORRECT.LP BKGPIX.pck XDS_ASCII.HKL >> best.log" 
     
-    sts = os.system(command)
+    sts, output = commands.getstatusoutput(command)
     return sts
 
 def execute_distl(filename):
-    sts = os.system('labelit.distl %s > distl.log' % filename)
+    sts, output = commands.getstatusoutput('labelit.distl %s > distl.log' % filename)
     return sts
 
 def save_files(prefix):

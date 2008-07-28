@@ -160,33 +160,21 @@ def write_f2mtz_input(params):
     Create F2MTZ.INP file using parameters in the dictionary params
     
     params = {
-        'space_group': int
-        'unit_cell': tuple of 6 floats
-        'input_file' : str
         'output_file' : str
     }
     """
     
     file_text = "#!/bin/csh \n"
-    file_text += "f2mtz HKLOUT temp.mtz << END1\n"
-    file_text += "TITLE XDS to MTZ\n"
-    file_text += "FILE %s\n" % params['input_file']
-    file_text += "SYMMETRY   %d\n" % (params['space_group'])
-    file_text += "CELL    %5.2f %5.2f %5.2f %4.2f %4.2f %4.2f\n" % params['unit_cell']
-    file_text += "LABOUT  H K L FP SIGFP FreeRflag\n"
-    file_text += "CTYPOUT H H H  F   Q       X\n"
-    file_text += "END\n"
-    file_text += "END1\n"
-
+    file_text += "f2mtz HKLOUT temp.mtz < F2MTZ.INP\n"
     file_text += "cad HKLIN1 temp.mtz HKLOUT %s <<EOF\n" % params['output_file']
     file_text += "LABIN FILE 1 ALL\n"
     file_text += "END\n"
     file_text += "EOF\n"
     file_text += "/bin/rm temp.mtz\n"
     try:
-        outfile = open('F2MTZ.INP','w')
+        outfile = open('f2mtz.com','w')
     except IOError, eStr:
-        print "ERROR: Cannot open F2MTZ.INP for writing: ", eStr
+        print "ERROR: Cannot open f2mtz.com for writing: ", eStr
 
     outfile.write(file_text)
     outfile.close()

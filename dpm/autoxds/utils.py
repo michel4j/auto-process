@@ -288,6 +288,10 @@ def execute_xscale():
 def execute_xdsconv():
     sts, output = commands.getstatusoutput('xdsconv >> xds.log')
     return sts==0
+
+def execute_f2mtz():
+    sts, output = commands.getstatusoutput('sh f2mtz.com >> xds.log')
+    return sts==0
        
 def execute_pointless():
     sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> pointless.log')

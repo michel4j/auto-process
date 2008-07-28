@@ -435,8 +435,15 @@ class AutoXDS:
                 }
                 io.write_xdsconv_input(xdsconv_options)
                 utils.execute_xdsconv()
-
-            rres['files']['xdsconv'] = out_files                
+                
+                f2mtz_options = {
+                    'output_file': out_file_root + ".MTZ"
+                }
+                io.write_f2mtz_input(f2mtz_options)
+                utils.execute_f2mtz()
+            
+            print 'AutoXDS: Output Files ... \n\t', ',\n\t'.join(out_files)
+            rres['files']['xdsconv'] = out_files               
             
 
         elapsed = time.time() - t1

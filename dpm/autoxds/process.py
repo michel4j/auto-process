@@ -404,7 +404,7 @@ class AutoXDS:
                     'freeR_fraction': 0.05,
                 }
                 io.write_xdsconv_input(xdsconv_options)
-                utils.execute_xdsconf()
+                utils.execute_xdsconv()
 
                 #SHELX File
                 out_files.append(out_file_root + ".SHELX")
@@ -419,7 +419,7 @@ class AutoXDS:
                     'freeR_fraction': 0.05,
                 }
                 io.write_xdsconv_input(xdsconv_options)
-                utils.execute_xdsconf()
+                utils.execute_xdsconv()
 
                 #MTZ File
                 out_files.append(out_file_root + ".MTZ")
@@ -434,7 +434,7 @@ class AutoXDS:
                     'freeR_fraction': 0.05,
                 }
                 io.write_xdsconv_input(xdsconv_options)
-                utils.execute_xdsconf()
+                utils.execute_xdsconv()
 
             rres['files']['xdsconv'] = out_files                
             

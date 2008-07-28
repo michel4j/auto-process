@@ -259,34 +259,42 @@ class AutoXDS:
             io.write_xds_input(jobs, run_info)
             utils.execute_xds_par()
             print "AutoXDS: Selecting spacegroup for '%s' ..." % run_info['prefix'],
-            utils.execute_pointless()
-            
-            sg_info = parser.parse_pointless('pointless.xml')
-            run_result['space_group'] = sg_info
-                        
-            run_info['unit_cell'] = utils.tidy_cell(sg_info['unit_cell'], sg_info['character'])
-            run_info['space_group'] = sg_info['group_number']
-            run_info['reindex_matrix'] = sg_info['reindex_matrix']
-            print sg_info['group_number'], utils.SPACE_GROUP_NAMES[sg_info['group_number']], sg_info['character']
+            success = utils.execute_pointless()
+            if not success:
+                print 'WARNING: Could not run POINTLESS! Automatic data processing may fail!'
+            else:
+                sg_info = parser.parse_pointless('pointless.xml')
+                run_result['space_group'] = sg_info                        
+                run_info['unit_cell'] = utils.tidy_cell(sg_info['unit_cell'], sg_info['character'])
+                run_info['space_group'] = sg_info['group_number']
+                run_info['reindex_matrix'] = sg_info['reindex_matrix']
+                print sg_info['group_number'], utils.SPACE_GROUP_NAMES[sg_info['group_number']], sg_info['character']
             
             # Rerun CORRECT in the right space group and scale
             print "AutoXDS: Merging reflections in '%s'" % run_info['prefix']
             jobs = "CORRECT"
             io.write_xds_input(jobs, run_info)
-            utils.execute_xds_par()
+            success = utils.execute_xds_par()
+            if not success:
+                print 'ERROR: Could not run CORRECT! Automatic data processing can not proceed!'
+                return
             info = parser.parse_correct('CORRECT.LP')
             run_result['integration'] = info
 
             
             if self.options.get('command', None) == 'screen':
-                utils.execute_best(run_info['exposure_time'], self.options.get('anomalous', False))
-                info = parser.parse_best('best.xml')
-                run_result['strategy'] = info
-                sts = utils.execute_distl(run_info['reference_image'])
-                if sts == 0:
+                success = utils.execute_best(run_info['exposure_time'], self.options.get('anomalous', False))
+                if not success:
+                    print 'ERROR: Could not calculate Strategy!'
+                else:
+                    info = parser.parse_best('best.xml')
+                    run_result['strategy'] = info
+                success = utils.execute_distl(run_info['reference_image'])
+                if success:
                     info = parser.parse_distl('distl.log')
                     run_result['image_analysis'] = info
                 else:
+                    print 'ERROR: Image analysis failed!'
                     run_result['image_analysis'] = {}
                 
             
@@ -312,6 +320,7 @@ class AutoXDS:
                     }
                     )
                 output_file_list.append("%s-XSCALE.HKL" % rres['files']['prefix'])
+                rres['files']['xscale'] = output_file_list
         else:
             inputs = []
             for rres in self.results:
@@ -325,6 +334,7 @@ class AutoXDS:
                     }
                     ]
             output_file_list.append("XSCALE.HKL")
+            rres['files']['xscale'] = output_file_list
     
         print 'AutoXDS: Scaling data set(s) ...'
         xscale_options = {
@@ -335,7 +345,11 @@ class AutoXDS:
             }
         
         io.write_xscale_input(xscale_options)
-        utils.execute_xscale()
+        success = utils.execute_xscale()
+        if not success:
+            print 'ERROR: SCALING Failed!'
+            return
+
         if len(output_file_list) == 1:
             info = parser.parse_xscale('XSCALE.LP', output_file_list[0])
             self.results[-1]['scaling'] = info
@@ -369,7 +383,62 @@ class AutoXDS:
                                 subtree_skew, ice_rings)
             print '%8.3f' % score
             rres['crystal_score'] = score
+        
+        # GENERATE MTZ and CNS output files    
+        for rres in self.results:
+            print 'AutoXDS: Converting data set(s) to MTZ, SHELX and CNS ...'
+            out_files = []
+            for infile in rres['files']['xscale']:
+                out_file_root = ''.join(infile.split('.')
+
+                # CNS File
+                out_files.append(out_file_root + ".CNS")
+                xdsconv_options = {
+                    'resolution': 0.0,     #rres['integration']['resolution'],
+                    'unit_cell': rres['integration']['unit_cell'],
+                    'space_group': rres['integration']['space_group'],
+                    'format': 'CNS',
+                    'anomalous': self.options.get('anomalous', False),
+                    'input_file': infile,
+                    'output_file': out_file_root + ".CNS",
+                    'freeR_fraction': 0.05,
+                }
+                io.write_xdsconv_input(xdsconv_options)
+                utils.execute_xdsconf()
+
+                #SHELX File
+                out_files.append(out_file_root + ".SHELX")
+                xdsconv_options = {
+                    'resolution': 0.0,     #rres['integration']['resolution'],
+                    'unit_cell': rres['integration']['unit_cell'],
+                    'space_group': rres['integration']['space_group'],
+                    'format': 'SHELX',
+                    'anomalous': self.options.get('anomalous', False),
+                    'input_file': infile,
+                    'output_file': out_file_root + ".SHELX",
+                    'freeR_fraction': 0.05,
+                }
+                io.write_xdsconv_input(xdsconv_options)
+                utils.execute_xdsconf()
+
+                #MTZ File
+                out_files.append(out_file_root + ".MTZ")
+                xdsconv_options = {
+                    'resolution': 0.0,     #rres['integration']['resolution'],
+                    'unit_cell': rres['integration']['unit_cell'],
+                    'space_group': rres['integration']['space_group'],
+                    'format': 'CCP4_F',
+                    'anomalous': self.options.get('anomalous', False),
+                    'input_file': infile,
+                    'output_file': out_file_root + ".CCP4F",
+                    'freeR_fraction': 0.05,
+                }
+                io.write_xdsconv_input(xdsconv_options)
+                utils.execute_xdsconf()
+
+            rres['files']['xdsconv'] = out_files                
             
+
         elapsed = time.time() - t1
         print "AutoXDS: Done. Total time used:  %d min %d sec"  % (int(elapsed/60), int(elapsed % 60))          
        

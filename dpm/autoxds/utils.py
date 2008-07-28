@@ -274,23 +274,24 @@ def select_lattices(table):
 
 def execute_xds():
     sts, output = commands.getstatusoutput('xds >> xds.log')
-    return sts
+    return sts==0
 
 def execute_xds_par():
     sts, output = commands.getstatusoutput('xds_par >> xds.log')
-    return sts
+    return sts==0
 
 
 def execute_xscale():
     sts, output = commands.getstatusoutput('xscale_par >> xds.log')
-    return sts
+    return sts==0
 
 def execute_xdsconv():
     sts, output = commands.getstatusoutput('xdsconv >> xds.log')
+    return sts==0
        
 def execute_pointless():
     sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> pointless.log')
-    return sts
+    return sts==0
 
 def execute_best(time, anomalous=False):
     anom_flag = ''
@@ -301,11 +302,11 @@ def execute_best(time, anomalous=False):
     command += " -xds CORRECT.LP BKGPIX.pck XDS_ASCII.HKL >> best.log" 
     
     sts, output = commands.getstatusoutput(command)
-    return sts
+    return sts==0
 
 def execute_distl(filename):
     sts, output = commands.getstatusoutput('labelit.distl %s > distl.log' % filename)
-    return sts
+    return sts==0
 
 def save_files(prefix):
     shutil.move('XDS.INP','%s-XDS.INP' % prefix)

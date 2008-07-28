@@ -389,7 +389,7 @@ class AutoXDS:
             print 'AutoXDS: Converting data set(s) to MTZ, SHELX and CNS ...'
             out_files = []
             for infile in rres['files']['xscale']:
-                out_file_root = ''.join(infile.split('.'))
+                out_file_root = ''.join(infile.split('.')[:-1])
 
                 # CNS File
                 out_files.append(out_file_root + ".CNS")

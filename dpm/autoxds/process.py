@@ -319,8 +319,9 @@ class AutoXDS:
                      'inputs': [{'input_file': in_file, 'resolution': resol}],
                     }
                     )
-                output_file_list.append("%s-XSCALE.HKL" % rres['files']['prefix'])
-                rres['files']['xscale'] = output_file_list
+                scale_out_file = "%s-XSCALE.HKL" % rres['files']['prefix']
+                output_file_list.append(scale_out_file)
+                rres['files']['xscale'] = [scale_out_file]
         else:
             inputs = []
             for rres in self.results:

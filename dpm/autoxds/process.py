@@ -394,7 +394,7 @@ class AutoXDS:
                 # CNS File
                 out_files.append(out_file_root + ".CNS")
                 xdsconv_options = {
-                    'resolution': 0.0,     #rres['integration']['resolution'],
+                    'resolution': rres['integration']['resolution'],
                     'unit_cell': rres['integration']['unit_cell'],
                     'space_group': rres['integration']['space_group'],
                     'format': 'CNS',
@@ -409,7 +409,7 @@ class AutoXDS:
                 #SHELX File
                 out_files.append(out_file_root + ".SHELX")
                 xdsconv_options = {
-                    'resolution': 0.0,     #rres['integration']['resolution'],
+                    'resolution': rres['integration']['resolution'],
                     'unit_cell': rres['integration']['unit_cell'],
                     'space_group': rres['integration']['space_group'],
                     'format': 'SHELX',
@@ -424,7 +424,7 @@ class AutoXDS:
                 #MTZ File
                 out_files.append(out_file_root + ".MTZ")
                 xdsconv_options = {
-                    'resolution': 0.0,     #rres['integration']['resolution'],
+                    'resolution': rres['integration']['resolution'],
                     'unit_cell': rres['integration']['unit_cell'],
                     'space_group': rres['integration']['space_group'],
                     'format': 'CCP4_F',

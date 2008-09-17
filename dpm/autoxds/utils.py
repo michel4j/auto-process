@@ -342,3 +342,17 @@ def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle,
     #    print '\t\t%s : %0.3f' % (name, contrib)
         
     return sum(score)
+
+
+# Physical Constats
+h = 4.13566733e-15 # eV.s
+c = 299792458e10   # A/s
+S111_a_rt   = 5.4310209 # A at RT
+S111_a_ln2  = 5.4297575 # A at LN2 
+
+def energy_to_wavelength(energy): #Angstroms
+	return (h*c)/(energy)
+
+def air(e):
+    p = [  1.00000857e+00,  -3.10243288e-04,   3.01020914e+00]    
+    return 1.0 - (p[0] * exp( p[1] * (e**p[2])))

@@ -7,6 +7,7 @@ Generic Utiltites for AutoXDS
 import os
 import re
 import math
+from math import exp
 import fnmatch
 import shutil
 import tempfile

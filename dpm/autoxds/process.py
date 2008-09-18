@@ -317,11 +317,11 @@ class AutoXDS:
                 in_file = rres['files']['correct']
                 sections.append(
                     {'anomalous': self.options.get('anomalous', False),
-                     'output_file': "%s-XSCALE.HKL" % rres['files']['prefix'],
+                     'output_file': "%s/XSCALE.HKL" % rres['files']['prefix'],
                      'inputs': [{'input_file': in_file, 'resolution': resol}],
                     }
                     )
-                scale_out_file = "%s-XSCALE.HKL" % rres['files']['prefix']
+                scale_out_file = "%s/XSCALE.HKL" % rres['files']['prefix']
                 output_file_list.append(scale_out_file)
                 rres['files']['xscale'] = [scale_out_file]
         else:

@@ -314,15 +314,16 @@ def execute_distl(filename):
     return sts==0
 
 def save_files(prefix):
-    shutil.move('XDS.INP','%s-XDS.INP' % prefix)
-    shutil.move('CORRECT.LP','%s-CORRECT.LP' % prefix)
-    shutil.move('INTEGRATE.LP','%s-INTEGRATE.LP' % prefix)
-    shutil.move('XDS_ASCII.HKL','%s-XDS_ASCII.HKL' % prefix)
-    shutil.move('INTEGRATE.HKL','%s-INTEGRATE.HKL' % prefix)
-    shutil.move('GXPARM.XDS','%s-GXPARM.XDS' % prefix)
+    os.mkdir(prefix)
+    shutil.copy('XDS.INP',prefix)
+    shutil.move('CORRECT.LP',prefix)
+    shutil.move('INTEGRATE.LP',prefix)
+    shutil.move('XDS_ASCII.HKL', prefix)
+    shutil.move('INTEGRATE.HKL', prefix)
+    shutil.move('GXPARM.XDS', prefix)
     files = {
-        'correct': '%s-XDS_ASCII.HKL' % prefix,
-        'integrate': '%s-XDS_ASCII.HKL' % prefix,
+        'correct': '%s/XDS_ASCII.HKL' % prefix,
+        'integrate': '%s/XDS_ASCII.HKL' % prefix,
         'prefix': prefix
         }
     return files

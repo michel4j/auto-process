@@ -20,9 +20,14 @@ class AutoXDS:
         for img, prefix in zip(self.options['images'], self.options['prefix']):
             run_info = utils.get_dataset_params(img, is_screening)
             run_info['prefix'] = prefix
-            self.dataset_info.append( run_info ) 
+            self.dataset_info.append( run_info )
+        if is_screening:
+            workdir_prefix = 'screen'
+        else: 
+            workdir_prefix = 'process'
         self.work_directory = utils.prepare_work_dir(
-                self.options.get('directory', './')
+                self.options.get('directory', './'),
+                workdir_prefix
                 )
         os.chdir(self.work_directory)
         

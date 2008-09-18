@@ -281,7 +281,7 @@ class AutoXDS:
             info = parser.parse_correct('CORRECT.LP')
             run_result['integration'] = info
             scales = parser.parse_integrate('INTEGRATE.LP')
-            run_result['integrateion']['table'] = scales['scale_factors']
+            run_result['integration']['table'] = scales['scale_factors']
 
             
             if self.options.get('command', None) == 'screen':

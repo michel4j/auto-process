@@ -327,3 +327,22 @@ def parse_xscale(filename, output_file='XSCALE.HKL'):
         wilson, w_pos =utils.scanf(_correct.wilson, wilson_section, w_pos)
        
     return info    
+
+
+def parse_integrate(filename):
+    """
+    Parse XDS INTEGRATE.LP file and return a dictionary containing all parameters
+    
+    """
+
+    info = {}
+    info['scale_factors'] = []
+
+    data = utils.load_file(filename)
+    
+    #first read the refinement summary information
+    scales_vals, pos = utils.scanf(_integrate.scales, data)
+    while scales_vals:
+        info['scale_factors'].append( utils.cast_params(_integrate.scales_vars, scales_vals) )
+        scales_vals, pos = utils.scanf(_integrate.scales, data, pos)
+    return info

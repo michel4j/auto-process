@@ -173,4 +173,13 @@ def cast_params(param_list, values):
             params[key] = tuple(values[pos:pos+length])
             pos += length
     return params
- 
+
+
+class Table(object):
+    def __init__(self, t):
+        self._table = t
+
+    def __getitem__(self, s):
+        vals = [r[s] for r in self._table]
+        return vals
+        

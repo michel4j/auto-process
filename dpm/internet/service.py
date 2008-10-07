@@ -72,8 +72,17 @@ class LocalDPMService(service.Service):
         self.settings['gid'] = gid
         return defer.succeed( [] )
         
-    def screen(self, img, directory):
-        return defer.succeed([])
+    def screen(self, img, directory, anom=False):
+        if anom:
+            args = ['-a','-s', img]
+        else:
+            args = ['-s', img]
+        return run_command(
+            'autoprocess.py',
+            args,
+            directory,
+            self.settings['uid'],
+            self.settings['gid'])
         
     def analyse_image(self, img, directory):
         return run_command(
@@ -83,10 +92,14 @@ class LocalDPMService(service.Service):
             self.settings['uid'],
             self.settings['gid'])
         
-    def process_data(self, img, directory):
+    def process_data(self, img, directory, anom=False):
+        if anom:
+            args = ['-a', img]
+        else:
+            args = [img]
         return run_command(
             'autoprocess',
-            [img],
+            args,
             directory,
             self.settings['uid'],
             self.settings['gid'])
@@ -121,7 +134,6 @@ class CommandProtocol(protocol.ProcessProtocol):
         else:
             self.deferred.errback(rc)
 
-
 def run_command(command, args, path, uid, gid):
     prot = CommandProtocol()
     args = [dpm.utils.which(command)] + args
@@ -134,4 +146,8 @@ def run_command(command, args, path, uid, gid):
         )
     return prot.deferred
 
+application = service.Application('DPM')
+f = LocalDPMService()
+serviceCollection = service.IServiceCollection(application)
+internet.TCPServer(8889, pb.PBServerFactory(IPerspectiveDPM(f))).setServiceParent(serviceCollection)
         

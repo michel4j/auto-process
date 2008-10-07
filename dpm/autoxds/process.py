@@ -5,7 +5,11 @@ Data Processing Class
 
 import os, sys, time
 
-from dpm import parser
+from dpm.parser.pointless import parse_pointless
+from dpm.parser.distl import parse_distl
+from dpm.parser.xds import parse_idxref, parse_correct, parse_xscale, parse_integrate
+from dpm.parser.best import parse_best
+
 from gnosis.xml import pickle
 
 import utils, io
@@ -255,7 +259,7 @@ class AutoXDS:
             jobs = 'XYCORR INIT COLSPOT IDXREF'
             io.write_xds_input(jobs, run_info)
             utils.execute_xds()
-            info = parser.parse_idxref('IDXREF.LP')
+            info = parse_idxref('IDXREF.LP')
             run_result['autoindex'] = info
             
             #Integration
@@ -268,7 +272,7 @@ class AutoXDS:
             if not success:
                 print 'WARNING: Could not run POINTLESS! Automatic data processing may fail!'
             else:
-                sg_info = parser.parse_pointless('pointless.xml')
+                sg_info = parse_pointless('pointless.xml')
                 run_result['space_group'] = sg_info                        
                 run_info['unit_cell'] = utils.tidy_cell(sg_info['unit_cell'], sg_info['character'])
                 run_info['space_group'] = sg_info['group_number']
@@ -283,9 +287,9 @@ class AutoXDS:
             if not success:
                 print 'ERROR: Could not run CORRECT! Automatic data processing can not proceed!'
                 return
-            info = parser.parse_correct('CORRECT.LP')
+            info = parse_correct('CORRECT.LP')
             run_result['integration'] = info
-            scales = parser.parse_integrate('INTEGRATE.LP')
+            scales = parse_integrate('INTEGRATE.LP')
             run_result['integration']['table'] = scales['scale_factors']
 
             
@@ -294,11 +298,11 @@ class AutoXDS:
                 if not success:
                     print 'ERROR: Could not calculate Strategy!'
                 else:
-                    info = parser.parse_best('best.xml')
+                    info = parse_best('best.xml')
                     run_result['strategy'] = info
                 success = utils.execute_distl(run_info['reference_image'])
                 if success:
-                    info = parser.parse_distl('distl.log')
+                    info = parse_distl('distl.log')
                     run_result['image_analysis'] = info
                 else:
                     print 'ERROR: Image analysis failed!'
@@ -359,11 +363,11 @@ class AutoXDS:
             return
 
         if len(output_file_list) == 1:
-            info = parser.parse_xscale('XSCALE.LP', output_file_list[0])
+            info = parse_xscale('XSCALE.LP', output_file_list[0])
             self.results[-1]['scaling'] = info
         else:
             for ofile, rres in zip(output_file_list, self.results):
-                info = parser.parse_xscale('XSCALE.LP', ofile)
+                info = parse_xscale('XSCALE.LP', ofile)
                 rres['scaling'] = info
         
         # Calculate SCORE

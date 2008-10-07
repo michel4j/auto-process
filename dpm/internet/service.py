@@ -5,6 +5,7 @@ from twisted.python import components
 from zope.interface import Interface, implements
 import os
 from dpm.parser.distl import parse_distl_string
+import dpm.utils
 from gnosis.xml import pickle
 
 class IDPMService(Interface):
@@ -75,27 +76,28 @@ class LocalDPMService(service.Service):
         return defer.succeed([])
         
     def analyse_image(self, img, directory):
-        distl = DistlProtocol()
-        cmd = ['/opt/cmcf_apps/labelit_0.988b/labelit_build/bin/labelit.distl',img]
-        p = reactor.spawnProcess(
-            distl,
-            cmd[0],
-            cmd,
-            env=os.environ, path=directory,
-            uid = self.settings['uid'], gid=self.settings['gid'],
-            )
-        return distl.deferred
+        return run_command(
+            'analyse_image',
+            [img],
+            directory,
+            self.settings['uid'],
+            self.settings['gid'])
         
     def process_data(self, img, directory):
-        return defer.succeed([])   
+        return run_command(
+            'autoprocess',
+            [img],
+            directory,
+            self.settings['uid'],
+            self.settings['gid'])
 
 def catchError(err):
     return "Internal error in DPM service"
         
-class DistlProtocol(protocol.ProcessProtocol):
+class CommandProtocol(protocol.ProcessProtocol):
     deferred = defer.Deferred()
     
-    def __init__(self, path='.'):
+    def __init__(self, path):
         self.output = ''
         self.errors = ''
         self.path = path
@@ -107,29 +109,29 @@ class DistlProtocol(protocol.ProcessProtocol):
         self.errors += error        
 
     def outConnectionLost(self):
-        
-        self._save_log('%s/distl.log' % self.path, self.output)
+        pass
     
     def errConnectionLost(self):
-        self._save_log('%s/distl.errlog' % self.path, self.errors)
+        pass
     
     def processEnded(self, reason):
         rc = reason.value.exitCode
         if rc == 0:
-            self.deferred.callback(self)
-            self._save_output('%s/distl.xml' % self.path)
+            self.deferred.callback(self.output)
         else:
-            self.deferred.errback(self.errors)
-    
-    def _save_log(self, filename, data):
-        f = open(filename,'w')
-        f.write(data)
-        f.close()
-            
-    def _save_output(self, filename):
-        info = parse_distl_string(self.output)
-        f = open(filename,'w')
-        pickle.dump(info,f)
-        f.close()
+            self.deferred.errback(rc)
+
+
+def run_command(command, args, path, uid, gid):
+    prot = CommandProtocol()
+    args = [dpm.utils.which(command)] + args
+    p = reactor.spawnProcess(
+        prot,
+        args[0],
+        args,
+        env=os.environ, path=path,
+        uid=uid, gid=gid,
+        )
+    return prot.deferred
 
         

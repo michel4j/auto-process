@@ -3,7 +3,7 @@ Parsers for XDS Files
 
 """
 
-import utils
+import dpm.parser.utils as utils
 
 class _ParseInfo: pass
 

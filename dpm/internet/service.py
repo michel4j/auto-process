@@ -6,6 +6,10 @@ from twisted.manhole import telnet
 from zope.interface import Interface, implements
 
 import os, sys
+sys.path.append(os.environ['DPM_PATH'])
+
+import dpm.utils
+from gnosis.xml import pickle
 
 class IDPMService(Interface):
     

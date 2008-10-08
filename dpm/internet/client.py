@@ -6,11 +6,10 @@ from gnosis.xml import pickle
 def gotObject(object):
     print 'Connection to DPM Server Established', object
     object.callRemote('setUser', os.getuid(), os.getgid()).addCallback(gotData)
-    object.callRemote('analyseImage', '/home/michel/data/Mof/Mof_Se6_3_peak_0001.img', '/tmp/2').addCallback(printResults)
-    object.callRemote('screenCrystal', '/home/michel/data/Mof/Mof_Se6_3_peak_0001.img', '/tmp/2').addCallback(printResults2)
-    object.callRemote('processDataset', '/home/michel/data/h14/h14_1_peak_0302.img', '/tmp/1').addCallback(printResults2)
-    object.callRemote('analyseImage', '/home/michel/data/h14/h14_1_peak_0302.img', '/tmp/1').addCallback(printResults)
-
+    object.callRemote('analyseImage', '/users/cmcfadmin/reference_data/insul1/insul_0.2_1_E0_0287.img', '/tmp').addCallback(printResults)
+    object.callRemote('screenCrystal', '/users/cmcfadmin/reference_data/insul1/insul_0.2_1_E0_0287.img', '/tmp').addCallback(printResults2)
+    object.callRemote('processDataset', '/users/cmcfadmin/reference_data/insul1/insul_0.2_1_E0_0287.img', '/tmp').addCallback(printResults2)
+    
 def gotData(data):
     print 'server sent:', data
 
@@ -26,6 +25,6 @@ def gotNoObject(reason):
 
 
 factory = pb.PBClientFactory()
-reactor.connectTCP('localhost', 8889, factory)
+reactor.connectTCP('ioc1608-301', 8889, factory)
 factory.getRootObject().addCallbacks(gotObject,gotNoObject)
 reactor.run()

@@ -9,6 +9,7 @@
 servicename='dpmserver'
 pidfile='/var/run/dpmserver.pid'
 logfile='/var/log/dpmserver.log'
+export DPM_PATH=/opt/cmcf_apps/dpm
 appfile='/opt/cmcf_apps/dpm/dpm/internet/service.py'
 
 # Source function library.

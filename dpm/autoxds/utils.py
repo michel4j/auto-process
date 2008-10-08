@@ -295,7 +295,7 @@ def execute_f2mtz():
     return sts==0
        
 def execute_pointless():
-    sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> pointless.log')
+    sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> xds.log')
     return sts==0
 
 def execute_best(time, anomalous=False):

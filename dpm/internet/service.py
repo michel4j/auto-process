@@ -1,43 +1,49 @@
-from twisted.internet import protocol, reactor, defer
+from twisted.internet import protocol, reactor, threads, defer
 from twisted.application import internet, service
 from twisted.spread import pb
 from twisted.python import components
+from twisted.manhole import telnet
 from zope.interface import Interface, implements
-import os
+
+import os, sys
+sys.path.append(os.environ['DPM_PATH'])
+
 from dpm.parser.distl import parse_distl_string
 import dpm.utils
 from gnosis.xml import pickle
 
 class IDPMService(Interface):
-    def set_user(uid, gid):
+    
+    def setUser(uid, gid):
         """Set the user as whom external programs will be executed"""
         
-    def screen(img, directory):
+    def screenCrystal(img, directory):
         """Characterize a data set
         returns a deferred which returns the results of characterization
         """
         
-    def analyse_image(img, directory):
+    def analyseImage(img, directory):
         """Analyse an image
         returns a deferred which returns the results of analysis
         """
         
-    def process_data(img, directory):
+    def processDataset(img, directory):
         """Process a dataset
         returns a deferred which returns the results of analysis
         """
 
 class IPerspectiveDPM(Interface):
-    def remote_set_user(uid, gid):
+    
+    def remote_setUser(uid, gid):
         """Set the user as whom external programs will be executed"""
         
-    def remote_screen(img, directory):
+    def remote_screenCrystal(img, directory):
         """Characterize a data set"""
         
-    def remote_analyse_image(img, directory):
+    def remote_analyseImage(img, directory):
         """Analyse an image"""
         
-    def remote_process_data(img, directory):
+    def remote_processDataset(img, directory):
         """Process a dataset"""
 
 class PerspectiveDPMFromService(pb.Root):
@@ -45,34 +51,35 @@ class PerspectiveDPMFromService(pb.Root):
     def __init__(self, service):
         self.service = service
         
-    def remote_set_user(self, uid, gid):
-        return self.service.set_user(gid, uid)
+    def remote_setUser(self, uid, gid):
+        return self.service.setUser(uid, gid)
         
-    def remote_screen(self, img, directory):
-        return self.service.screen(img, directory)
+    def remote_screenCrystal(self, img, directory):
+        return self.service.screenCrystal(img, directory)
         
-    def remote_analyse_image(self, img, directory):
-        return self.service.analyse_image(img, directory)
+    def remote_analyseImage(self, img, directory):
+        return self.service.analyseImage(img, directory)
         
-    def remote_process_data(self, img, directory):
-        return self.service.process_data(img, directory)
+    def remote_processDataset(self, img, directory):
+        return self.service.processDataset(img, directory)
 
 components.registerAdapter(PerspectiveDPMFromService,
     IDPMService,
     IPerspectiveDPM)
     
-class LocalDPMService(service.Service):
+class DPMService(service.Service):
     implements(IDPMService)
+    
     def __init__(self):
         self.settings = {}
-        self.set_user(0,0)
+        self.setUser(0,0)
         
-    def set_user(self, uid, gid):
+    def setUser(self, uid, gid):
         self.settings['uid'] = uid
         self.settings['gid'] = gid
         return defer.succeed( [] )
         
-    def screen(self, img, directory, anom=False):
+    def screenCrystal(self, img, directory, anom=False):
         if anom:
             args = ['-a','-s', img]
         else:
@@ -84,7 +91,7 @@ class LocalDPMService(service.Service):
             self.settings['uid'],
             self.settings['gid'])
         
-    def analyse_image(self, img, directory):
+    def analyseImage(self, img, directory):
         return run_command(
             'analyse_image',
             [img],
@@ -92,13 +99,13 @@ class LocalDPMService(service.Service):
             self.settings['uid'],
             self.settings['gid'])
         
-    def process_data(self, img, directory, anom=False):
+    def processDataset(self, img, directory, anom=False):
         if anom:
             args = ['-a', img]
         else:
             args = [img]
         return run_command(
-            'autoprocess',
+            'autoprocess.py',
             args,
             directory,
             self.settings['uid'],
@@ -108,7 +115,6 @@ def catchError(err):
     return "Internal error in DPM service"
         
 class CommandProtocol(protocol.ProcessProtocol):
-    deferred = defer.Deferred()
     
     def __init__(self, path):
         self.output = ''
@@ -135,19 +141,22 @@ class CommandProtocol(protocol.ProcessProtocol):
             self.deferred.errback(rc)
 
 def run_command(command, args, path, uid, gid):
-    prot = CommandProtocol()
+    prot = CommandProtocol(path)
+    prot.deferred = defer.Deferred()
     args = [dpm.utils.which(command)] + args
     p = reactor.spawnProcess(
         prot,
         args[0],
         args,
         env=os.environ, path=path,
-        uid=uid, gid=gid,
+        uid=uid, gid=gid, usePTY=True
         )
     return prot.deferred
-
+    
 application = service.Application('DPM')
-f = LocalDPMService()
+f = DPMService()
+tf = telnet.ShellFactory()
+tf.setService(f)
 serviceCollection = service.IServiceCollection(application)
 internet.TCPServer(8889, pb.PBServerFactory(IPerspectiveDPM(f))).setServiceParent(serviceCollection)
-        
+internet.TCPServer(4040, tf).setServiceParent(serviceCollection)        

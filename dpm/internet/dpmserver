@@ -19,7 +19,7 @@ appfile='/opt/cmcf_apps/dpm/dpm/internet/service.py'
 [ -f $appfile ] || exit 0
 
 start() {
-    echo -n $"Starting ImgSync daemon: "
+    echo -n $"Starting DPM Service: "
     daemon /usr/bin/twistd -y $appfile --logfile=$logfile --pidfile=$pidfile
     RETVAL=$?
     echo
@@ -27,7 +27,7 @@ start() {
 }
 
 stop() {
-    echo -n $"Stopping ImgSync daemon: "
+    echo -n $"Stopping DPM Service: "
 
     killproc $servicename -TERM
     RETVAL=$?

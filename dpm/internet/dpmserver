@@ -14,7 +14,6 @@ appfile='/opt/cmcf_apps/dpm/dpm/internet/service.py'
 
 # Source function library.
 . /etc/rc.d/init.d/functions
-. /opt/cmcf_apps/profile.d/dpm.sh
 
 # Sanity checks.
 [ -x /usr/bin/twistd ] || exit 0

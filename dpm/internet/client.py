@@ -7,7 +7,7 @@ def gotObject(object):
     print 'Connection to DPM Server Established', object
     object.callRemote('setUser', os.getuid(), os.getgid()).addCallback(gotData)
     object.callRemote('analyseImage', '/users/cmcfadmin/reference_data/insul1/insul_0.2_1_E0_0287.img', '/tmp').addCallback(printResults)
-    #object.callRemote('screenCrystal', '/users/cmcfadmin/reference_data/insul1/insul_0.2_1_E0_0287.img', '/tmp').addCallback(printResults2)
+    object.callRemote('screenCrystal', '/users/cmcfadmin/reference_data/insul1/insul_0.2_1_E0_0287.img', '/tmp').addCallback(printResults2)
     #object.callRemote('processDataset', '/users/cmcfadmin/reference_data/insul1/insul_0.2_1_E0_0287.img', '/tmp').addCallback(printResults2)
     
 def gotData(data):

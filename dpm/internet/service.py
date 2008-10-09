@@ -3,6 +3,7 @@ from twisted.application import internet, service
 from twisted.spread import pb
 from twisted.python import components
 from twisted.manhole import telnet
+from twisted.python import log
 from zope.interface import Interface, implements
 
 import os, sys

@@ -140,7 +140,7 @@ class CommandProtocol(protocol.ProcessProtocol):
         else:
             self.deferred.errback(rc)
 
-def run_command(command, args, path, uid, gid):
+def run_command(command, args, path='/tmp', uid=0, gid=0):
     prot = CommandProtocol(path)
     prot.deferred = defer.Deferred()
     args = [dpm.utils.which(command)] + args

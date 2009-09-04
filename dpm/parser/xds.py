@@ -51,20 +51,28 @@ _idxref.summary_vars = [
     ('unit_cell',6),
     ('spacegroup', 1)]
     
-_idxref.lattice = " %5d        %2c     %8f    %6f %6f %6f %5f %5f %5f   %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d\n"
+_idxref.lattice = " * %3d        %2c     %8f    %6f %6f  %5f %5f %5f %5f\n"
+#_idxref.lattice = " * %4d        %2c     %8f    %6f %6f %6f %5f %5f %5f\n"
 _idxref.lattice_start = "DETERMINATION OF LATTICE CHARACTER AND BRAVAIS LATTICE"
-_idxref.lattice_end = "AFTER ALL THE INDIVIDUAL PROGRAM STEPS HAVE BEEN CARRIED OUT"
+_idxref.lattice_end = "LATTICE SYMMETRY IMPLICATED BY SPACE GROUP SYMMETRY"
 _idxref.lattice_vars = [
     ('index',1),
     ('character',1),
     ('quality',1),
-    ('unit_cell',6),
-    ('reindex_matrix', 12)]
+    ('unit_cell',6)]
     
 _idxref.subtree_start = "RESULTS FROM LOCAL INDEXING"
 _idxref.subtree_end = "SELECTION OF THE INDEX ORIGIN"
 _idxref.subtree =" %5d     %8d\n"
 _idxref.subtree_vars = [('subtree',1),('population',1)]
+
+_idxref.slice_start = "Maximum oscillation range to prevent angular overlap"
+_idxref.slice_end = "cpu time used"
+_idxref.slice_item = "          %8f                %8f\n"
+_idxref.slice_vars = [('angle',1),('resolution',1)]
+
+_idxref.success_start = "!!! ERROR !!!"
+_idxref.success_end = "\n"
 
 _integrate.scales = " %5d  %2d %6f %8d %4d %6d %7d %5d %7f %7f\n"
 _integrate.scales_vars = [
@@ -208,6 +216,7 @@ def parse_idxref(filename):
     info = {}
     info['lattice_table'] = []
     info['subtree_table'] = []
+    info['oscillation_table'] = []
     
         
     data = utils.load_file(filename)
@@ -239,6 +248,19 @@ def parse_idxref(filename):
         info['subtree_table'].append(utils.cast_params(_idxref.subtree_vars, st_line))
         st_line, st_pos = utils.scanf(_idxref.subtree, st_section, st_pos)
     
+    # read oscillation ranges
+    st_section, pos = utils.cut_section(_idxref.slice_start, _idxref.slice_end, data)
+    st_line, st_pos = utils.scanf(_idxref.slice_item, st_section)
+    while st_line:
+        info['oscillation_table'].append(utils.cast_params(_idxref.slice_vars, st_line))
+        st_line, st_pos = utils.scanf(_idxref.slice_item, st_section, st_pos)
+    
+    success_str, pos = utils.cut_section(_idxref.success_start, _idxref.success_end, data)
+    if success_str != '':
+        info['success'] = False
+    else:
+        info['success'] = True
+        
     return info
 
 def parse_correct(filename):

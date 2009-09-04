@@ -152,6 +152,10 @@ def cut_section(start, end, s, position=0):
         end_m = end_re.search(s, position)
         if end_m:
             result = (s[start_m.start():end_m.start()], end_m.end())
+        else:
+            result = (s[start_m.start():start_m.end()], start_m.end())
+    else:
+        result = ('', position)
     return result
    
 def cast_params(param_list, values):

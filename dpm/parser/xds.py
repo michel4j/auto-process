@@ -2,7 +2,7 @@
 Parsers for XDS Files
 
 """
-
+import re, numpy
 import dpm.parser.utils as utils
 
 class _ParseInfo: pass
@@ -202,6 +202,17 @@ _correct.statistics_vars = [
     ('sig_ano',1),
     ('Nano',1)
     ]
+
+_correct.lattice = " * %3d        %2c     %8f    %6f %6f  %5f %5f %5f %5f   %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d\n"
+_correct.lattice_start = "DETERMINATION OF LATTICE CHARACTER AND BRAVAIS LATTICE"
+_correct.lattice_end = "LATTICE SYMMETRY IMPLICATED BY SPACE GROUP SYMMETRY"
+_correct.lattice_vars = [
+    ('index',1),
+    ('character',1),
+    ('quality',1),
+    ('unit_cell',6),
+    ('reindex_matrix', 12)]
+
 _xscale.statistics_vars = _correct.statistics_vars
 _xscale.statistics = _correct.statistics
 _xscale.statistics_all = _correct.statistics_all
@@ -271,6 +282,7 @@ def parse_correct(filename):
 
     info = {}
     info['statistics_table'] = []
+    info['lattice_table'] = []
     info['wilson_table'] = []
     info['wilson_line'] = None
 
@@ -283,6 +295,13 @@ def parse_correct(filename):
         for k,v in utils.cast_params(_correct.summary_vars, sum_vals).items():
             info[k] = v
     
+    # read lattice character table and space group selection
+    lat_section, pos = utils.cut_section(_correct.lattice_start, _correct.lattice_end, data)
+    lat_line, lat_pos = utils.scanf(_correct.lattice, lat_section)
+    while lat_line:
+        info['lattice_table'].append(utils.cast_params(_correct.lattice_vars, lat_line))
+        lat_line, lat_pos = utils.scanf(_correct.lattice, lat_section, lat_pos)
+
     #then read final statistics table
     fin_section, pos = utils.cut_section(_correct.final_start, _correct.final_end, data)
     stat_section, pos = utils.cut_section(_correct.statistics_start, _correct.statistics_end, fin_section)
@@ -368,3 +387,25 @@ def parse_integrate(filename):
         info['scale_factors'].append( utils.cast_params(_integrate.scales_vars, scales_vals) )
         scales_vals, pos = utils.scanf(_integrate.scales, data, pos)
     return info
+
+def get_profile(raw_data):
+    def _str2arr(s):
+        l = [int(v) for v in re.findall('.{3}', s)]
+        a = numpy.array(l).reshape((9,9))
+        return a
+    data = []
+
+    for line in raw_data:
+        if len(line) > 2:
+            l = line[3:-1]
+            data.append(l)
+
+    slice_str = ['']*9
+
+    for i in range(27):
+        section = data[i].split('   ')
+        sl =  i//9 * 3
+        for j in range(3):
+            slice_str[sl+j] += section[j]
+    
+    return numpy.array(map(_str2arr, slice_str))

@@ -57,7 +57,8 @@ def write_xds_input(jobs, params):
     file_text += "ORGX=%d  ORGY=%d \n" %(params['detector_origin'][0], params['detector_origin'][1])
     file_text += """
     DETECTOR=CCDCHESS
-    MINIMUM_VALID_PIXEL_VALUE=0     
+    MINIMUM_VALID_PIXEL_VALUE=0
+    STRONG_PIXEL=6    
     OVERLOAD=65000
     TRUSTED_REGION=0.00 1.25
     VALUE_RANGE_FOR_TRUSTED_DETECTOR_PIXELS= 6000 30000

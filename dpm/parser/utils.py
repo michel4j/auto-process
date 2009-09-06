@@ -7,6 +7,8 @@ Scanf: Small scanf-implementation.
 
 import re
 import sys
+from scipy import interpolate
+import numpy
 
 DEBUG = False
 
@@ -178,6 +180,13 @@ def cast_params(param_list, values):
             pos += length
     return params
 
+def interp_array(a, size=25):
+    x, y = numpy.mgrid[-1:1:9j,-1:1:9j]
+    z = a
+    xnew, ynew = numpy.mgrid[-1:1:size*j,-1:1:size*j]
+    tck = interpolate.bisplrep(x,y,z,s=0)
+    znew = interpolate.bisplev(xnew[:,0], ynew[0,:], tck)
+    return znew
 
 class Table(object):
     def __init__(self, t):

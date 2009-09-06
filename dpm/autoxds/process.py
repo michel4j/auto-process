@@ -71,7 +71,7 @@ class AutoXDS:
                 'Cell Vol',
                 'Reindex',
                 )
-            for l in utils.select_lattices(dset['autoindex']['lattice_table']):
+            for l in dset['integration']['lattice_table']:
                 vol = utils.cell_volume( l['unit_cell'] )
                 descr = "%s(%s)" % (utils.CRYSTAL_SYSTEMS[ l['character'][0] ], l['character'])
                 sg = utils.POINT_GROUPS[ l['character'] ][0]
@@ -270,7 +270,7 @@ class AutoXDS:
             print "AutoXDS: Selecting spacegroup for '%s' ..." % run_info['prefix'],
             success = utils.execute_pointless()
             if not success:
-                print 'WARNING: Could not run POINTLESS! Automatic data processing may fail!'
+                print 'WARNING: Could not run POINTLESS! SpaceGroup Selection may fail!'
             else:
                 sg_info = parse_pointless('pointless.xml')
                 run_result['space_group'] = sg_info                        

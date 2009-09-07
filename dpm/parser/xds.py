@@ -60,8 +60,9 @@ _idxref.lattice_vars = [
     ('character',1),
     ('quality',1),
     ('unit_cell',6)]
-    
-_idxref.subtree_start = "RESULTS FROM LOCAL INDEXING"
+
+_idxref.num_reflections = " ***** RESULTS FROM LOCAL INDEXING OF  %5d OBSERVED SPOTS *****"
+_idxref.subtree_start = " SUBTREE    POPULATION"
 _idxref.subtree_end = "SELECTION OF THE INDEX ORIGIN"
 _idxref.subtree =" %5d     %8d\n"
 _idxref.subtree_vars = [('subtree',1),('population',1)]
@@ -73,6 +74,29 @@ _idxref.slice_vars = [('angle',1),('resolution',1)]
 
 _idxref.success_start = "!!! ERROR !!!"
 _idxref.success_end = "\n"
+
+_idxref.cluster_dim =" DIMENSION OF SPACE SPANNED BY DIFFERENCE VECTOR CLUSTERS  %2d"
+_idxref.cluster_index_st = " CLUSTER COORDINATES AND INDICES WITH RESPECT TO REC"
+_idxref.cluster_index_en = " PARAMETERS OF THE REDUCED CELL"
+_idxref.cluster_index = "%5d %10f%10f%10f  %7d.  %8f  %8f  %8f"
+_idxref.cluster_index_vars = [
+    ('idx',1),
+    ('vector', 3),
+    ('frequency',1),
+    ('indices', 3)]
+
+_idxref.index_origin_st = "SELECTION OF THE INDEX ORIGIN"
+_idxref.index_origin_en = "SELECTED:     INDEX_ORIGIN="
+_idxref.index_origin_sel = "SELECTED:     INDEX_ORIGIN= %8c"
+_idxref.index_origin_it = " %8c %8f %6f %8f %8f %7f %7f %7f %7f %7f %7f\n"
+_idxref.index_origin_vars = [
+    ('index_origin', 1),
+    ('quality',1),
+    ('delta',1),
+    ('position', 2),
+    ('vector', 3),
+    ('difference', 3)               
+    ]
 
 _integrate.scales = " %5d  %2d %6f %8d %4d %6d %7d %5d %7f %7f\n"
 _integrate.scales_vars = [
@@ -219,7 +243,7 @@ _xscale.statistics_all = _correct.statistics_all
 _xscale.statistics_start = _correct.statistics_start
 _xscale.statistics_end = _correct.statistics_end
 
-def parse_idxref(filename):
+def parse_idxref(filename='IDXREF.LP'):
     """
     Parse XDS IDXREF.LP file and return a dictionary containing all parameters
     
@@ -228,11 +252,25 @@ def parse_idxref(filename):
     info['lattice_table'] = []
     info['subtree_table'] = []
     info['oscillation_table'] = []
-    
+    info['cluster_table'] = []
+    info['index_origin_table'] = []
         
     data = utils.load_file(filename)
     
-    #first read the refinement summary information
+    #read cluster dimension and reflections
+    clus_dim, pos = utils.scanf(_idxref.cluster_dim, data)
+    if clus_dim is not None:
+        info['cluster_dimension'] = clus_dim[0]
+    else:
+        info['cluster_dimension'] = None
+    
+    num_refl, pos = utils.scanf(_idxref.num_reflections, data)
+    if num_refl is not None:
+        info['indexed_reflections'] = num_refl[0]
+    else:
+        info['indexed_reflections'] = None
+        
+    # read the refinement summary information
     sum_section, pos = utils.cut_section(_idxref.summary_start, _idxref.summary_end, data)
     sum_vals, pos = utils.scanf(_idxref.summary, sum_section)
     if sum_vals:
@@ -266,15 +304,34 @@ def parse_idxref(filename):
         info['oscillation_table'].append(utils.cast_params(_idxref.slice_vars, st_line))
         st_line, st_pos = utils.scanf(_idxref.slice_item, st_section, st_pos)
     
-    success_str, pos = utils.cut_section(_idxref.success_start, _idxref.success_end, data)
+    # read cluster indices
+    cl_section, pos = utils.cut_section(_idxref.cluster_index_st, _idxref.cluster_index_en, data)
+    cl_line, cl_pos = utils.scanf(_idxref.cluster_index, cl_section)
+    while cl_line:
+        info['cluster_table'].append(utils.cast_params(_idxref.cluster_index_vars, cl_line))
+        cl_line, cl_pos = utils.scanf(_idxref.cluster_index, cl_section, cl_pos)
+    
+    # read index_origin table
+    cl_section, pos = utils.cut_section(_idxref.index_origin_st, _idxref.index_origin_en, data)
+    cl_line, cl_pos = utils.scanf(_idxref.index_origin_it, cl_section)
+    while cl_line:
+        info['index_origin_table'].append(utils.cast_params(_idxref.index_origin_vars, cl_line))
+        cl_line, cl_pos = utils.scanf(_idxref.index_origin_it, cl_section, cl_pos)
+
+    
+    success_str, pos = utils.cut_section(_idxref.success_start, _idxref.success_end, data)    
     if success_str != '':
         info['success'] = False
     else:
         info['success'] = True
         
+    index_origin, pos = utils.scanf(_idxref.index_origin_sel, data)
+    if index_origin:
+        info['selected_index_origin'] = index_origin[0]
+        
     return info
 
-def parse_correct(filename):
+def parse_correct(filename='CORRECT.LP'):
     """
     Parse XDS CORRECT.LP file and return a dictionary containing all parameters
     
@@ -326,7 +383,7 @@ def parse_correct(filename):
         
     return info
 
-def parse_xscale(filename, output_file='XSCALE.HKL'):
+def parse_xscale(filename='XSCALE.LP', output_file='XSCALE.HKL'):
     """
     Parse XDS XSCALE.LP file and return a dictionary containing all parameters
     
@@ -370,7 +427,7 @@ def parse_xscale(filename, output_file='XSCALE.HKL'):
     return info    
 
 
-def parse_integrate(filename):
+def parse_integrate(filename='INTEGRATE.LP'):
     """
     Parse XDS INTEGRATE.LP file and return a dictionary containing all parameters
     

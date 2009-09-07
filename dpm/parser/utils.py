@@ -144,7 +144,7 @@ def cut_section(start, end, s, position=0):
     returns a tuple (subsection, end-position)
     
     """
-    result = (None, 0)        
+    result = ('', 0)        
     start_re = re.compile(start)
     end_re = re.compile(end)
 

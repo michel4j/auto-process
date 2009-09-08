@@ -383,7 +383,7 @@ class AutoXDS:
             r_meas= rres['scaling']['r_meas']
             if r_meas < -99:
                 r_meas = rres['integration']['r_meas']
-            st_table = rres['autoindex']['subtree_table']            
+            st_table = rres['autoindex']['subtrees']            
             st_array = [i['population'] for i in st_table]
             subtree_skew = sum(st_array[1:]) / float(sum(st_array))
             if rres.has_key('image_analysis'):

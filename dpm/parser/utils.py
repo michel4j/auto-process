@@ -8,7 +8,11 @@ Scanf: Small scanf-implementation.
 import re
 import sys
 from scipy import interpolate
+from dpm.utils.configobj import ConfigObj
 import numpy
+import os
+
+INI_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 DEBUG = False
 
@@ -172,6 +176,7 @@ def cast_params(param_list, values):
     pos = 0
     params = {}
     for key, length in param_list:
+        length = int(length)
         if length == 1:
             params[key] = values[pos]
             pos += 1
@@ -187,6 +192,39 @@ def interp_array(a, size=25):
     tck = interpolate.bisplrep(x,y,z,s=0)
     znew = interpolate.bisplev(xnew[:,0], ynew[0,:], tck)
     return znew
+
+def parse_file(filename, config):
+    info = {}
+    conf = ConfigObj(os.path.join(INI_DIR, config))    
+    data = load_file(filename)
+    
+    for section in conf.keys():
+        if section == '_top_':
+            for k, pat in conf['_top_'].items():
+                _v, _p = scanf(pat, data)
+                if _v is not None:
+                    if len(_v) == 1:
+                        info[k] = _v[0]
+                    else:
+                        info[k] = _v
+                else:
+                    info[k] = None
+        else:
+            params = conf[section]['keys'].items()
+            chunk, pos = cut_section(conf[section]['start'], conf[section]['end'], data)
+            is_table = conf[section].get('table', None) == "1"
+            _v, _p = scanf(conf[section]['body'], chunk)
+            if is_table:
+                entry = []
+                while _v:
+                    entry.append( cast_params(params, _v) )
+                    _v, _p = scanf(conf[section]['body'], chunk, _p)
+                info[section] = entry
+            else:
+                if _v is not None:
+                    entry = cast_params(params, _v)
+                    info[section] = entry
+    return info
 
 class Table(object):
     def __init__(self, t):

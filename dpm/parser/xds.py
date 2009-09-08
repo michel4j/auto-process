@@ -5,6 +5,7 @@ Parsers for XDS Files
 import re, numpy
 import dpm.parser.utils as utils
 
+
 class _ParseInfo: pass
 
 _idxref = _ParseInfo() # object for keeping track of IDXREF parsing information
@@ -244,92 +245,7 @@ _xscale.statistics_start = _correct.statistics_start
 _xscale.statistics_end = _correct.statistics_end
 
 def parse_idxref(filename='IDXREF.LP'):
-    """
-    Parse XDS IDXREF.LP file and return a dictionary containing all parameters
-    
-    """
-    info = {}
-    info['lattice_table'] = []
-    info['subtree_table'] = []
-    info['oscillation_table'] = []
-    info['cluster_table'] = []
-    info['index_origin_table'] = []
-        
-    data = utils.load_file(filename)
-    
-    #read cluster dimension and reflections
-    clus_dim, pos = utils.scanf(_idxref.cluster_dim, data)
-    if clus_dim is not None:
-        info['cluster_dimension'] = clus_dim[0]
-    else:
-        info['cluster_dimension'] = None
-    
-    num_refl, pos = utils.scanf(_idxref.num_reflections, data)
-    if num_refl is not None:
-        info['indexed_reflections'] = num_refl[0]
-    else:
-        info['indexed_reflections'] = None
-        
-    # read the refinement summary information
-    sum_section, pos = utils.cut_section(_idxref.summary_start, _idxref.summary_end, data)
-    sum_vals, pos = utils.scanf(_idxref.summary, sum_section)
-    if sum_vals:
-        for k,v in utils.cast_params(_idxref.summary_vars, sum_vals).items():
-            info[k] = v
-        
-
-    # read lattice character table
-    lat_section, pos = utils.cut_section(_idxref.lattice_start, _idxref.lattice_end, data)
-    lat_line, lat_pos = utils.scanf(_idxref.lattice, lat_section)
-    while lat_line:
-        info['lattice_table'].append(utils.cast_params(_idxref.lattice_vars, lat_line))
-        lat_line, lat_pos = utils.scanf(_idxref.lattice, lat_section, lat_pos)
-    
-    def _cmp(x,y):
-        return cmp(x['quality'], y['quality'])
-    
-    info['lattice_table'].sort(_cmp)
-        
-    # read subtree table
-    st_section, pos = utils.cut_section(_idxref.subtree_start, _idxref.subtree_end, data)
-    st_line, st_pos = utils.scanf(_idxref.subtree, st_section)
-    while st_line:
-        info['subtree_table'].append(utils.cast_params(_idxref.subtree_vars, st_line))
-        st_line, st_pos = utils.scanf(_idxref.subtree, st_section, st_pos)
-    
-    # read oscillation ranges
-    st_section, pos = utils.cut_section(_idxref.slice_start, _idxref.slice_end, data)
-    st_line, st_pos = utils.scanf(_idxref.slice_item, st_section)
-    while st_line:
-        info['oscillation_table'].append(utils.cast_params(_idxref.slice_vars, st_line))
-        st_line, st_pos = utils.scanf(_idxref.slice_item, st_section, st_pos)
-    
-    # read cluster indices
-    cl_section, pos = utils.cut_section(_idxref.cluster_index_st, _idxref.cluster_index_en, data)
-    cl_line, cl_pos = utils.scanf(_idxref.cluster_index, cl_section)
-    while cl_line:
-        info['cluster_table'].append(utils.cast_params(_idxref.cluster_index_vars, cl_line))
-        cl_line, cl_pos = utils.scanf(_idxref.cluster_index, cl_section, cl_pos)
-    
-    # read index_origin table
-    cl_section, pos = utils.cut_section(_idxref.index_origin_st, _idxref.index_origin_en, data)
-    cl_line, cl_pos = utils.scanf(_idxref.index_origin_it, cl_section)
-    while cl_line:
-        info['index_origin_table'].append(utils.cast_params(_idxref.index_origin_vars, cl_line))
-        cl_line, cl_pos = utils.scanf(_idxref.index_origin_it, cl_section, cl_pos)
-
-    
-    success_str, pos = utils.cut_section(_idxref.success_start, _idxref.success_end, data)    
-    if success_str != '':
-        info['success'] = False
-    else:
-        info['success'] = True
-        
-    index_origin, pos = utils.scanf(_idxref.index_origin_sel, data)
-    if index_origin:
-        info['selected_index_origin'] = index_origin[0]
-        
-    return info
+    return utils.parse_file(filename, config='idxref.ini')
 
 def parse_correct(filename='CORRECT.LP'):
     """

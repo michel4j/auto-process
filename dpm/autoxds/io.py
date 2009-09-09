@@ -24,7 +24,8 @@ def write_xds_input(jobs, params):
         'spot_range' : list of (tuple of 2 ints)'s
         'detector_size': tuple of 2 ints
         'pixel_size' : tuple of 2 floats
-        'detector_origin': tuple of 2 floats      
+        'detector_origin': tuple of 2 floats
+        'reference': filename OR None    
     }
     
     """

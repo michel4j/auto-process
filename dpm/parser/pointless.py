@@ -54,8 +54,8 @@ def parse_pointless(filename):
     if summary_el.getAttribute('Type') == 'pointgroup':
         summary = {
             'type': summary_el.getAttribute('Type'),
-            'group_name': best_candidate['name'],
-            'group_number': best_candidate['number'],
+            'sg_name': best_candidate['name'],
+            'sg_number': best_candidate['number'],
             'reindex_operator': best_candidate['reindex_operator'],
             'confidence': float(summary_el.getElementsByTagName('Confidence')[0].firstChild.nodeValue),
             'probability': best_candidate['probability'],
@@ -69,8 +69,8 @@ def parse_pointless(filename):
         #rdx_matrix = ( rt[1], rt[4], rt[7], 0, rt[0], rt[3], rt[6], 0, -rt[2], -rt[5], -rt[8], 0)
         summary = {
             'type': 'spacegroup',
-            'group_name': name,
-            'group_number': sg_dict[ name ],
+            'sg_name': name,
+            'sg_number': sg_dict[ name ],
             'reindex_operator': summary_el.getElementsByTagName('ReindexOperator')[0].firstChild.nodeValue,
             'confidence': float(summary_el.getElementsByTagName('Confidence')[0].firstChild.nodeValue),
             'probability': float(summary_el.getElementsByTagName('TotalProb')[0].firstChild.nodeValue),
@@ -100,7 +100,7 @@ def parse_pointless(filename):
     #    break
     
         
-    summary['character'] = dpm.autoxds.utils.get_character( summary['group_number'] )
+    summary['character'] = dpm.autoxds.utils.get_character( summary['sg_number'] )
     summary['candidates'] = sg_candidates
     
     return summary

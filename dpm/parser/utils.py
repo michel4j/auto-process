@@ -78,7 +78,7 @@ def _scanf_compile(format):
             format_pat += char
             i += 1
     if DEBUG:
-        print "DEBUG: %r -> %s" % (format, format_pat)
+        print "DEBUG: %r -> '%s'" % (format, format_pat)
     format_re = re.compile(format_pat)
     if len(scanf_cache) > SCANF_CACHE_SIZE:
         scanf_cache.clear()
@@ -117,11 +117,13 @@ def scanf(format, s, position=0):
     if hasattr(s, "readlines"): s = ''.join(s.readlines())
 
     format_re, casts = _scanf_compile(format)
-        
     found= format_re.search(s, position)
     if found:
         groups = found.groups()
-        result = tuple([casts[i](groups[i]) for i in range(len(groups))])
+        try:
+            result = tuple([casts[i](groups[i]) for i in range(len(groups))])
+        except:
+            return  None, position
         return result, found.end()
     else:
         return None, position
@@ -148,20 +150,29 @@ def cut_section(start, end, s, position=0):
     returns a tuple (subsection, end-position)
     
     """
-    result = ('', 0)        
-    start_re = re.compile(start)
-    end_re = re.compile(end)
-
-    start_m = start_re.search(s, position)
-    if start_m:
-        position = start_m.start()
+    if start is None and end is None:
+        return (s, 0)
+    
+    if start is not None:
+        start_re = re.compile(start)
+        start_m = start_re.search(s, position)
+        if start_m:
+            _s = start_m.start()
+        else:
+            _s = position
+    else:
+        _s = position
+    if end is not None:
+        end_re = re.compile(end)
         end_m = end_re.search(s, position)
         if end_m:
-            result = (s[start_m.start():end_m.start()], end_m.end())
+            _e = end_m.end()
         else:
-            result = (s[start_m.start():start_m.end()], start_m.end())
+            _e = len(s)
     else:
-        result = ('', position)
+        _e = len(s)
+    
+    result = (s[_s:_e], _e)
     return result
    
 def cast_params(param_list, values):
@@ -193,14 +204,14 @@ def interp_array(a, size=25):
     znew = interpolate.bisplev(xnew[:,0], ynew[0,:], tck)
     return znew
 
-def parse_file(filename, config):
+def _process_sections(data, conf):
     info = {}
-    conf = ConfigObj(os.path.join(INI_DIR, config))    
-    data = load_file(filename)
-    
-    for section in conf.keys():
-        if section == '_top_':
-            for k, pat in conf['_top_'].items():
+    for skey, sconf in conf.items():
+        # skip keywords
+        if skey in ['type', 'start', 'end', 'body','keys']:
+            continue
+        if skey == '_top_':
+            for k, pat in sconf.items():
                 _v, _p = scanf(pat, data)
                 if _v is not None:
                     if len(_v) == 1:
@@ -210,20 +221,45 @@ def parse_file(filename, config):
                 else:
                     info[k] = None
         else:
-            params = conf[section]['keys'].items()
-            chunk, pos = cut_section(conf[section]['start'], conf[section]['end'], data)
-            is_table = conf[section].get('table', None) == "1"
-            _v, _p = scanf(conf[section]['body'], chunk)
-            if is_table:
+            spec_type = sconf.get('type', "flat")
+            # convert single 'start', 'end' values to lists
+            start = sconf.get('start', None)
+            end = sconf.get('end', None)
+            if not isinstance(start, list):
+                start = [ start ]
+            if not isinstance(end, list):
+                end = [ end ]
+                
+            # extract chunks included nested chunks
+            chunk = data
+            for _s, _e in zip(start, end):
+                chunk, pos = cut_section(_s, _e, chunk)
+
+            if spec_type == "nested":
+                entry = _process_sections(chunk, sconf)
+                info[skey] = entry
+            elif spec_type == "table":
                 entry = []
+                params = sconf['keys'].items()
+                _v, _p = scanf(sconf['body'], chunk)
                 while _v:
                     entry.append( cast_params(params, _v) )
-                    _v, _p = scanf(conf[section]['body'], chunk, _p)
-                info[section] = entry
+                    _v, _p = scanf(sconf['body'], chunk, _p)
+                info[skey] = entry
             else:
+                params = sconf['keys'].items()
+                _v, _p = scanf(sconf['body'], chunk)
                 if _v is not None:
                     entry = cast_params(params, _v)
-                    info[section] = entry
+                    info[skey] = entry
+    
+    return info
+            
+
+def parse_file(filename, config):
+    conf = ConfigObj(os.path.join(INI_DIR, config))    
+    data = load_file(filename)
+    info = _process_sections(data, conf)
     return info
 
 class Table(object):

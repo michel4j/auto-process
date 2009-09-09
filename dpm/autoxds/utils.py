@@ -231,21 +231,22 @@ def select_resolution(table):
     Takes a table of statistics and determines the optimal resolution
     The table is a list of dictionaries each with at least the following fields
     record = {
-        'shell': float
+        'shell': string convertible to float
         'r_meas': float
         'i_sigma' : float
     }
     
     """
-    resol = table[-1]['shell']
-    pos = 0
-    while  pos < len(table) and table[pos]['i_sigma'] >= 1.5:
-        resol = table[pos]['shell']
-        pos +=1
+    resol = table[-2]['shell']
+    for pos, l in enumerate(table):
+        if l['i_sigma'] >= 1.5:
+            resol = l['shell']
+        else:
+            break
     if pos < len(table) and table[pos]['i_sigma'] <= -99.0:
-        resol = table[-1]['shell']
+        resol = table[-2]['shell']
     
-    return resol
+    return float(resol)
 
 def select_lattices(table):
     """

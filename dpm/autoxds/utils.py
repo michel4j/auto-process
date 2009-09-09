@@ -13,6 +13,8 @@ import shutil
 import tempfile
 import commands
 from dpm.imageio import marccd
+from dpm.parser.utils import Table
+import numpy
 
 
 # each rule is a list of 9 boolean values representing
@@ -359,3 +361,105 @@ def energy_to_wavelength(energy): #Angstroms
 def air(e):
     p = [  1.00000857e+00,  -3.10243288e-04,   3.01020914e+00]    
     return 1.0 - (p[0] * exp( p[1] * (e**p[2])))
+
+def _files_exist(file_list):
+    for f in file_list:
+        if not os.path.exists(f):
+            return False
+    return True
+
+def print_table(info, multiple=False):
+    
+    if not multiple:
+        length = max([len(v) for v in info.keys()])
+        format = "%%%ds: %%s" % length
+        for k, v in info.items():
+            print format % (k, v)
+    else:
+        formats = {}
+        _t = Table(info)
+        for k in info[0].keys():
+            length = max([ len(str(v)) for v in _t[k] ])
+            length = max(length, len(k))
+            formats[k] = "%%%ds " % length
+        for k, f in formats.items():
+            print f % (k),
+        print
+        for l in info:
+            for k, v in l.items():
+                print f % (v),
+            print
+    
+
+def check_init():
+    file_list = ['XYCORR.LP','X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf',
+        'INIT.LP', 'BKGINIT.cbf', 'BLANK.cbf', 'GAIN.cbf']
+    return _files_exist(file_list)
+
+def check_spots():
+    file_list = ['COLSPOT.LP','SPOT.XDS']
+    return _files_exist(file_list)
+    
+def check_index():
+    file_list = ['XPARM.XDS','SPOT.XDS', 'IDXREF.LP']
+    return _files_exist(file_list)
+    
+def diagnose_index(info):
+    data = {}
+
+    _st = info.get('subtrees')
+    _spots = info.get('indexed_spots')
+    _refl = info.get('local_spots')
+
+    # get percent of indexed reflections
+    data['percent_indexed'] = None
+    data['primary_subtree'] = None
+    if _refl is not None and _st is not None and len(_st)>3:
+        data['primary_subtree'] = 100.0 * _st[0].get('population')/float(_refl)
+    
+    if _spots is not None:
+        data['percent_indexed'] = 100.0 * _spots[0]/_spots[1]
+    
+    # get number of subtrees
+    data['distinct_subtrees'] = None
+    if _st is not None and len(_st) > 3 and _refl is not None:
+        data['distinct_subtrees'] = 0
+        for item in _st:
+            _percent = 100.0 * item.get('population')/float(_refl)
+            if _percent >= 30.0:
+                data['distinct_subtrees'] += 1
+            else:
+                break
+
+    # get max, std deviation of integral indices
+    _indices = info.get('cluster_indices')
+    data['index_error_max'] = None
+    data['index_error_stdev'] = None 
+    if _indices is not None and len(_indices) > 0:
+        t = Table(_indices)
+        _index_array = numpy.array(t['hkl'])
+        _index_err = abs(_index_array - _index_array.round())
+        data['index_error_max'] = _index_err.max()
+        data['index_error_stdev'] = _index_err.std()
+    
+    # get spot deviation 
+    _summary = info.get('summary')
+    data['spot_deviation'] = None
+    if _summary  is not None:
+        data['spot_deviation'] = info['summary'].get('stdev_spot')
+       
+    data['cluster_dimension'] = info.get('cluster_dimension')
+    
+    # get quality of selected index origin
+    _origins = info.get('index_origins')
+    _sel_org = info.get('selected_origin')
+    data['index_origin_delta'] = None
+    data['new_origin'] = None
+    if _sel_org is not None and _origins is not None and len(_origins)>0:
+        for _org in _origins:
+            if _org['index_origin'] == _sel_org:
+                data['index_origin_delta'] = _org.get('delta')
+                data['new_origin'] = _org.get('position')
+                break
+            
+    return data

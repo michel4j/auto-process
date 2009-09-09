@@ -32,6 +32,7 @@ else:
     sys.path.append(dpm_path)
     
 from dpm.autoxds.process import AutoXDS
+from dpm.utils.log import log_to_console
 
 def usage():
     print __doc__
@@ -94,6 +95,7 @@ def main():
        
 if __name__ == "__main__":
     try:
+        log_to_console()
         main()
     except KeyboardInterrupt:
         sys.exit(1)

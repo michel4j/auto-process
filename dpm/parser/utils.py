@@ -35,6 +35,7 @@ scanf_translate = [
     ("%s", "(\S+)", lambda x:x),
     ("%([xX])", "(0%s[\dA-Za-f]+)", lambda x:int(x, 16)),
     ("%o", "(0[0-7]*)", lambda x:int(x, 7)),
+    ("%\{\{(.+)\}\}", "%s", lambda x:x),
     ]]
 
 
@@ -73,7 +74,7 @@ def _scanf_compile(format):
         if not found:
             char = format[i]
             # escape special characters
-            if char in "()[]-.+*?{}<>\\":
+            if char in "()[]-.+*?{}<>!\\":
                 format_pat += "\\"
             format_pat += char
             i += 1

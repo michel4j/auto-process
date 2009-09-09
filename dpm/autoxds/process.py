@@ -9,10 +9,13 @@ from dpm.parser.pointless import parse_pointless
 from dpm.parser.distl import parse_distl
 from dpm.parser.xds import parse_idxref, parse_correct, parse_xscale, parse_integrate
 from dpm.parser.best import parse_best
-
+from dpm.utils.log import get_module_logger, log_to_console
+import pprint
 from gnosis.xml import pickle
 
 import utils, io
+
+_logger = get_module_logger('AutoXDS')
 
 class AutoXDS:
     results = []
@@ -39,7 +42,41 @@ class AutoXDS:
         fh = open(filename, 'w')
         pickle.dump(self.results, fh)
         fh.close()
-    
+
+    def find_spots(self, run_info):
+        _logger.info('Finding strong spots...')
+        jobs = 'COLSPOT'
+        io.write_xds_input(jobs, run_info)
+        utils.execute_xds_par()
+        if utils.check_spots():
+            return {'success':True}
+        else:
+            return {'success':False, 'reason': 'Could not find spots.'}
+        
+    def initialize(self, run_info):
+        _logger.info('Initializing...')
+        jobs = 'XYCORR INIT'
+        io.write_xds_input(jobs, run_info)
+        utils.execute_xds_par()
+        if utils.check_init():
+            _out = self.find_spots(run_info)
+            return _out   
+        else:
+            return {'success':False, 'reason': 'Could not create correction tables'}
+        
+    def auto_index(self, run_info):
+        _logger.info('Auto-indexing...')
+        jobs = 'IDXREF'
+        io.write_xds_input(jobs, run_info)
+        utils.execute_xds_par()
+        info = parse_idxref()
+        data = utils.diagnose_index(info)
+        utils.print_table(data)
+        if info.get('failure') is None:
+            return {'success':True, 'data': info}
+        else:
+            return {'success':False, 'reason': info['failure']}
+        
     def save_log(self, filename='autoxds.log'):
         fh = open(filename, 'w')
         file_text = ""
@@ -220,8 +257,8 @@ class AutoXDS:
     def run(self):
         
         t1 = time.time()
-        print 'AutoXDS: Using %d CPUs.' % self.dataset_info[0]['cpu_count']
-        print "AutoXDS: Output in directory '%s'." % self.work_directory
+        _logger.info('Using %d CPUs.' % self.dataset_info[0]['cpu_count'])
+        _logger.info("Output in '%s'." % self.work_directory)
         description = 'Processing'
         adj = 'native'
         if self.options.get('command',None) == 'screen':
@@ -230,20 +267,25 @@ class AutoXDS:
             adj = 'MAD'
         elif self.options.get('anomalous', False):
             adj = 'anomalous'
-        print "AutoXDS: %s %d %s dataset(s)... " % (
-            description, len(self.dataset_info), adj)
+        _logger.info("%s %d %s dataset(s)... " % (
+            description, len(self.dataset_info), adj))
         
         for run_info in self.dataset_info:
             run_result = {}
             run_result['parameters'] = run_info
             
-            # AutoIndexing
-            print "AutoXDS: Autoindexing '%s'" % run_info['prefix']
-            jobs = 'XYCORR INIT COLSPOT IDXREF'
-            io.write_xds_input(jobs, run_info)
-            utils.execute_xds()
-            info = parse_idxref()
-            run_result['indexing'] = info
+            # Initializing
+            _out = self.initialize(run_info)
+            if not _out['success']:
+                _logger.error('FAILED! Reason: %s' % _out.get('reason'))
+                sys.exit(1)
+            
+            # Auto Indexing
+            _out = self.auto_index(run_info)
+            while not _out['success']:
+                _logger.warning('FAILED! Reason: %s' % _out.get('reason'))
+                sys.exit(1)
+            run_result['indexing'] = _out.get('data')
             
             #Integration
             print "AutoXDS: Integrating '%s'" % run_info['prefix']

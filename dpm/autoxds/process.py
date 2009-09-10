@@ -70,9 +70,30 @@ class AutoXDS:
         io.write_xds_input(jobs, run_info)
         utils.execute_xds_par()
         info = parse_idxref()
-        data = utils.diagnose_index(info)
-        utils.print_table(data)
+        if info.get('failure'):
+            data = utils.diagnose_index(info)
+            _logger.info('FAILED! Reason: %s' % info['failure'])
+            
+            # filter out weaker spots and retry spots
+            spot_list = utils.load_spots()
+            sigma = 4
+            _improved = True
+            while data['percent_indexed'] < 70.0 and sigma < 50 and _improved:
+                sigma *= 2
+                _logger.info('Retrying with SIGMA=%2d ...' % sigma)
+                spot_list = utils.filter_spots(spot_list, sigma=sigma)
+                utils.save_spots(spot_list)
+                utils.execute_xds_par()
+                info = parse_idxref()
+                _data = utils.diagnose_index(info)
+                if _data['percent_indexed'] < data['percent_indexed']:
+                    _improved = False
+                data = _data
+            
+            utils.print_table(data)
+                           
         if info.get('failure') is None:
+            _logger.info('Auto-indexing SUCCESS')
             return {'success':True, 'data': info}
         else:
             return {'success':False, 'reason': info['failure']}
@@ -283,7 +304,7 @@ class AutoXDS:
             # Auto Indexing
             _out = self.auto_index(run_info)
             while not _out['success']:
-                _logger.warning('FAILED! Reason: %s' % _out.get('reason'))
+                _logger.error('Auto-indexing FAILED! Reason: %s' % _out.get('reason'))
                 sys.exit(1)
             run_result['indexing'] = _out.get('data')
             

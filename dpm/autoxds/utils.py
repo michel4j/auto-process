@@ -422,7 +422,7 @@ def diagnose_index(info):
     
     # get number of subtrees
     data['distinct_subtrees'] = None
-    if _st is not None and len(_st) > 3 and _refl is not None:
+    if _st is not None and len(_st) > 2 and _refl is not None:
         data['distinct_subtrees'] = 0
         for item in _st:
             _percent = 100.0 * item.get('population')/float(_refl)
@@ -463,3 +463,34 @@ def diagnose_index(info):
                 break
             
     return data
+
+def load_spots(filename='SPOT.XDS'):
+    try:
+        spot_list = numpy.loadtxt(filename)
+    except:
+        return None
+    return spot_list
+
+def save_spots(spot_list, filename='SPOT.XDS'):
+    f = open(filename, 'w')
+    for spot in spot_list:
+        txt = '%10.2f%10.2f%10.2f%9.0f.%8d%8d%8d\n' % tuple(spot)
+        f.write(txt)
+    f.close()
+
+def filter_spots(spot_list, sigma=0, unindexed=False):
+    new_list = spot_list
+    def _zeros(a):
+        for v in a:
+            if abs(v)<0.01:
+                return False
+        return True
+            
+    if sigma > 0:
+        new_list = [sp for sp in new_list if sp[3] > sigma ]
+    if unindexed:
+        new_list = [sp for sp in new_list if _zeros(sp[4:])]
+    return new_list
+        
+    
+        

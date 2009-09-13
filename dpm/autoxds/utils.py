@@ -10,7 +10,6 @@ import math
 from math import exp
 import fnmatch
 import shutil
-import tempfile
 import commands
 from dpm.imageio import marccd
 from dpm.parser.utils import Table
@@ -123,6 +122,7 @@ def get_dataset_params(img_file, screen=False):
     file_pattern = re.compile('^(.*)([_.])(\d+)(\..+)?$')
     fm = file_pattern.search(filename)
     parts = fm.groups()
+    _dataset_name = parts[0]
     if len(parts) == 4:
         prefix = parts[0] + parts[1]
         if parts[3]:
@@ -142,14 +142,8 @@ def get_dataset_params(img_file, screen=False):
     frame_count = len(file_list)
     
     info = marccd.read_header(img_file)
-    info['file_template'] = "%s/%s" % (directory, xds_template)
-    
-    # if template is longer create symlink
-    if len(info['file_template']) + len(info['file_format']) > 49:
-        tmp_dir = tempfile.mktemp('','xds-')
-        os.symlink(directory, tmp_dir)
-        info['file_template'] = "%s/%s" % (tmp_dir, xds_template)
-        
+    info['dataset_name'] = _dataset_name
+    info['file_template'] = "%s/%s" % (directory, xds_template)        
     
     #determine spot range
     spot_range = []
@@ -177,7 +171,6 @@ def get_dataset_params(img_file, screen=False):
     info['reindex_matrix'] = None
     info['unit_cell'] = (0,0,0,0,0,0)
     info['space_group'] = 0
-    info['cpu_count'] = get_cpu_count()
     info['reference_image'] = reference_image
     
     return info
@@ -239,14 +232,15 @@ def select_resolution(table):
     }
     
     """
-    resol = table[-2]['shell']
-    for pos, l in enumerate(table):
+    shells = table[:-1]
+    resol = shells[-1]['shell']
+    for pos, l in enumerate(shells):
         if l['i_sigma'] >= 1.5:
             resol = l['shell']
         else:
             break
-    if pos < len(table) and table[pos]['i_sigma'] <= -99.0:
-        resol = table[-2]['shell']
+    if pos < len(shells) and shells[pos]['i_sigma'] <= -99.0:
+        resol = shell[-1]['shell']
     
     return float(resol)
 
@@ -316,21 +310,6 @@ def execute_distl(filename):
     sts, output = commands.getstatusoutput('labelit.distl %s > distl.log' % filename)
     return sts==0
 
-def save_files(prefix):
-    os.mkdir(prefix)
-    shutil.copy('XDS.INP',prefix)
-    shutil.copy('CORRECT.LP',prefix)
-    shutil.copy('INTEGRATE.LP',prefix)
-    shutil.copy('XDS_ASCII.HKL', prefix)
-    shutil.copy('INTEGRATE.HKL', prefix)
-    shutil.copy('GXPARM.XDS', prefix)
-    files = {
-        'correct': '%s/XDS_ASCII.HKL' % prefix,
-        'integrate': '%s/XDS_ASCII.HKL' % prefix,
-        'prefix': prefix
-        }
-    return files
-
 def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
     score = [ 1.0,
         -0.7 * math.exp(-4.0 / resolution),
@@ -340,9 +319,10 @@ def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle,
         -0.01 * abs(r_meas),
         -0.2 * 2.0 / i_sigma,
         -0.05 * ice_rings,
-        -0.5 * subtree_skew]
+        #-0.5 * subtree_skew
+        ]
     
-    names = ['Root', 'Resolution', 'Spindle', 'Spot', 'Mosaicity','R_meas', 'I/Sigma', 'Ice','Satellites']
+    names = ['Root', 'Resolution', 'Spindle', 'Spot', 'Mosaicity','R_meas', 'I/Sigma', 'Ice', 'Satellites']
     #for name, contrib in zip(names,score):
     #    print '\t\t%s : %0.3f' % (name, contrib)
         
@@ -406,10 +386,12 @@ def check_index():
     
 def diagnose_index(info):
     data = {}
-
+    _refl = _spots = None
     _st = info.get('subtrees')
-    _spots = info.get('indexed_spots')
-    _refl = info.get('local_spots')
+    _summary = info.get('summary')
+    if _summary is not None:
+        _spots = _summary.get('selected_spots')
+        _refl = _summary.get('indexed_spots')
 
     # get percent of indexed reflections
     data['percent_indexed'] = None
@@ -418,11 +400,11 @@ def diagnose_index(info):
         data['primary_subtree'] = 100.0 * _st[0].get('population')/float(_refl)
     
     if _spots is not None:
-        data['percent_indexed'] = 100.0 * _spots[0]/_spots[1]
+        data['percent_indexed'] = 100.0 * _spots/_refl
     
     # get number of subtrees
     data['distinct_subtrees'] = None
-    if _st is not None and len(_st) > 2 and _refl is not None:
+    if _st is not None and len(_st) > 0 and _refl is not None:
         data['distinct_subtrees'] = 0
         for item in _st:
             _percent = 100.0 * item.get('population')/float(_refl)
@@ -443,7 +425,6 @@ def diagnose_index(info):
         data['index_error_stdev'] = _index_err.std()
     
     # get spot deviation 
-    _summary = info.get('summary')
     data['spot_deviation'] = None
     if _summary  is not None:
         data['spot_deviation'] = info['summary'].get('stdev_spot')
@@ -455,11 +436,13 @@ def diagnose_index(info):
     _sel_org = info.get('selected_origin')
     data['index_origin_delta'] = None
     data['new_origin'] = None
+    #data['index_deviation'] = None
     if _sel_org is not None and _origins is not None and len(_origins)>0:
         for _org in _origins:
             if _org['index_origin'] == _sel_org:
                 data['index_origin_delta'] = _org.get('delta')
                 data['new_origin'] = _org.get('position')
+                #data['index_deviation'] = _org.get('deviation')
                 break
             
     return data

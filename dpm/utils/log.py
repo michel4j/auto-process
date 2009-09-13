@@ -24,7 +24,7 @@ def log_to_console(level=logging.DEBUG):
     
     console = logging.StreamHandler()
     console.setLevel(level)
-    formatter = logging.Formatter('%(name)s|%(asctime)s|%(levelname)s: %(message)s', '%d/%m/%y %H:%M:%S')
+    formatter = logging.Formatter('%(name)s|%(asctime)s| %(message)s', '%d/%m/%y %H:%M:%S')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
     

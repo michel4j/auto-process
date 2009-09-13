@@ -42,6 +42,9 @@ def read_header(filename):
     info['wavelength']  = source_pars[3] / 1e5
     info['exposure_time'] = goniostat_pars[4] / 1e3
     info['detector_origin'] = (goniostat_pars[1]/1e3, goniostat_pars[2]/1e3)
+    # use image center if detector origin is (0,0)
+    if sum(info['detector_origin']) <  0.1:
+        info['detector_origin'] = (header_pars[17]/2, header_pars[18]/2)
     info['detector_size'] = (header_pars[17], header_pars[18])
     info['pixel_size'] = (detector_pars[1]/1e6, detector_pars[2]/1e6)
     info['starting_angle'] = goniostat_pars[8] / 1e3

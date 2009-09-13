@@ -53,7 +53,7 @@ def parse_pointless(filename):
     #summary for the best solution
     if summary_el.getAttribute('Type') == 'pointgroup':
         summary = {
-            'type': summary_el.getAttribute('Type'),
+            'type': 'PointGroup',
             'sg_name': best_candidate['name'],
             'sg_number': best_candidate['number'],
             'reindex_operator': best_candidate['reindex_operator'],
@@ -68,7 +68,7 @@ def parse_pointless(filename):
         rdx_matrix = ( rt[0], rt[3], rt[6], 0, rt[1], rt[4], rt[7], 0, rt[2], rt[5], rt[8], 0 )
         #rdx_matrix = ( rt[1], rt[4], rt[7], 0, rt[0], rt[3], rt[6], 0, -rt[2], -rt[5], -rt[8], 0)
         summary = {
-            'type': 'spacegroup',
+            'type': 'SpaceGroup',
             'sg_name': name,
             'sg_number': sg_dict[ name ],
             'reindex_operator': summary_el.getElementsByTagName('ReindexOperator')[0].firstChild.nodeValue,

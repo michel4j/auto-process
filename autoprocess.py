@@ -8,7 +8,7 @@ options:
     --screen, -s : Process a few frames from characterize crystal from each set.
     --anom, -a : Process with Friedel's law False
     --prefix=p1,p2,p3 : comma separated list of prefixes to use for output files. 
-            Default 1,2,3,...,n
+            Default is first part of image name
             prefix order should correspond to the order of the data sets
               for example for MAD data, use --prefix=peak,infl,remo
     --dir=/path : Directory to store processed results. Subdirectories will be created inside.
@@ -49,7 +49,6 @@ def main():
     # Parse options
     options = {}
     options['directory'] = os.path.abspath('./')
-    options['prefix'] = []
     for o, a in opts:
         if o in ("-h","--help"):
             usage()
@@ -65,11 +64,8 @@ def main():
             options['directory'] = a
         if o in ('--prefix'):
             options['prefix'] = a.split(',')
-            
-    if len(options['prefix']) < len(args):
-        for i in xrange(len(options['prefix']), len(args)):
-            options['prefix'].append("%d" % (i+1))
-                
+            if len(options['prefix']) < len(args):
+                del options['prefix']
     if len(args) == 0:
         print "ERROR: no image sets provided."
         usage()
@@ -90,8 +86,6 @@ def main():
            
     app = AutoXDS( options )
     app.run()      
-    app.save_xml('process.xml')
-    app.save_log('process.log')
        
 if __name__ == "__main__":
     try:

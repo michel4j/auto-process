@@ -18,88 +18,48 @@ import utils, io
 _logger = get_module_logger('AutoXDS')
 
 class AutoXDS:
-    results = []
-    
+
     def __init__(self, options):
         self.options = options
+        self.results = {}
         is_screening = (self.options.get('command', None) == 'screen')
-        self.dataset_info = []
-        for img, prefix in zip(self.options['images'], self.options['prefix']):
-            run_info = utils.get_dataset_params(img, is_screening)
-            run_info['prefix'] = prefix
-            self.dataset_info.append( run_info )
+        self.dataset_info = {}
+        self.cpu_count = utils.get_cpu_count()
+        _logger.info('Using %d CPUs.' % self.cpu_count)
         if is_screening:
             workdir_prefix = 'screen'
         else: 
             workdir_prefix = 'process'
-        self.work_directory = utils.prepare_work_dir(
+        self.top_directory = utils.prepare_work_dir(
                 self.options.get('directory', './'),
                 workdir_prefix
                 )
-        os.chdir(self.work_directory)
-        
-    def save_xml(self, filename='autoxds.xml'):
-        fh = open(filename, 'w')
-        pickle.dump(self.results, fh)
-        fh.close()
-
-    def find_spots(self, run_info):
-        _logger.info('Finding strong spots...')
-        jobs = 'COLSPOT'
-        io.write_xds_input(jobs, run_info)
-        utils.execute_xds_par()
-        if utils.check_spots():
-            return {'success':True}
-        else:
-            return {'success':False, 'reason': 'Could not find spots.'}
-        
-    def initialize(self, run_info):
-        _logger.info('Initializing...')
-        jobs = 'XYCORR INIT'
-        io.write_xds_input(jobs, run_info)
-        utils.execute_xds_par()
-        if utils.check_init():
-            _out = self.find_spots(run_info)
-            return _out   
-        else:
-            return {'success':False, 'reason': 'Could not create correction tables'}
-        
-    def auto_index(self, run_info):
-        _logger.info('Auto-indexing...')
-        jobs = 'IDXREF'
-        io.write_xds_input(jobs, run_info)
-        utils.execute_xds_par()
-        info = parse_idxref()
-        if info.get('failure'):
-            data = utils.diagnose_index(info)            
-            # filter out weaker spots and retry spots
-            spot_list = utils.load_spots()
-            sigma = 4
-            _retries = 0
-            while data['percent_indexed'] < 70.0 and sigma < 50 and _retries < 4:
-                sigma *= 2
-                _retries +=1
-                _logger.info('Failed! Retrying with SIGMA=%2d ...' % sigma)
-                spot_list = utils.filter_spots(spot_list, sigma=sigma)
-                utils.save_spots(spot_list)
-                utils.execute_xds_par()
-                info = parse_idxref()
-                _data = utils.diagnose_index(info)
-                data = _data
-            
-            #utils.print_table(data)
-                           
-        if info.get('failure') is None:
-            _logger.info('Auto-indexing SUCCESS')
-            return {'success':True, 'data': info}
-        else:
-            return {'success':False, 'reason': info['failure']}
+        # for multiple data sets process each in a separate subdirectory
+        if len(self.options['images']) == 1:
+            img = self.options.get('images')[0]
+            run_info = utils.get_dataset_params(img, is_screening)
+            run_info['cpu_count'] = self.cpu_count
+            if self.options.get('prefix'):
+                run_info['dataset_name'] = self.options['prefix'][0]
+            run_info['working_directory'] = self.top_directory
+            self.dataset_info[run_info['dataset_name']] =  run_info
+        else:   
+            for i, img in enumerate(self.options['images']):
+                run_info = utils.get_dataset_params(img, is_screening)
+                run_info['cpu_count'] = self.cpu_count
+                if self.options.get('prefix'):
+                    run_info['dataset_name'] = self.options['prefix'][i]
+                run_info['working_directory'] = os.path.join(self.top_directory,
+                                                             run_info['dataset_name'])
+                self.dataset_info[run_info['dataset_name']] =  run_info
+        os.chdir(self.top_directory)
         
     def save_log(self, filename='autoxds.log'):
+        os.chdir(self.top_directory)
         fh = open(filename, 'w')
         file_text = ""
-        for dset in self.results:
-            file_text += "###--- Results for data in %s\n" % dset['parameters']['file_template']
+        for dataset_name, dset in self.results.items():
+            file_text += "###--- Results for data in %s\n" % dataset_name
             img_anal_res = dset.get('image_analysis', None)
             file_text += '\n CRYSTAL SCORE %8.3f \n' % dset['crystal_score']
             if img_anal_res is not None:
@@ -270,13 +230,305 @@ class AutoXDS:
         file_text += '\n\n'   
         fh.write(file_text)    
         fh.close()
+
+    def save_xml(self, filename='autoxds.xml'):
+        os.chdir(self.top_directory)
+        fh = open(filename, 'w')
+        pickle.dump(self.results, fh)
+        fh.close()
+
+    def find_spots(self, run_info):
+        os.chdir(run_info['working_directory'])
+        _logger.info('Finding strong spots...')
+        jobs = 'COLSPOT'
+        io.write_xds_input(jobs, run_info)
+        utils.execute_xds_par()
+        if utils.check_spots():
+            return {'success':True}
+        else:
+            return {'success':False, 'reason': 'Could not find spots.'}
         
+    def initialize(self, run_info):
+        os.chdir(run_info['working_directory'])
+        _logger.info('Initializing...')
+        jobs = 'XYCORR INIT'
+        io.write_xds_input(jobs, run_info)
+        utils.execute_xds_par()
+        if utils.check_init():
+            _out = self.find_spots(run_info)
+            return _out   
+        else:
+            return {'success':False, 'reason': 'Could not create correction tables'}
+        
+    def auto_index(self, run_info):
+        os.chdir(run_info['working_directory'])
+        _logger.info('Auto-indexing...')
+        jobs = 'IDXREF'
+        io.write_xds_input(jobs, run_info)
+        utils.execute_xds_par()
+        info = parse_idxref()
+        data = utils.diagnose_index(info)
+        #utils.print_table(data)
+        _retries = [0,0,0,0]
+        sigma = 6
+        while info.get('failure') and sum(_retries) < 10:
+            # first correct detector origin
+            if data['percent_indexed'] < 70.0 or data['spot_deviation'] >= 3.0 and _retries[0] < 4:
+                _retries[0] +=1
+                _logger.info(':-( Not enough percentage of indexed spots!')
+                # filter out weaker spots and retry spots
+                spot_list = utils.load_spots()
+                sigma *= 1.5
+                spot_list = utils.filter_spots(spot_list, sigma=sigma)
+                utils.save_spots(spot_list)
+                _logger.info('Retrying with Sigma=%2.0f ...' % sigma)
+                utils.execute_xds_par()
+                info = parse_idxref()
+                data = utils.diagnose_index(info)
+            elif data['index_origin_delta'] > 6 and data['index_error_max'] > 0.05 and _retries[1] < 3:
+                _retries[1] +=1
+                _logger.info(':-( Index error too large!')
+                run_info['detector_origin'] = data['new_origin']
+                io.write_xds_input(jobs, run_info)
+                _logger.info('Retrying with adjusted detector origin %0.1f %0.1f ...' % run_info['detector_origin'])
+                utils.execute_xds_par()
+                info = parse_idxref()
+                data = utils.diagnose_index(info)
+            elif data['distinct_subtrees'] > 1 and _retries[2] < 3:
+                _retries[2] +=1
+                _logger.info(':-( More than one significant lattice found!')
+                spot_list = utils.load_spots()
+                spot_list = utils.filter_spots(spot_list, unindexed=True)
+                utils.save_spots(spot_list)
+                _logger.info('Retrying after removing spots from satellites ...')
+                utils.execute_xds_par()
+                info = parse_idxref()
+                data = utils.diagnose_index(info)
+            elif data['distinct_subtrees'] < 1:
+                _retries[-1] = 999
+                _logger.info(':-( No distict lattice could be found!')
+            else:
+                _retries[-1] = 999
+                _logger.info(':-( Unrecognized problem with auto-indexing')
+        if info.get('failure') is None:
+            _logger.info(':-) Auto-indexing succeeded.')
+            return {'success':True, 'data': info}
+        else:
+            return {'success':False, 'reason': info['failure']}
+    
+    def integrate(self, run_info):
+        os.chdir(run_info['working_directory'])
+        _logger.info('Integrating ...')
+        jobs = "DEFPIX INTEGRATE"
+        io.write_xds_input(jobs, run_info)
+        utils.execute_xds_par()
+        info = parse_integrate()
+        
+        if info.get('failure') is None:
+            #_logger.info(':-) Integration succeeded.')
+            return {'success':True, 'data': info}
+        else:
+            return {'success':False, 'reason': info['failure']}
+    
+    def correct(self, run_info):
+        os.chdir(run_info['working_directory'])
+        _logger.info('Correcting ...')
+        jobs = "CORRECT"
+        io.write_xds_input(jobs, run_info)
+        utils.execute_xds_par()
+        info = parse_correct()
+        if info.get('statistics') is not None:
+            if len(info['statistics']) > 1 and info.get('summary') is not None:
+                info['summary'].update( info['statistics'][-1] )
+                del info['summary']['shell']
+        
+        if info.get('failure') is None:
+            #_logger.info(':-) Correction succeeded.')
+            return {'success':True, 'data': info}
+        else:
+            return {'success':False, 'reason': info['failure']}
+
+    def determine_spacegroup(self, run_info):
+        os.chdir(run_info['working_directory'])
+        _logger.info("Determining SpaceGroup...")
+        success = utils.execute_pointless()
+        if not success:
+            _logger.warning(':-( SpaceGroup Determination failed!')
+            return {'success':False, 'reason': 'POINTLESS FAILED!'}
+        else:
+            sg_info = parse_pointless('pointless.xml')
+            return {'success':True, 'data': sg_info}        
+    
+    def scale_datasets(self, run_info):
+        os.chdir(self.top_directory)
+        _logger.info("Scaling ...")
+        command = self.options.get('command', None)
+        output_file_list = []
+        if command == 'mad':
+            sections = []
+            _crystal_name = os.path.commonprefix(self.results.keys())
+            for name, rres in self.results.items():
+                resol = rres['correction']['resolution']
+                in_file = rres['files']['correct']
+                out_file = os.path.join(name, "XSCALE.HKL")
+                sections.append(
+                    {'anomalous': self.options.get('anomalous', True),
+                     'output_file': out_file,
+                     'crystal': _crystal_name,
+                     'inputs': [{'input_file': in_file, 'resolution': resol}],
+                    }
+                    )
+                output_file_list.append(out_file)
+                rres['files']['xscale'] = [out_file]
+        else:
+            inputs = []
+            for name, rres in self.results.items():
+                resol = rres['correction']['resolution']
+                in_file = rres['files']['correct']
+                inputs.append( {'input_file': in_file, 'resolution': resol} )
+            sections = [
+                    {'anomalous': self.options.get('anomalous', False),
+                     'output_file': "XSCALE.HKL",
+                     'inputs': inputs,
+                    }
+                    ]
+            output_file_list.append("XSCALE.HKL")
+            rres['files']['xscale'] = output_file_list
+    
+        xscale_options = {
+            'cpu_count': self.cpu_count,
+            'sections': sections
+            }
+        
+        io.write_xscale_input(xscale_options)
+        success = utils.execute_xscale()
+
+        if len(output_file_list) == 1:
+            info = parse_xscale('XSCALE.LP', output_file_list[0])
+            if info.get('statistics') is not None:
+                if len(info['statistics']) > 1:
+                    info['summary'] = info['statistics'][-1]
+            for name, rres in self.results.items():            
+                rres['scaling'] = info
+        else:
+            for ofile, rres in zip(output_file_list, self.results.values()):
+                info = parse_xscale('XSCALE.LP', ofile)
+                if info.get('statistics') is not None:
+                    if len(info['statistics']) > 1:
+                        info['summary'] = info['statistics'][-1]               
+                rres['scaling'] = info
+        if not success:
+            _logger.error(':-( Scaling failed!')
+            return {'success': False, 'reason': None}
+    
+    def convert_files(self, run_info):
+        os.chdir(self.top_directory)
+        # GENERATE MTZ and CNS output files    
+        _logger.info('Generating MTZ, SHELX and CNS files ...')
+        for name, rres in self.results.items():
+            out_files = []
+            if rres['files'].get('xscale') is None: 
+                continue
+            for infile in rres['files']['xscale']:
+                out_file_root = name
+
+                # CNS File
+                out_files.append(out_file_root + ".cns")
+                xdsconv_options = {
+                    'resolution': rres['correction']['resolution'],
+                    'unit_cell': rres['correction']['symmetry']['space_group']['unit_cell'],
+                    'space_group': rres['correction']['symmetry']['space_group']['sg_number'],
+                    'format': 'CNS',
+                    'anomalous': self.options.get('anomalous', False),
+                    'input_file': infile,
+                    'output_file': out_file_root + ".cns",
+                    'freeR_fraction': 0.05,
+                }
+                io.write_xdsconv_input(xdsconv_options)
+                utils.execute_xdsconv()
+
+                #SHELX File
+                out_files.append(out_file_root + ".shelx")
+                xdsconv_options = {
+                    'resolution': rres['correction']['resolution'],
+                    'unit_cell': rres['correction']['symmetry']['space_group']['unit_cell'],
+                    'space_group': rres['correction']['symmetry']['space_group']['sg_number'],
+                    'format': 'SHELX',
+                    'anomalous': self.options.get('anomalous', False),
+                    'input_file': infile,
+                    'output_file': out_file_root + ".shelx",
+                    'freeR_fraction': 0.05,
+                }
+                io.write_xdsconv_input(xdsconv_options)
+                utils.execute_xdsconv()
+
+                #MTZ File
+                out_files.append(out_file_root + ".mtz")
+                xdsconv_options = {
+                    'resolution': rres['correction']['resolution'],
+                    'unit_cell': rres['correction']['symmetry']['space_group']['unit_cell'],
+                    'space_group': rres['correction']['symmetry']['space_group']['sg_number'],
+                    'format': 'CCP4_F',
+                    'anomalous': True,
+                    'input_file': infile,
+                    'output_file': out_file_root + ".ccp4f",
+                    'freeR_fraction': 0.05,
+                }
+                io.write_xdsconv_input(xdsconv_options)
+                utils.execute_xdsconv()
+                
+                f2mtz_options = {
+                    'output_file': out_file_root + ".mtz"
+                }
+                io.write_f2mtz_input(f2mtz_options)
+                utils.execute_f2mtz()
+            
+            _logger.info('Output Files: %s' % ( ', '.join(out_files)))
+            rres['files']['xdsconv'] = out_files               
+
+    def get_fileinfo(self, run_info):
+        if run_info['working_directory'] == self.top_directory:
+            files = {
+                'correct': 'XDS_ASCII.HKL',
+                'integrate': 'INTEGRATE.HKL',
+                }      
+        else:
+            try:
+                # only available in python >= 2.6
+                prefix = os.path.relpath(run_info['working_directory'], self.top_directory)
+            except:
+                prefix = run_info['dataset_name']
+            files = {
+                'correct': os.path.join(prefix, 'XDS_ASCII.HKL'),
+                'integrate': os.path.join(prefix, 'INTEGRATE.HKL')
+                }
+        return files
+    
+    def score_dataset(self, rres):
+        resolution = rres['correction']['resolution']
+        mosaicity = rres['correction']['summary']['mosaicity']
+        std_spot = rres['correction']['summary']['stdev_spot']
+        std_spindle= rres['correction']['summary']['stdev_spindle']
+        i_sigma = rres['correction']['summary']['i_sigma']
+        r_meas = rres['correction']['summary']['r_meas']
+        st_table = rres['indexing']['subtrees']            
+        st_array = [i['population'] for i in st_table]
+        subtree_skew = sum(st_array[1:]) / float(sum(st_array))
+        if rres.has_key('image_analysis'):
+            ice_rings = rres['image_analysis']['ice_rings']
+        else:
+            ice_rings = 0
+        score = utils.score_crystal(resolution, mosaicity, r_meas, i_sigma,
+                            std_spot, std_spindle,
+                            subtree_skew, ice_rings)
+        _logger.info("Dataset Score: %0.2f" % score)
+        rres['crystal_score'] = score
+        
+
             
     def run(self):
         
         t1 = time.time()
-        _logger.info('Using %d CPUs.' % self.dataset_info[0]['cpu_count'])
-        _logger.info("Output in '%s'." % self.work_directory)
         description = 'Processing'
         adj = 'native'
         if self.options.get('command',None) == 'screen':
@@ -285,59 +537,76 @@ class AutoXDS:
             adj = 'MAD'
         elif self.options.get('anomalous', False):
             adj = 'anomalous'
-        _logger.info("%s %d %s dataset(s)... " % (
-            description, len(self.dataset_info), adj))
-        
-        for run_info in self.dataset_info:
+        _ref_run = None
+        _logger.info("Top Level Directory: '%s'." % self.top_directory)
+        for run_name, run_info in self.dataset_info.items():
+            if not os.path.isdir(run_info['working_directory']):
+                os.mkdir(os.path.abspath(run_info['working_directory']))
+            _logger.info("**** %s %s dataset: '%s' ****" % (description, adj, run_name))
+            _logger.info("==> Output: '%s'." % run_info['working_directory'])
             run_result = {}
             run_result['parameters'] = run_info
             
             # Initializing
             _out = self.initialize(run_info)
             if not _out['success']:
-                _logger.error('FAILED! Reason: %s' % _out.get('reason'))
+                _logger.error('Initialization FAILED! Reason: %s' % _out.get('reason'))
                 sys.exit(1)
             
             # Auto Indexing
             _out = self.auto_index(run_info)
-            while not _out['success']:
+            if not _out['success']:
                 _logger.error('Auto-indexing FAILED! Reason: %s' % _out.get('reason'))
                 sys.exit(1)
             run_result['indexing'] = _out.get('data')
             
             #Integration
-            print "AutoXDS: Integrating '%s'" % run_info['prefix']
-            jobs = "DEFPIX INTEGRATE CORRECT"
-            io.write_xds_input(jobs, run_info)
-            utils.execute_xds_par()
-            print "AutoXDS: Selecting spacegroup for '%s' ..." % run_info['prefix'],
-            success = utils.execute_pointless()
-            if not success:
-                print 'WARNING: Could not run POINTLESS! SpaceGroup Selection may fail!'
-            else:
-                sg_info = parse_pointless('pointless.xml')
-                run_result['space_group'] = sg_info                        
-                run_info['unit_cell'] = utils.tidy_cell(sg_info['unit_cell'], sg_info['character'])
-                run_info['space_group'] = sg_info['sg_number']
-                run_info['reindex_matrix'] = sg_info['reindex_matrix']
-                print sg_info['sg_number'], utils.SPACE_GROUP_NAMES[sg_info['sg_number']], sg_info['character']
-            
-            # Rerun CORRECT in the right space group and scale
-            print "AutoXDS: Merging reflections in '%s'" % run_info['prefix']
-            jobs = "CORRECT"
-            io.write_xds_input(jobs, run_info)
-            success = utils.execute_xds_par()
-            if not success:
-                print 'ERROR: Could not run CORRECT! Automatic data processing can not proceed!'
-                return
-            info = parse_correct()
-            if info.get('statistics') is not None:
-                if len(info['statistics']) > 1 and info.get('summary') is not None:
-                    info['summary'].update( info['statistics'][-1] )
-            run_result['correction'] = info
-            run_result['integration'] = parse_integrate()
+            _out = self.integrate(run_info)
+            if not _out['success']:
+                _logger.error('Integration FAILED! Reason: %s' % _out.get('reason'))
+                sys.exit(1)
+            run_result['integration'] = _out.get('data')
 
+            #initial correction
+            if _ref_run is not None:
+                run_info['reference_data'] = os.path.join('..', self.results[_ref_run]['files']['correct'])
+            _out = self.correct(run_info)
+            if not _out['success']:
+                _logger.error('Correction FAILED! Reason: %s' % _out.get('reason'))
+                sys.exit(1)
+            run_result['correction'] = _out.get('data')
+            _sel_pgn = _out['data']['symmetry']['space_group']['sg_number']
+            _logger.info('Suggested PointGroup: %s (#%d)' % (utils.SPACE_GROUP_NAMES[_sel_pgn], _sel_pgn))
             
+            #space group determination
+            _out = self.determine_spacegroup(run_info)
+            _sel_sgn = _sel_pgn
+            if _out['success']:
+                sg_info = _out.get('data')
+                _sel_sgn = sg_info['sg_number']
+                run_result['space_group'] = sg_info                   
+                run_info['unit_cell'] = utils.tidy_cell(sg_info['unit_cell'], sg_info['character'])
+                run_info['space_group'] = _sel_sgn
+                if _ref_run is None:
+                    run_info['reindex_matrix'] = sg_info['reindex_matrix']
+                _logger.info('Selected %s: %s (#%d)' % (sg_info['type'], utils.SPACE_GROUP_NAMES[_sel_sgn], _sel_sgn))
+                if _ref_run is not None:
+                    _ref_sgn = self.results[_ref_run]['space_group']['sg_number']
+                    _ref_type = self.results[_ref_run]['space_group']['type']
+                    if _sel_sgn != _ref_sgn:
+                        _logger.warning('WARNING: SpaceGroup differs from reference data set!')                           
+                        _logger.info('Proceeding with %s: %s (#%d) instead.' % (_ref_type, utils.SPACE_GROUP_NAMES[_ref_sgn], _ref_sgn))
+                        run_info['unit_cell'] = self.results[_ref_run]['unit_cell']
+                        run_info['space_group'] = _ref_sgn
+            else:
+                _logger.info('Proceeding with PointGroup: %s (#%d)' % (utils.SPACE_GROUP_NAMES[_sel_pgn], _sel_pgn))
+                
+            # Final correction
+            _out = self.correct(run_info)
+            if not _out['success']:
+                _logger.error('Correction FAILED! Reason: %s' % _out.get('reason'))
+            run_result['correction'] = _out.get('data')
+
             if self.options.get('command', None) == 'screen':
                 success = utils.execute_best(run_info['exposure_time'], self.options.get('anomalous', False))
                 if not success:
@@ -354,160 +623,24 @@ class AutoXDS:
                     run_result['image_analysis'] = {}
                 
             
-            run_result['files'] = utils.save_files(run_info['prefix'])
-            self.results.append( run_result )
+            run_result['files'] = self.get_fileinfo(run_info)
+            if _ref_run is None:
+                _ref_run = run_name
+            self.results[run_name] = run_result 
                
             # Select Cut-off resolution
             resol = utils.select_resolution( run_result['correction']['statistics'])
             run_result['correction']['resolution'] = resol
-
-        # SCALE data set(s) if we are not screening
-        command = self.options.get('command', None)
-        output_file_list = []
-        if command == 'mad':
-            sections = []
-            for rres in self.results:
-                resol = rres['correction']['resolution']
-                in_file = rres['files']['correct']
-                sections.append(
-                    {'anomalous': self.options.get('anomalous', False),
-                     'output_file': "%s/XSCALE.HKL" % rres['files']['prefix'],
-                     'inputs': [{'input_file': in_file, 'resolution': resol}],
-                    }
-                    )
-                scale_out_file = "%s/XSCALE.HKL" % rres['files']['prefix']
-                output_file_list.append(scale_out_file)
-                rres['files']['xscale'] = [scale_out_file]
-        else:
-            inputs = []
-            for rres in self.results:
-                resol = rres['correction']['resolution']
-                in_file = rres['files']['correct']
-                inputs.append( {'input_file': in_file, 'resolution': resol} )
-            sections = [
-                    {'anomalous': self.options.get('anomalous', False),
-                     'output_file': "XSCALE.HKL",
-                     'inputs': inputs,
-                    }
-                    ]
-            output_file_list.append("XSCALE.HKL")
-            rres['files']['xscale'] = output_file_list
-    
-        print 'AutoXDS: Scaling data set(s) ...'
-        xscale_options = {
-            'cpu_count': self.dataset_info[0]['cpu_count'],
-            'unit_cell': self.results[0]['correction']['symmetry']['space_group']['unit_cell'],
-            'space_group': self.results[0]['correction']['symmetry']['space_group']['sg_number'],
-            'sections': sections
-            }
-        
-        io.write_xscale_input(xscale_options)
-        success = utils.execute_xscale()
-        if not success:
-            print 'ERROR: SCALING Failed!'
-            return
-
-        if len(output_file_list) == 1:
-            info = parse_xscale('XSCALE.LP', output_file_list[0])
-            if info.get('statistics') is not None:
-                if len(info['statistics']) > 1:
-                    info['summary'] = info.get('statistics')[-1]               
-            self.results[-1]['scaling'] = info
-        else:
-            for ofile, rres in zip(output_file_list, self.results):
-                info = parse_xscale('XSCALE.LP', ofile)
-                if info.get('statistics') is not None:
-                    if len(info['statistics']) > 1:
-                        info['summary'] = info.get('statistics')[-1]               
-                rres['scaling'] = info
-        
-        # Calculate SCORE
-        for rres in self.results:
-            print "AutoXDS: Scoring data set '%s'..." % rres['files']['prefix'],
-            resolution = rres['correction']['resolution']
-            mosaicity = rres['correction']['summary']['mosaicity']
-            std_spot = rres['correction']['summary']['stdev_spot']
-            std_spindle= rres['correction']['summary']['stdev_spindle']
-            i_sigma = rres['scaling']['summary']['i_sigma']
-            if i_sigma < -99: 
-                i_sigma = rres['correction']['summary']['i_sigma']
-            r_meas= rres['scaling']['summary']['r_meas']
-            if r_meas < -99:
-                r_meas = rres['correction']['summary']['r_meas']
-            st_table = rres['indexing']['subtrees']            
-            st_array = [i['population'] for i in st_table]
-            subtree_skew = sum(st_array[1:]) / float(sum(st_array))
-            if rres.has_key('image_analysis'):
-                ice_rings = rres['image_analysis']['ice_rings']
-            else:
-                ice_rings = 0
-            score = utils.score_crystal(resolution, mosaicity, r_meas, i_sigma,
-                                std_spot, std_spindle,
-                                subtree_skew, ice_rings)
-            print '%8.3f' % score
-            rres['crystal_score'] = score
-        
-        # GENERATE MTZ and CNS output files    
-        for rres in self.results:
-            print 'AutoXDS: Converting data set(s) to MTZ, SHELX and CNS ...'
-            out_files = []
-            for infile in rres['files']['xscale']:
-                out_file_root = ''.join(infile.split('.')[:-1])
-
-                # CNS File
-                out_files.append(out_file_root + ".CNS")
-                xdsconv_options = {
-                    'resolution': rres['correction']['resolution'],
-                    'unit_cell': rres['correction']['symmetry']['space_group']['unit_cell'],
-                    'space_group': rres['correction']['symmetry']['space_group']['sg_number'],
-                    'format': 'CNS',
-                    'anomalous': self.options.get('anomalous', False),
-                    'input_file': infile,
-                    'output_file': out_file_root + ".CNS",
-                    'freeR_fraction': 0.05,
-                }
-                io.write_xdsconv_input(xdsconv_options)
-                utils.execute_xdsconv()
-
-                #SHELX File
-                out_files.append(out_file_root + ".SHELX")
-                xdsconv_options = {
-                    'resolution': rres['correction']['resolution'],
-                    'unit_cell': rres['correction']['symmetry']['space_group']['unit_cell'],
-                    'space_group': rres['correction']['symmetry']['space_group']['sg_number'],
-                    'format': 'SHELX',
-                    'anomalous': self.options.get('anomalous', False),
-                    'input_file': infile,
-                    'output_file': out_file_root + ".SHELX",
-                    'freeR_fraction': 0.05,
-                }
-                io.write_xdsconv_input(xdsconv_options)
-                utils.execute_xdsconv()
-
-                #MTZ File
-                out_files.append(out_file_root + ".MTZ")
-                xdsconv_options = {
-                    'resolution': rres['correction']['resolution'],
-                    'unit_cell': rres['correction']['symmetry']['space_group']['unit_cell'],
-                    'space_group': rres['correction']['symmetry']['space_group']['sg_number'],
-                    'format': 'CCP4_F',
-                    'anomalous': self.options.get('anomalous', False),
-                    'input_file': infile,
-                    'output_file': out_file_root + ".CCP4F",
-                    'freeR_fraction': 0.05,
-                }
-                io.write_xdsconv_input(xdsconv_options)
-                utils.execute_xdsconv()
-                
-                f2mtz_options = {
-                    'output_file': out_file_root + ".MTZ"
-                }
-                io.write_f2mtz_input(f2mtz_options)
-                utils.execute_f2mtz()
             
-            print 'AutoXDS: Output Files ... \n\t', ',\n\t'.join(out_files)
-            rres['files']['xdsconv'] = out_files               
-            
+            # Score dataset
+            self.score_dataset(run_result)
+        
+        # Score dataset
+        self.scale_datasets(run_info)
+        
+        self.convert_files(run_info)            
+        self.save_xml('process.xml')
+        self.save_log('process.log')
 
         elapsed = time.time() - t1
         print "AutoXDS: Done. Total time used:  %d min %d sec"  % (int(elapsed/60), int(elapsed % 60))          

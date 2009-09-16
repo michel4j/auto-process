@@ -4,7 +4,7 @@
 
 setenv DPM_PATH $HOME/Code/eclipse-ws/data-analysis-module
 
-set path=($path $DPM_PATH)
+set path=($path $DPM_PATH/bin)
 if ($?PYTHONPATH) then
 	setenv PYTHONPATH ${PYTHONPATH}:${DPM_PATH}
 else

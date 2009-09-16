@@ -3,6 +3,7 @@ Parsers for XDS Files
 
 """
 import re, numpy
+import os
 import utils
 
 
@@ -41,7 +42,11 @@ _xparm.vars = [
     ('cell_c_axis',3)  ]
 
 def parse_idxref(filename='IDXREF.LP'):
-    return utils.parse_file(filename, config='idxref.ini')
+    info = utils.parse_file(filename, config='idxref.ini')
+    if os.path.getsize(filename) < 15000 and info.get('failure') is None:
+        info['failure'] = 'Indexing did not complete!'
+    return info
+        
 
 def parse_correct(filename='CORRECT.LP'):
     return utils.parse_file(filename, config='correct.ini')

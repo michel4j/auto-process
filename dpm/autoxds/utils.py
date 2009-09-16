@@ -388,28 +388,34 @@ def diagnose_index(info):
     data = {}
     _refl = _spots = None
     _st = info.get('subtrees')
+    _local_spots = info.get('local_indexed_spots')
     _summary = info.get('summary')
     if _summary is not None:
         _spots = _summary.get('selected_spots')
         _refl = _summary.get('indexed_spots')
+        data['indexed_spots'] = _refl
 
     # get percent of indexed reflections
     data['percent_indexed'] = None
     data['primary_subtree'] = None
     if _refl is not None and _st is not None and len(_st)>3:
-        data['primary_subtree'] = 100.0 * _st[0].get('population')/float(_refl)
+        data['primary_subtree'] = 100.0 * _st[0].get('population')/float(_local_spots)
     
     if _spots is not None:
         data['percent_indexed'] = 100.0 * _spots/_refl
     
     # get number of subtrees
     data['distinct_subtrees'] = None
+    data['satellites'] = None
     if _st is not None and len(_st) > 0 and _refl is not None:
         data['distinct_subtrees'] = 0
+        data['satellites'] = 0
         for item in _st:
-            _percent = 100.0 * item.get('population')/float(_refl)
+            _percent = 100.0 * item.get('population')/float(_local_spots)
             if _percent >= 30.0:
                 data['distinct_subtrees'] += 1
+            elif _percent > 1:
+                data['satellites']  += 1
             else:
                 break
 
@@ -457,7 +463,10 @@ def load_spots(filename='SPOT.XDS'):
 def save_spots(spot_list, filename='SPOT.XDS'):
     f = open(filename, 'w')
     for spot in spot_list:
-        txt = '%10.2f%10.2f%10.2f%9.0f.%8d%8d%8d\n' % tuple(spot)
+        if len(spot)>4:
+            txt = '%10.2f%10.2f%10.2f%9.0f.%8d%8d%8d\n' % tuple(spot)
+        else:
+            txt = '%10.2f%10.2f%10.2f%9.0f.\n' % tuple(spot)
         f.write(txt)
     f.close()
 
@@ -471,9 +480,16 @@ def filter_spots(spot_list, sigma=0, unindexed=False):
             
     if sigma > 0:
         new_list = [sp for sp in new_list if sp[3] > sigma ]
-    if unindexed:
+    if unindexed and len(new_list[0] > 4):
         new_list = [sp for sp in new_list if _zeros(sp[4:])]
     return new_list
         
-    
+
+def backup_file(filename):
+    if os.path.exists(filename):
+        index = 0
+        while os.path.exists('%s.%0d' % (filename, index)):
+            index += 1
+        shutil.move(filename, '%s.%0d' % (filename, index))
+    return
         

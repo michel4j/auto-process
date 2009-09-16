@@ -239,7 +239,7 @@ class AutoXDS:
 
     def find_spots(self, run_info):
         os.chdir(run_info['working_directory'])
-        _logger.info('Finding strong spots...')
+        _logger.info('Finding strong spots ...')
         jobs = 'COLSPOT'
         io.write_xds_input(jobs, run_info)
         utils.execute_xds_par()
@@ -250,7 +250,7 @@ class AutoXDS:
         
     def initialize(self, run_info):
         os.chdir(run_info['working_directory'])
-        _logger.info('Initializing...')
+        _logger.info('Initializing ...')
         jobs = 'XYCORR INIT'
         io.write_xds_input(jobs, run_info)
         utils.execute_xds_par()
@@ -262,54 +262,77 @@ class AutoXDS:
         
     def auto_index(self, run_info):
         os.chdir(run_info['working_directory'])
-        _logger.info('Auto-indexing...')
+        _logger.info('Auto-indexing ...')
         jobs = 'IDXREF'
         io.write_xds_input(jobs, run_info)
         utils.execute_xds_par()
         info = parse_idxref()
         data = utils.diagnose_index(info)
-        #utils.print_table(data)
-        _retries = [0,0,0,0]
+        _retries = 0
         sigma = 6
-        while info.get('failure') and sum(_retries) < 10:
+        sepmin, clustrad = 6, 3
+        spot_size = 6
+        while info.get('failure') and _retries < 5:
+            _retries += 1
+            utils.backup_file('IDXREF.LP')
             # first correct detector origin
-            if data['percent_indexed'] < 70.0 or data['spot_deviation'] >= 3.0 and _retries[0] < 4:
-                _retries[0] +=1
-                _logger.info(':-( Not enough percentage of indexed spots!')
-                # filter out weaker spots and retry spots
-                spot_list = utils.load_spots()
-                sigma *= 1.5
-                spot_list = utils.filter_spots(spot_list, sigma=sigma)
-                utils.save_spots(spot_list)
-                _logger.info('Retrying with Sigma=%2.0f ...' % sigma)
-                utils.execute_xds_par()
-                info = parse_idxref()
-                data = utils.diagnose_index(info)
-            elif data['index_origin_delta'] > 6 and data['index_error_max'] > 0.05 and _retries[1] < 3:
-                _retries[1] +=1
-                _logger.info(':-( Index error too large!')
+            if data['index_error_max'] > 0.051:
+                _logger.info(':-( Indices deviate significantly from integral values!')
+                if data['distinct_subtrees'] > 0:
+                    #FIXME: in the future we should remove ice ring here
+                    sigma *= 1.5
+                    _logger.info('Retrying after removing spots with Sigma < %2.0f ...' % sigma)
+                    spot_list = utils.load_spots()
+                    spot_list = utils.filter_spots(spot_list, sigma=sigma)
+                    utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = parse_idxref()
+                    data = utils.diagnose_index(info)
+                else:
+                    spot_size *= 1.5
+                    sepmin *= 1.5
+                    clustrad *= 1.5
+                    new_params = {'min_spot_size':spot_size, 'min_spot_separation':sepmin, 'cluster_radius': clustrad}
+                    run_info.update(new_params)
+                    _logger.info('Adjusting spot size and separation parameters ...')
+                    io.write_xds_input('COLSPOT IDXREF', run_info)
+                    utils.execute_xds_par()
+                    info = parse_idxref()
+                    data = utils.diagnose_index(info)                  
+            elif data['index_origin_delta'] > 6:
+                _logger.info(':-( Index origin is not optimal!')
                 run_info['detector_origin'] = data['new_origin']
                 io.write_xds_input(jobs, run_info)
                 _logger.info('Retrying with adjusted detector origin %0.1f %0.1f ...' % run_info['detector_origin'])
                 utils.execute_xds_par()
                 info = parse_idxref()
                 data = utils.diagnose_index(info)
-            elif data['distinct_subtrees'] > 1 and _retries[2] < 3:
-                _retries[2] +=1
-                _logger.info(':-( More than one significant lattice found!')
-                spot_list = utils.load_spots()
-                spot_list = utils.filter_spots(spot_list, unindexed=True)
-                utils.save_spots(spot_list)
-                _logger.info('Retrying after removing spots from satellites ...')
-                utils.execute_xds_par()
-                info = parse_idxref()
-                data = utils.diagnose_index(info)
-            elif data['distinct_subtrees'] < 1:
-                _retries[-1] = 999
-                _logger.info(':-( No distict lattice could be found!')
+            elif data['percent_indexed'] < 70.0 or data['spot_deviation'] >= 3.0:
+                if data['percent_indexed'] < 70.0:
+                    _logger.info(':-( Not enough percentage of indexed spots!')
+                else:
+                    _logger.info(':-( Solution is not accurate!')
+                if data['primary_subtree'] >= 90:
+                    _logger.info('Retrying after removing unindexed alien spots ...')
+                    spot_list = utils.load_spots()
+                    spot_list = utils.filter_spots(spot_list, unindexed=True)
+                    utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = parse_idxref()
+                    data = utils.diagnose_index(info)
+                else:
+                    _logger.info('Retrying with Sigma=%2.0f ...' % sigma)
+                    spot_list = utils.load_spots()
+                    sigma *= 1.5
+                    spot_list = utils.filter_spots(spot_list, sigma=sigma)
+                    utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = parse_idxref()
+                    data = utils.diagnose_index(info)
             else:
-                _retries[-1] = 999
                 _logger.info(':-( Unrecognized problem with auto-indexing')
+                utils.print_table(data)
+                break
         if info.get('failure') is None:
             _logger.info(':-) Auto-indexing succeeded.')
             return {'success':True, 'data': info}
@@ -543,7 +566,7 @@ class AutoXDS:
             if not os.path.isdir(run_info['working_directory']):
                 os.mkdir(os.path.abspath(run_info['working_directory']))
             _logger.info("**** %s %s dataset: '%s' ****" % (description, adj, run_name))
-            _logger.info("==> Output: '%s'." % run_info['working_directory'])
+            #_logger.info("==> Output: '%s'." % run_info['working_directory'])
             run_result = {}
             run_result['parameters'] = run_info
             

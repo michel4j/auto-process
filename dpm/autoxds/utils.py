@@ -457,7 +457,8 @@ def load_spots(filename='SPOT.XDS'):
     try:
         spot_list = numpy.loadtxt(filename)
     except:
-        return None
+        from pylab import load
+        spot_list = load(filename, comments='!')
     return spot_list
 
 def save_spots(spot_list, filename='SPOT.XDS'):
@@ -472,16 +473,16 @@ def save_spots(spot_list, filename='SPOT.XDS'):
 
 def filter_spots(spot_list, sigma=0, unindexed=False):
     new_list = spot_list
-    def _zeros(a):
+    def _indexed(a):
         for v in a:
-            if abs(v)<0.01:
-                return False
-        return True
+            if abs(v)>0.01:
+                return True
+        return False
             
     if sigma > 0:
         new_list = [sp for sp in new_list if sp[3] > sigma ]
-    if unindexed and len(new_list[0] > 4):
-        new_list = [sp for sp in new_list if _zeros(sp[4:])]
+    if unindexed and len(new_list[0]) > 4:
+        new_list = [sp for sp in new_list if _indexed(sp[4:])]
     return new_list
         
 

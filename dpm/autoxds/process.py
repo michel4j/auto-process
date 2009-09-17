@@ -312,7 +312,7 @@ class AutoXDS:
                     _logger.info(':-( Not enough percentage of indexed spots!')
                 else:
                     _logger.info(':-( Solution is not accurate!')
-                if data['primary_subtree'] >= 90:
+                if data['primary_subtree'] < 90:
                     _logger.info('Retrying after removing unindexed alien spots ...')
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, unindexed=True)

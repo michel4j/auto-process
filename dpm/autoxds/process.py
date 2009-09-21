@@ -10,6 +10,8 @@ from dpm.parser.distl import parse_distl
 from dpm.parser.xds import parse_idxref, parse_correct, parse_xscale, parse_integrate
 from dpm.parser.best import parse_best
 from dpm.utils.log import get_module_logger, log_to_console
+from dpm.utils.prettytable import PrettyTable
+from dpm.parser.utils import Table
 import pprint
 from gnosis.xml import pickle
 
@@ -131,26 +133,18 @@ class AutoXDS:
             file_text += "Standard deviation of spot position:    %5.3f (pix)\n" % dset['correction']['summary']['stdev_spot']
             file_text += "Standard deviation of spindle position: %5.3f (deg)\n" % dset['correction']['summary']['stdev_spindle']
             file_text += '\n--- Statistics ---\n'
-            file_text += '\n%8s %8s %8s %8s %8s %8s %8s\n' % (
-                'Shell',
-                'Complete',
-                'R_meas',
-                'R_mrgd-F',
-                'I/Sigma',
-                'SigAno',
-                'AnoCorr'
-                )
             
-            for l in dset['correction']['statistics']:
-                file_text += '%8s %7.2f%% %7.2f%% %7.2f%% %8.2f %8.2f %8.1f\n' % (
-                    l['shell'],
-                    l['completeness'],
-                    l['r_meas'],
-                    l['r_mrgdf'],
-                    l['i_sigma'],
-                    l['sig_ano'],
-                    l['cor_ano']
-                    )
+            pt = PrettyTable()
+            tbl = Table(dset['correction']['statistics'])
+            pt.add_column('Resolution', tbl['shell'], 'r')
+            pt.add_column('Completeness', tbl['completeness'], 'r')
+            pt.add_column('R_meas', tbl['r_meas'], 'r')
+            pt.add_column('R_mrg-F', tbl['r_mrgdf'], 'r')
+            pt.add_column('I/Sigma', tbl['i_sigma'], 'r')
+            pt.add_column('SigAno', tbl['sig_ano'], 'r')
+            pt.add_column('AnoCorr', tbl['cor_ano'], 'r')
+                        
+            file_text += str(pt)
             resol = dset['correction']['resolution']
             file_text += "\nResolution cut-off from preliminary analysis (I/SigI>1.5):  %5.2f\n\n" % (resol)
             
@@ -159,25 +153,17 @@ class AutoXDS:
             if dset.get('scaling',None):
                 file_text += "\n--- SCALING ---\n"
                 file_text += '\n--- Statistics ---\n'
-                file_text += '\n%8s %8s %8s %8s %8s %8s %8s\n' % (
-                    'Shell',
-                    'Complete',
-                    'R_meas',
-                    'R_mrgd-F',
-                    'I/Sigma',
-                    'SigAno',
-                    'AnoCorr'
-                    )
-                for l in dset['scaling']['statistics']:
-                    file_text += '%8s %7.2f%% %7.2f%% %7.2f%% %8.2f %8.2f %8.1f\n' % (
-                        l['shell'],
-                        l['completeness'],
-                        l['r_meas'],
-                        l['r_mrgdf'],
-                        l['i_sigma'],
-                        l['sig_ano'],
-                        l['cor_ano']
-                        )
+                pt = PrettyTable()
+                tbl = Table(dset['scaling']['statistics'])
+                pt.add_column('Resolution', tbl['shell'], 'r')
+                pt.add_column('Completeness', tbl['completeness'], 'r')
+                pt.add_column('R_meas', tbl['r_meas'], 'r')
+                pt.add_column('R_mrg-F', tbl['r_mrgdf'], 'r')
+                pt.add_column('I/Sigma', tbl['i_sigma'], 'r')
+                pt.add_column('SigAno', tbl['sig_ano'], 'r')
+                pt.add_column('AnoCorr', tbl['cor_ano'], 'r')
+                        
+                file_text += str(pt)
             
             # Print out strategy information  
             if dset.get('strategy', None):

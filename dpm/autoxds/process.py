@@ -7,14 +7,14 @@ import os, sys, time
 
 from dpm.parser.pointless import parse_pointless
 from dpm.parser.distl import parse_distl
-from dpm.parser.xds import parse_idxref, parse_correct, parse_xscale, parse_integrate
+from dpm.parser import xds
 from dpm.parser.best import parse_best
 from dpm.utils.log import get_module_logger, log_to_console
 from dpm.utils.prettytable import PrettyTable
+from dpm.utils.progress import ProgDisplay, ProgChecker
 from dpm.parser.utils import Table
-import pprint
 from gnosis.xml import pickle
-
+import pprint
 import utils, io
 
 _logger = get_module_logger('AutoXDS')
@@ -252,7 +252,7 @@ class AutoXDS:
         jobs = 'IDXREF'
         io.write_xds_input(jobs, run_info)
         utils.execute_xds_par()
-        info = parse_idxref()
+        info = xds.parse_idxref()
         data = utils.diagnose_index(info)
         _retries = 0
         sigma = 6
@@ -272,7 +272,7 @@ class AutoXDS:
                     spot_list = utils.filter_spots(spot_list, sigma=sigma)
                     utils.save_spots(spot_list)
                     utils.execute_xds_par()
-                    info = parse_idxref()
+                    info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
                 else:
                     spot_size *= 1.5
@@ -283,7 +283,7 @@ class AutoXDS:
                     _logger.info('Adjusting spot size and separation parameters ...')
                     io.write_xds_input('COLSPOT IDXREF', run_info)
                     utils.execute_xds_par()
-                    info = parse_idxref()
+                    info = xds.parse_idxref()
                     data = utils.diagnose_index(info)                  
             elif data['index_origin_delta'] > 6:
                 _logger.info(':-( Index origin is not optimal!')
@@ -291,7 +291,7 @@ class AutoXDS:
                 io.write_xds_input(jobs, run_info)
                 _logger.info('Retrying with adjusted detector origin %0.1f %0.1f ...' % run_info['detector_origin'])
                 utils.execute_xds_par()
-                info = parse_idxref()
+                info = xds.parse_idxref()
                 data = utils.diagnose_index(info)
             elif data['percent_indexed'] < 70.0 or data['spot_deviation'] >= 3.0:
                 if data['percent_indexed'] < 70.0:
@@ -304,7 +304,7 @@ class AutoXDS:
                     spot_list = utils.filter_spots(spot_list, unindexed=True)
                     utils.save_spots(spot_list)
                     utils.execute_xds_par()
-                    info = parse_idxref()
+                    info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
                 else:
                     _logger.info('Retrying with Sigma=%2.0f ...' % sigma)
@@ -313,7 +313,7 @@ class AutoXDS:
                     spot_list = utils.filter_spots(spot_list, sigma=sigma)
                     utils.save_spots(spot_list)
                     utils.execute_xds_par()
-                    info = parse_idxref()
+                    info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
             else:
                 _logger.info(':-( Unrecognized problem with auto-indexing')
@@ -330,8 +330,15 @@ class AutoXDS:
         _logger.info('Integrating ...')
         jobs = "DEFPIX INTEGRATE"
         io.write_xds_input(jobs, run_info)
+        _pc = ProgChecker(self.cpu_count)
+        _pd = ProgDisplay(run_info['data_range'], _pc.queue)
+        _pd.start()
+        _pc.start()
         utils.execute_xds_par()
-        info = parse_integrate()
+        _pd.stop()
+        _pc.stop()
+        
+        info = xds.parse_integrate()
         
         if info.get('failure') is None:
             #_logger.info(':-) Integration succeeded.')
@@ -345,7 +352,7 @@ class AutoXDS:
         jobs = "CORRECT"
         io.write_xds_input(jobs, run_info)
         utils.execute_xds_par()
-        info = parse_correct()
+        info = xds.parse_correct()
         if info.get('statistics') is not None:
             if len(info['statistics']) > 1 and info.get('summary') is not None:
                 info['summary'].update( info['statistics'][-1] )
@@ -392,7 +399,10 @@ class AutoXDS:
         else:
             inputs = []
             for name, rres in self.results.items():
-                resol = rres['correction']['resolution']
+                if command == "screen":
+                    resol = 0.0
+                else:
+                    resol = rres['correction']['resolution']
                 in_file = rres['files']['correct']
                 inputs.append( {'input_file': in_file, 'resolution': resol} )
             sections = [
@@ -413,7 +423,7 @@ class AutoXDS:
         success = utils.execute_xscale()
 
         if len(output_file_list) == 1:
-            info = parse_xscale('XSCALE.LP', output_file_list[0])
+            info = xds.parse_xscale('XSCALE.LP', output_file_list[0])
             if info.get('statistics') is not None:
                 if len(info['statistics']) > 1:
                     info['summary'] = info['statistics'][-1]
@@ -421,7 +431,7 @@ class AutoXDS:
                 rres['scaling'] = info
         else:
             for ofile, rres in zip(output_file_list, self.results.values()):
-                info = parse_xscale('XSCALE.LP', ofile)
+                info = xds.parse_xscale('XSCALE.LP', ofile)
                 if info.get('statistics') is not None:
                     if len(info['statistics']) > 1:
                         info['summary'] = info['statistics'][-1]               
@@ -495,6 +505,26 @@ class AutoXDS:
             _logger.info('Output Files: %s' % ( ', '.join(out_files)))
             rres['files']['xdsconv'] = out_files               
 
+    def calc_strategy(self,run_info):
+        os.chdir(run_info['working_directory'])
+        utils.update_xparm()
+        _logger.info('Calculating Strategy ...')
+        jobs = "XPLAN"
+        _reso = 1.0 #self.results[run_info['dataset_name']]['correction']['resolution']
+        run_info['shells'] = utils.resolution_shells(_reso, 10)
+        io.write_xds_input(jobs, run_info)
+        success = utils.execute_xds_par()
+        info_x = xds.parse_xplan()
+        _logger.info('Calculating Strategy ...')
+        success = utils.execute_best(run_info['exposure_time'], self.options.get('anomalous', False))
+        info_b = parse_best('best.xml')
+        info_b['xplan'] = info_x
+        if not success:
+            _logger.error(':-( Strategy failed!')
+            return {'success': False, 'reason': None}
+        else:
+            return {'success': True, 'data': info_b}
+
     def get_fileinfo(self, run_info):
         if run_info['working_directory'] == self.top_directory:
             files = {
@@ -532,26 +562,24 @@ class AutoXDS:
                             subtree_skew, ice_rings)
         _logger.info("Dataset Score: %0.2f" % score)
         rres['crystal_score'] = score
-        
-
-            
+                  
     def run(self):
         
         t1 = time.time()
-        description = 'Processing'
-        adj = 'native'
+        description = 'PROCESSING'
+        adj = 'NATIVE'
         if self.options.get('command',None) == 'screen':
-            description = 'Characterizing'
+            description = 'CHARACTERIZING'
         elif self.options.get('command',None) == 'mad':
             adj = 'MAD'
         elif self.options.get('anomalous', False):
-            adj = 'anomalous'
+            adj = 'ANOMALOUS'
         _ref_run = None
-        _logger.info("Top Level Directory: '%s'." % self.top_directory)
+        _logger.info("Directory: '%s'" % self.top_directory)
         for run_name, run_info in self.dataset_info.items():
             if not os.path.isdir(run_info['working_directory']):
                 os.mkdir(os.path.abspath(run_info['working_directory']))
-            _logger.info("**** %s %s dataset: '%s' ****" % (description, adj, run_name))
+            _logger.info("%s %s DATASET: '%s'" % (description, adj, run_name))
             #_logger.info("==> Output: '%s'." % run_info['working_directory'])
             run_result = {}
             run_result['parameters'] = run_info
@@ -614,33 +642,32 @@ class AutoXDS:
             _out = self.correct(run_info)
             if not _out['success']:
                 _logger.error('Correction FAILED! Reason: %s' % _out.get('reason'))
-            run_result['correction'] = _out.get('data')
+            else:
+                run_result['correction'] = _out.get('data')
 
-            if self.options.get('command', None) == 'screen':
-                success = utils.execute_best(run_info['exposure_time'], self.options.get('anomalous', False))
-                if not success:
-                    print 'ERROR: Could not calculate Strategy!'
-                else:
-                    info = parse_best('best.xml')
-                    run_result['strategy'] = info
-                success = utils.execute_distl(run_info['reference_image'])
-                if success:
-                    info = parse_distl('distl.log')
-                    run_result['image_analysis'] = info
-                else:
-                    print 'ERROR: Image analysis failed!'
-                    run_result['image_analysis'] = {}
-                
-            
-            run_result['files'] = self.get_fileinfo(run_info)
-            if _ref_run is None:
-                _ref_run = run_name
-            self.results[run_name] = run_result 
-               
             # Select Cut-off resolution
             resol = utils.select_resolution( run_result['correction']['statistics'])
             run_result['correction']['resolution'] = resol
             
+            if self.options.get('command', None) == 'screen':
+                _out = self.calc_strategy(run_info)
+                if not _out['success']:
+                    _logger.error('Strategy FAILED! Reason: %s' % _out.get('reason'))
+                else:
+                    run_result['strategy'] = _out.get('data')
+#                success = utils.execute_distl(run_info['reference_image'])
+#                if success:
+#                    info = parse_distl('distl.log')
+#                    run_result['image_analysis'] = info
+#                else:
+#                    print 'ERROR: Image analysis failed!'
+#                    run_result['image_analysis'] = {}
+                                            
+            run_result['files'] = self.get_fileinfo(run_info)
+            if _ref_run is None:
+                _ref_run = run_name
+            self.results[run_name] = run_result 
+                           
             # Score dataset
             self.score_dataset(run_result)
         
@@ -652,5 +679,5 @@ class AutoXDS:
         self.save_log('process.log')
 
         elapsed = time.time() - t1
-        print "AutoXDS: Done. Total time used:  %d min %d sec"  % (int(elapsed/60), int(elapsed % 60))          
+        _logger.info("Done. Total time used:  %d min %d sec"  % (int(elapsed/60), int(elapsed % 60)))          
        

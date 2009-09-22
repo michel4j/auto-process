@@ -3,11 +3,14 @@ BEST xml output parsing functions
 
 """
 import xml.dom.minidom
+import os
 
 def parse_best(filename):
     """read BEST XML output returns a dictionary"""
-    doc = xml.dom.minidom.parse(filename)
     summary = {}
+    if not os.path.exists(filename):
+        return summary
+    doc = xml.dom.minidom.parse(filename)
     summary['runs'] = []
     summary['prediction_all'] = {}
     summary['prediction_hi'] = {}
@@ -23,7 +26,9 @@ def parse_best(filename):
                     for item in subnode.getElementsByTagName('item'):
                         key = item.getAttribute('name')
                         value = item.firstChild.nodeValue
-                        summary[key] = float(value)
+                        if key != 'resolution_reasoning':
+                            value = float(value)
+                        summary[key] = value
                 if name == 'collection_run':
                     run = {}
                     run[u'number'] = int(index)

@@ -70,6 +70,21 @@ CRYSTAL_SYSTEMS = {
     'h':'rhombohedral',
     'c':'cubic'
     }                    
+
+def resolution_shells(resolution, num=10.0):
+    
+    def _angle(resol):
+        return numpy.arcsin( 0.5 * 1.0 / resol )
+        
+    def _resol(angl):
+        return round(0.5 * 1.0 / numpy.sin (angl),2)
+                 
+    max_angle = _angle( resolution )
+    min_angle = _angle( 25.0)
+    angles = numpy.linspace(min_angle, max_angle, num)
+    return map(_resol, angles)
+
+
 def get_character(sg_number=1):
     return [k for k, v in POINT_GROUPS.items() if sg_number in v][0]
     
@@ -298,11 +313,10 @@ def execute_pointless():
 def execute_best(time, anomalous=False):
     anom_flag = ''
     if anomalous:
-        anom_flag = '-a'       
-    command  = "best -t %f -i2s 1.5 -q -pl best.plan" % time
+        anom_flag = '-a'
+    command  = "best -t %f -i2s 1.5" % time
     command += " -e none -M 1 -w 0.2 %s -dna best.xml" % anom_flag
-    command += " -xds CORRECT.LP BKGPIX.pck XDS_ASCII.HKL >> best.log" 
-    
+    command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL >> best.log" 
     sts, output = commands.getstatusoutput(command)
     return sts==0
 
@@ -383,6 +397,11 @@ def check_spots():
 def check_index():
     file_list = ['XPARM.XDS','SPOT.XDS', 'IDXREF.LP']
     return _files_exist(file_list)
+
+def update_xparm():
+    if os.path.exists('GXPARM.XDS'):
+        backup_file('XPARM.XDS')
+        shutil.copy('GXPARM.XDS', 'XPARM.XDS')
     
 def diagnose_index(info):
     data = {}

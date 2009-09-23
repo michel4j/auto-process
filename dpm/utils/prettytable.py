@@ -240,7 +240,7 @@ class PrettyTable(object):
         Arguments:
 
         fields - list or tuple of field names"""
-    @cache_clearing
+    #@cache_clearing
     def _set_field_names(self, val):
         # We *may* need to change the widths if this isn't the first time
         # setting the field names.  This could certainly be done more
@@ -255,7 +255,7 @@ class PrettyTable(object):
 
     def _get_align(self):
         return self._align
-    @cache_clearing
+    #@cache_clearing
     def _set_align(self, val):
         self._validate_align(val)
         for field in self._field_names:
@@ -520,7 +520,7 @@ class PrettyTable(object):
     # DATA INPUT METHODS         #
     ##############################
 
-    @cache_clearing
+    #@cache_clearing
     def add_row(self, row):
 
         """Add a row to the table
@@ -537,7 +537,7 @@ class PrettyTable(object):
             if len(unicode(row[i])) > self._widths[i]:
                 self._widths[i] = len(unicode(row[i]))
 
-    @cache_clearing
+    #@cache_clearing
     def del_row(self, row_index):
 
         """Delete a row to the table
@@ -551,7 +551,7 @@ class PrettyTable(object):
         del self._rows[row_index]
         self._recompute_widths()
 
-    @cache_clearing
+    #@cache_clearing
     def add_column(self, fieldname, column, align="c"):
 
         """Add a column to the table.
@@ -577,7 +577,7 @@ class PrettyTable(object):
         else:
             raise Exception("Column length %d does not match number of rows %d!" % (len(column), len(self._rows)))
 
-    @cache_clearing
+    #@cache_clearing
     def clear_rows(self):
 
         """Delete all rows from the table but keep the current field names"""
@@ -585,7 +585,7 @@ class PrettyTable(object):
         self._rows = []
         self._widths = [len(unicode(field_name)) for field_name in self._field_names]
 
-    @cache_clearing
+    #@cache_clearing
     def clear(self):
 
         """Delete all rows and field names from the table, maintaining nothing but styling options"""

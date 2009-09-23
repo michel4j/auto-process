@@ -20,8 +20,22 @@ def parse_xplan(filename='XPLAN.LP'):
     return utils.parse_file(filename, config='xplan.ini')
 
 
-def parse_xscale(filename='XSCALE.LP', output_file='XSCALE.HKL'):
-    info = utils.parse_file(filename, config='xscale.ini')
+def parse_xscale(filename='XSCALE.LP'):
+    data = file(filename).read()
+    # extract separate sections corresponding to different datasets
+    _st_p = re.compile('(STATISTICS OF SCALED OUTPUT DATA SET : ([\w-]*)/?XSCALE.HKL.+?STATISTICS OF INPUT DATA SET [=\s]*)', re.DOTALL)
+    _wl_p = re.compile('(WILSON STATISTICS OF SCALED DATA SET: ([\w-]*)/?XSCALE.HKL\s+[*]{78}.+?(?:List of|\s+[*]{78}|cpu time))', re.DOTALL)
+    data_sections = {}
+    for d,k in _st_p.findall(data):
+        data_sections[k] = d
+    for d,k in _wl_p.findall(data):
+        data_sections[k] += d
+    info = {}
+    for k, d in data_sections.items():
+        info[k] = utils.parse_data(d, config='xscale.ini')
+        if info[k].get('statistics') is not None:
+            if len(info[k]['statistics']) > 1:
+                info[k]['summary'] = info[k]['statistics'][-1]             
     return info
 
 def parse_integrate(filename='INTEGRATE.LP'):

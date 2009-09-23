@@ -263,6 +263,12 @@ def parse_file(filename, config):
     info = _process_sections(data, conf)
     return info
 
+def parse_data(data, config):
+    conf = ConfigObj(os.path.join(INI_DIR, config))    
+    info = _process_sections(data, conf)
+    return info
+    
+
 class Table(object):
     def __init__(self, t):
         self._table = t

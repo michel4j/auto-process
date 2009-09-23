@@ -61,7 +61,7 @@ class AutoXDS:
         fh = open(filename, 'w')
         file_text = ""
         for dataset_name, dset in self.results.items():
-            file_text += "###--- Results for data in %s\n" % dataset_name
+            file_text += "\n###--- Results for data in %s\n" % dataset_name
             img_anal_res = dset.get('image_analysis', None)
             file_text += '\n CRYSTAL SCORE %8.3f \n' % dset['crystal_score']
             if img_anal_res is not None:
@@ -150,9 +150,9 @@ class AutoXDS:
             
 
             # Print out scaling results
-            if dset.get('scaling',None):
+            if dset.get('scaling', None):
                 file_text += "\n--- SCALING ---\n"
-                file_text += '\n--- Statistics ---\n'
+                file_text += '\n--- Statistics of scaled output data set ---\n'
                 pt = PrettyTable()
                 tbl = Table(dset['scaling']['statistics'])
                 pt.add_column('Resolution', tbl['shell'], 'r')
@@ -421,21 +421,13 @@ class AutoXDS:
         
         io.write_xscale_input(xscale_options)
         success = utils.execute_xscale()
-
-        if len(output_file_list) == 1:
-            info = xds.parse_xscale('XSCALE.LP', output_file_list[0])
-            if info.get('statistics') is not None:
-                if len(info['statistics']) > 1:
-                    info['summary'] = info['statistics'][-1]
-            for name, rres in self.results.items():            
-                rres['scaling'] = info
+        raw_info = xds.parse_xscale('XSCALE.LP')
+        
+        if len(raw_info.keys()) == 1:
+            self.results.values()[-1]['scaling'] =  raw_info.values()[0]     
         else:
-            for ofile, rres in zip(output_file_list, self.results.values()):
-                info = xds.parse_xscale('XSCALE.LP', ofile)
-                if info.get('statistics') is not None:
-                    if len(info['statistics']) > 1:
-                        info['summary'] = info['statistics'][-1]               
-                rres['scaling'] = info
+            for name, info in raw_info.items():
+                self.results[name]['scaling'] = info
         if not success:
             _logger.error(':-( Scaling failed!')
             return {'success': False, 'reason': None}

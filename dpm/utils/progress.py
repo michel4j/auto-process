@@ -119,7 +119,7 @@ class ProgChecker(object):
             self.queue = queue
         self._stopped = False
         self._initialized = False
-        self._chunk_pattern =re.compile(r'[*]{78}\n\s+PROCESSING OF IMAGES\s+(\d{1,5})\s+[.]{3}\s+(\d{1,5})\n [*]{78}\n', re.DOTALL)
+        self._chunk_pattern =re.compile(r'\s+PROCESSING OF IMAGES\s+(\d{1,5})\s+[.]{3}\s+(\d{1,5})\n [*]{78}.+?REFLECTION INTENSITIES INTEGRATED BY PROFILE FITTING', re.DOTALL)
         
     
     def stop(self):

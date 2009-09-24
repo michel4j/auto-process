@@ -259,8 +259,10 @@ class AutoXDS:
         sepmin, clustrad = 6, 3
         spot_size = 6
         while info.get('failure') and _retries < 5:
+            utils.print_table(data)
             _retries += 1
             utils.backup_file('IDXREF.LP')
+            utils.backup_file('SPOT.XDS')
             # first correct detector origin
             if data['index_error_max'] > 0.051:
                 _logger.info(':-( Indices deviate significantly from integral values!')

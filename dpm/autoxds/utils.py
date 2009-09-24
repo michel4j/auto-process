@@ -182,6 +182,8 @@ def get_dataset_params(img_file, screen=False):
     else:
         info['data_range'] = (first_frame, first_frame + frame_count - 1)
     
+    #info['spot_range'] = [info['data_range']]
+    
     # initialize default dummy values for other parameters
     info['reindex_matrix'] = None
     info['unit_cell'] = (0,0,0,0,0,0)
@@ -413,6 +415,8 @@ def diagnose_index(info):
         _spots = _summary.get('selected_spots')
         _refl = _summary.get('indexed_spots')
         data['indexed_spots'] = _refl
+        data['percent_overlap'] = 100.0 * _summary.get('rejects_overlap')/_refl
+        data['percent_too_far'] = 100.0 * _summary.get('rejects_far')/_refl
 
     # get percent of indexed reflections
     data['percent_indexed'] = None
@@ -453,7 +457,9 @@ def diagnose_index(info):
     data['spot_deviation'] = None
     if _summary  is not None:
         data['spot_deviation'] = info['summary'].get('stdev_spot')
-       
+    
+    # get rejects
+      
     data['cluster_dimension'] = info.get('cluster_dimension')
     
     # get quality of selected index origin
@@ -510,6 +516,6 @@ def backup_file(filename):
         index = 0
         while os.path.exists('%s.%0d' % (filename, index)):
             index += 1
-        shutil.move(filename, '%s.%0d' % (filename, index))
+        shutil.copy(filename, '%s.%0d' % (filename, index))
     return
         

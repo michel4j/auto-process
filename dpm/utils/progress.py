@@ -119,7 +119,7 @@ class ProgChecker(object):
             self.queue = queue
         self._stopped = False
         self._initialized = False
-        self._chunk_pattern =re.compile(r'\s+PROCESSING OF IMAGES\s+(\d{1,5})\s+[.]{3}\s+(\d{1,5})\n [*]{78}.+?REFLECTION INTENSITIES INTEGRATED BY PROFILE FITTING', re.DOTALL)
+        self._chunk_pattern =re.compile('\s+PROCESSING OF IMAGES\s+(\d{1,5})\s+[.]{3}\s+(\d{1,5})\n [*]{78}', re.DOTALL)
         
     
     def stop(self):
@@ -127,10 +127,11 @@ class ProgChecker(object):
     
     def _process_chunks(self):
         for fn, chunk in self.file_data.items():
-            batches =  self._chunk_pattern.findall(chunk)
-            self.file_data[fn] = self._chunk_pattern.sub(chunk, '')
-            for batch in batches:
-                self.queue.put(map(int, batch))
+            batches =  self._chunk_pattern.search(chunk)
+            if batches is not None:
+                self.file_data[fn] = self._chunk_pattern.sub(chunk, '')
+                for batch in batches:
+                    self.queue.put(map(int, batch))
 
     def start(self):
         self._stopped = False

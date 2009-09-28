@@ -7,6 +7,7 @@ options:
     --mad, -m : Process each set, scale together and generate separate reflection files.
     --screen, -s : Process a few frames from characterize crystal from each set.
     --anom, -a : Process with Friedel's law False
+    --backup, -b : Backup previous directory if exists
     --prefix=p1,p2,p3 : comma separated list of prefixes to use for output files. 
             Default is first part of image name
             prefix order should correspond to the order of the data sets
@@ -40,7 +41,7 @@ def usage():
     
 def main():
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], "msah", ["help", "dir=", "mad","screen","anom","prefix="])
+        opts, args = getopt.gnu_getopt(sys.argv[1:], "msahb", ["help", "dir=", "mad","screen","anom", "backup", "prefix="])
     except getopt.error, msg:
         print "ERROR: ", msg
         usage()
@@ -62,6 +63,8 @@ def main():
             options['command'] = 'screen'
         if o in ('--dir'):
             options['directory'] = a
+        if o in ('-b', '--backup'):
+            options['backup'] = True
         if o in ('--prefix'):
             options['prefix'] = a.split(',')
             if len(options['prefix']) < len(args):

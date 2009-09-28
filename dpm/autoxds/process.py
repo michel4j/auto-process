@@ -28,32 +28,37 @@ class AutoXDS:
         self.dataset_info = {}
         self.cpu_count = utils.get_cpu_count()
         _logger.info('Using %d CPUs.' % self.cpu_count)
-        if is_screening:
-            workdir_prefix = 'screen'
-        else: 
-            workdir_prefix = 'process'
-        self.top_directory = utils.prepare_work_dir(
-                self.options.get('directory', './'),
-                workdir_prefix
-                )
-        # for multiple data sets process each in a separate subdirectory
-        if len(self.options['images']) == 1:
-            img = self.options.get('images')[0]
+
+        # prepare dataset info
+        for i, img in enumerate(self.options['images']):
             run_info = utils.get_dataset_params(img, is_screening)
             run_info['cpu_count'] = self.cpu_count
             if self.options.get('prefix'):
-                run_info['dataset_name'] = self.options['prefix'][0]
-            run_info['working_directory'] = self.top_directory
+                run_info['dataset_name'] = self.options['prefix'][i]
             self.dataset_info[run_info['dataset_name']] =  run_info
+        
+        # prepare top level working directory
+        if is_screening:
+            _suffix = 'scrn'
+        else: 
+            _suffix = 'proc'
+        _prefix = os.path.commonprefix(self.dataset_info.keys())
+        if _prefix == '':
+            _prefix = '_'.join(self.dataset_info.keys())
+        elif _prefix[-1] == '_':
+            _prefix = _prefix[:-1]
+        work_dir = '%s-%s' % (_prefix, _suffix)
+        self.top_directory = utils.prepare_work_dir(
+                self.options.get('directory', './'),  work_dir)
+        
+        # for multiple data sets, process each in a separate subdirectory
+        if len(self.dataset_info.keys()) ==1:
+            for name, run_info in self.dataset_info.items():
+                run_info['working_directory'] = self.top_directory
         else:   
-            for i, img in enumerate(self.options['images']):
-                run_info = utils.get_dataset_params(img, is_screening)
-                run_info['cpu_count'] = self.cpu_count
-                if self.options.get('prefix'):
-                    run_info['dataset_name'] = self.options['prefix'][i]
+            for name, run_info in self.dataset_info.items():
                 run_info['working_directory'] = os.path.join(self.top_directory,
                                                              run_info['dataset_name'])
-                self.dataset_info[run_info['dataset_name']] =  run_info
         os.chdir(self.top_directory)
         
     def save_log(self, filename='autoxds.log'):
@@ -258,71 +263,63 @@ class AutoXDS:
         sigma = 6
         sepmin, clustrad = 6, 3
         spot_size = 6
+                
         while info.get('failure') and _retries < 5:
             utils.print_table(data)
             _retries += 1
             utils.backup_file('IDXREF.LP')
             utils.backup_file('SPOT.XDS')
-            # first correct detector origin
-            if data['index_error_max'] > 0.051:
-                _logger.info(':-( Indices deviate significantly from integral values!')
-                if data['distinct_subtrees'] > 0:
-                    #FIXME: in the future we should remove ice ring here
-                    sigma *= 1.5
-                    _logger.info('Retrying after removing spots with Sigma < %2.0f ...' % sigma)
-                    spot_list = utils.load_spots()
-                    spot_list = utils.filter_spots(spot_list, sigma=sigma)
-                    utils.save_spots(spot_list)
-                    utils.execute_xds_par()
-                    info = xds.parse_idxref()
-                    data = utils.diagnose_index(info)
-                else:
-                    spot_size *= 1.5
-                    sepmin *= 1.5
-                    clustrad *= 1.5
-                    new_params = {'min_spot_size':spot_size, 'min_spot_separation':sepmin, 'cluster_radius': clustrad}
-                    run_info.update(new_params)
-                    _logger.info('Adjusting spot size and separation parameters ...')
-                    io.write_xds_input('COLSPOT IDXREF', run_info)
-                    utils.execute_xds_par()
-                    info = xds.parse_idxref()
-                    data = utils.diagnose_index(info)                  
-            elif data['index_origin_delta'] > 6:
-                _logger.info(':-( Index origin is not optimal!')
-                run_info['detector_origin'] = data['new_origin']
-                io.write_xds_input(jobs, run_info)
-                _logger.info('Retrying with adjusted detector origin %0.1f %0.1f ...' % run_info['detector_origin'])
+
+            if data['quality_code'] in [1, 2, 3, 7, 134, 135]:
+                _logger.info(':-( Removing alien spots ...')
+                spot_list = utils.load_spots()
+                spot_list = utils.filter_spots(spot_list, unindexed=True)
+                utils.save_spots(spot_list)
                 utils.execute_xds_par()
                 info = xds.parse_idxref()
                 data = utils.diagnose_index(info)
-            elif data['percent_indexed'] < 70.0 or data['spot_deviation'] >= 3.0:
-                if data['percent_indexed'] < 70.0:
-                    _logger.info(':-( Not enough percentage of indexed spots!')
-                else:
-                    _logger.info(':-( Solution is not accurate!')
-                if data['primary_subtree'] < 90:
-                    _logger.info('Retrying after removing unindexed alien spots ...')
-                    spot_list = utils.load_spots()
-                    spot_list = utils.filter_spots(spot_list, unindexed=True)
-                    utils.save_spots(spot_list)
-                    utils.execute_xds_par()
-                    info = xds.parse_idxref()
-                    data = utils.diagnose_index(info)
-                else:
-                    _logger.info('Retrying with Sigma=%2.0f ...' % sigma)
-                    spot_list = utils.load_spots()
-                    sigma *= 1.5
-                    spot_list = utils.filter_spots(spot_list, sigma=sigma)
-                    utils.save_spots(spot_list)
-                    utils.execute_xds_par()
-                    info = xds.parse_idxref()
-                    data = utils.diagnose_index(info)
+            elif data['quality_code'] in [6]:
+                sigma *= 2
+                _logger.info(':-( Removing weak spots (Sigma < %2.0f) ...' % sigma)
+                spot_list = utils.load_spots()
+                spot_list = utils.filter_spots(spot_list, sigma=sigma)
+                utils.save_spots(spot_list)
+                utils.execute_xds_par()
+                info = xds.parse_idxref()
+                data = utils.diagnose_index(info)
+            elif data['quality_code'] in [162]:
+                run_info['detector_origin'] = data['new_origin']
+                _logger.info(':-( Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
+                io.write_xds_input(jobs, run_info)
+                utils.execute_xds_par()
+                info = xds.parse_idxref()
+                data = utils.diagnose_index(info)
+            elif data['quality_code'] in [199] and _retries == 1:
+                _logger.info(':-( Finding more spots ...')
+                run_info['spot_range'] = [run_info['data_range']]
+                io.write_xds_input('COLSPOT IDXREF', run_info)
+                utils.execute_xds_par()
+                info = xds.parse_idxref()
+                data = utils.diagnose_index(info)               
+            elif data['quality_code'] in [199]:
+                _logger.info(':-( Adjusting spot parameters ...')
+                spot_size *= 1.5
+                sepmin *= 1.5
+                clustrad *= 1.5
+                new_params = {'min_spot_size':spot_size, 'min_spot_separation':sepmin, 'cluster_radius': clustrad}
+                run_info.update(new_params)
+                io.write_xds_input('COLSPOT IDXREF', run_info)
+                utils.execute_xds_par()
+                info = xds.parse_idxref()
+                data = utils.diagnose_index(info)                  
+                
             else:
-                _logger.info(':-( Unrecognized problem with auto-indexing')
-                utils.print_table(data)
-                break
+                _logger.info(':-( Unrecogmized quality Code [%d]...'% data['quality_code'])
+                _retries = 5
+
         if info.get('failure') is None:
             _logger.info(':-) Auto-indexing succeeded.')
+            utils.print_table(data)
             return {'success':True, 'data': info}
         else:
             return {'success':False, 'reason': info['failure']}

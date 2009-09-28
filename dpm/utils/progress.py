@@ -127,7 +127,7 @@ class ProgChecker(object):
     
     def _process_chunks(self):
         for fn, chunk in self.file_data.items():
-            batches =  self._chunk_pattern.search(chunk)
+            batches =  self._chunk_pattern.findall(chunk)
             if batches is not None:
                 self.file_data[fn] = self._chunk_pattern.sub(chunk, '')
                 for batch in batches:
@@ -178,13 +178,14 @@ class ProgChecker(object):
 #spinner="▏▎▍▌▋▊▉█▉▊▌▍▎" #utf8
 class ProgDisplay(threading.Thread):
     ESC = chr(27)
-    spinner="▁▂▃▄▅▆▇█▇▆▅▄▃▂" #utf8
+    #spinner="▁▂▃▄▅▆▇█▇▆▅▄▃▂" #utf8
+    spinner="⇐⇖⇑⇗⇒⇘⇓⇙" #utf8
     def __init__(self, data_range, q):
         threading.Thread.__init__(self)
         self.queue = q
         self.total = data_range[1] - data_range[0]
         self.data_range = data_range
-        self.length = 50
+        self.length = 56
         self._cursor = False
         self._stopped = False
         self.chars=[c.encode("utf-8") for c in unicode(self.spinner,"utf-8")]

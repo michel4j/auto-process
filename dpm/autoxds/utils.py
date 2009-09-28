@@ -106,24 +106,29 @@ def _all_files(root, patterns='*'):
 def get_cpu_count():
     return os.sysconf('SC_NPROCESSORS_ONLN')
 
-def prepare_work_dir(work_dir_parent, prefix='xds'):
+def prepare_work_dir(work_dir_parent, prefix='xds', backup=False):
     """ 
     Creates a work dir for AutoXDS to run. Increments run number if 
     directory already exists.
     
     """
     
-    count = 0
-    workdir = "%s/%s-%d" % (work_dir_parent, prefix, count)
+    workdir = "%s/%s" % (work_dir_parent, prefix)
     exists = os.path.isdir(workdir)
     
-    while exists:
-        count += 1
-        workdir = "%s/%s-%d" % (work_dir_parent, prefix, count)
-        exists = os.path.isdir(workdir)
+    if not exists:
+        os.makedirs(workdir)
+    elif backup:
+        count = 0
+        while exists:
+            count += 1
+            bkdir = "%s/%s.%02d" % (work_dir_parent, prefix, count)
+            exists = os.path.isdir(bkdir)
+        shutil.move(workdir, bkdir)
+        os.makedirs(workdir)
 
-    os.makedirs(workdir)
     return workdir
+
     
 def get_dataset_params(img_file, screen=False):
     """ 
@@ -131,8 +136,7 @@ def get_dataset_params(img_file, screen=False):
     returns a dictionary of results
     
     """
-    reference_image = os.path.abspath(img_file)
-    directory, filename = os.path.split(reference_image)
+    directory, filename = os.path.split(os.path.abspath(img_file))
 
     file_pattern = re.compile('^(.*)([_.])(\d+)(\..+)?$')
     fm = file_pattern.search(filename)
@@ -151,12 +155,16 @@ def get_dataset_params(img_file, screen=False):
 
     file_list = list( _all_files(directory, xds_template) )
     fm = file_pattern.search(file_list[0])
+
+    reference_image = os.path.join(directory, file_list[0])
+    print reference_image
+    
     parts = fm.groups()
     first_frame = int (parts[2])
     if first_frame == 0: first_frame = 1
     frame_count = len(file_list)
     
-    info = marccd.read_header(img_file)
+    info = marccd.read_header(reference_image)
     info['dataset_name'] = _dataset_name
     info['file_template'] = "%s/%s" % (directory, xds_template)        
     
@@ -257,7 +265,7 @@ def select_resolution(table):
         else:
             break
     if pos < len(shells) and shells[pos]['i_sigma'] <= -99.0:
-        resol = shell[-1]['shell']
+        resol = shells[-1]['shell']
     
     return float(resol)
 
@@ -288,20 +296,20 @@ def select_lattices(table):
     
 
 def execute_xds():
-    sts, output = commands.getstatusoutput('xds >> xds.log')
+    sts, output = commands.getstatusoutput('nice xds >> xds.log')
     return sts==0
 
 def execute_xds_par():
-    sts, output = commands.getstatusoutput('xds_par >> xds.log')
+    sts, output = commands.getstatusoutput('nice xds_par >> xds.log')
     return sts==0
 
 
 def execute_xscale():
-    sts, output = commands.getstatusoutput('xscale_par >> xds.log')
+    sts, output = commands.getstatusoutput('nice xscale_par >> xds.log')
     return sts==0
 
 def execute_xdsconv():
-    sts, output = commands.getstatusoutput('xdsconv >> xds.log')
+    sts, output = commands.getstatusoutput('nice xdsconv >> xds.log')
     return sts==0
 
 def execute_f2mtz():
@@ -309,14 +317,14 @@ def execute_f2mtz():
     return sts==0
        
 def execute_pointless():
-    sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> xds.log')
+    sts, output = commands.getstatusoutput('nice pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> xds.log')
     return sts==0
 
 def execute_best(time, anomalous=False):
     anom_flag = ''
     if anomalous:
         anom_flag = '-a'
-    command  = "best -t %f -i2s 1.5" % time
+    command  = "nice best -t %f -i2s 1.5" % time
     command += " -e none -M 1 -w 0.2 %s -dna best.xml" % anom_flag
     command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL >> best.log" 
     sts, output = commands.getstatusoutput(command)
@@ -355,7 +363,7 @@ def energy_to_wavelength(energy): #Angstroms
 	return (h*c)/(energy)
 
 def air(e):
-    p = [  1.00000857e+00,  -3.10243288e-04,   3.01020914e+00]    
+    p = [ 1.00000857e+00,  -3.10243288e-04,   3.01020914e+00]    
     return 1.0 - (p[0] * exp( p[1] * (e**p[2])))
 
 def _files_exist(file_list):
@@ -406,7 +414,17 @@ def update_xparm():
         shutil.copy('GXPARM.XDS', 'XPARM.XDS')
     
 def diagnose_index(info):
+    # quality_code is integer factors
+    # 1 = spot deviation bad
+    # 2 = percent indexed < 70
+    # 4 = cluster index error > 0.051
+    # 8 = cluster dimension < 3
+    # 16 = not enough spots
+    # 32 = more than one distinct subtree
+    # 64 = no distinct subtree
+    # 128 = index origin delta > 6
     data = {}
+    data['quality_code'] = 0
     _refl = _spots = None
     _st = info.get('subtrees')
     _local_spots = info.get('local_indexed_spots')
@@ -419,17 +437,18 @@ def diagnose_index(info):
         data['percent_too_far'] = 100.0 * _summary.get('rejects_far')/_refl
 
     # get percent of indexed reflections
-    data['percent_indexed'] = None
-    data['primary_subtree'] = None
+    data['percent_indexed'] = 0.0
+    data['primary_subtree'] = 0.0
     if _refl is not None and _st is not None and len(_st)>3:
         data['primary_subtree'] = 100.0 * _st[0].get('population')/float(_local_spots)
     
     if _spots is not None:
         data['percent_indexed'] = 100.0 * _spots/_refl
+    if data['percent_indexed'] < 70 : data['quality_code'] |= 2
     
     # get number of subtrees
-    data['distinct_subtrees'] = None
-    data['satellites'] = None
+    data['distinct_subtrees'] = 0
+    data['satellites'] = 0
     if _st is not None and len(_st) > 0 and _refl is not None:
         data['distinct_subtrees'] = 0
         data['satellites'] = 0
@@ -441,41 +460,48 @@ def diagnose_index(info):
                 data['satellites']  += 1
             else:
                 break
-
+    if data['distinct_subtrees'] > 1 :
+        data['quality_code'] |= 32
+    elif data['distinct_subtrees'] == 0 :
+        data['quality_code'] |= 64
+        
     # get max, std deviation of integral indices
     _indices = info.get('cluster_indices')
-    data['index_error_max'] = None
-    data['index_error_stdev'] = None 
+    data['index_error_max'] = 999.
+    data['index_error_mean'] = 999. 
     if _indices is not None and len(_indices) > 0:
         t = Table(_indices)
         _index_array = numpy.array(t['hkl'])
         _index_err = abs(_index_array - _index_array.round())
         data['index_error_max'] = _index_err.max()
-        data['index_error_stdev'] = _index_err.std()
+        data['index_error_mean'] = _index_err.mean()
+    if data['index_error_mean'] > 0.05 : data['quality_code'] |= 4
     
     # get spot deviation 
-    data['spot_deviation'] = None
+    data['spot_deviation'] = 999.
     if _summary  is not None:
         data['spot_deviation'] = info['summary'].get('stdev_spot')
+    if data['spot_deviation'] > 3 : data['quality_code'] |= 1
     
     # get rejects
       
-    data['cluster_dimension'] = info.get('cluster_dimension')
+    data['cluster_dimension'] = info.get('cluster_dimension', 0)
+    if data['cluster_dimension'] < 3 : data['quality_code'] |= 8
     
     # get quality of selected index origin
     _origins = info.get('index_origins')
     _sel_org = info.get('selected_origin')
-    data['index_origin_delta'] = None
+    data['index_origin_delta'] = 999.
     data['new_origin'] = None
-    #data['index_deviation'] = None
     if _sel_org is not None and _origins is not None and len(_origins)>0:
         for _org in _origins:
             if _org['index_origin'] == _sel_org:
                 data['index_origin_delta'] = _org.get('delta')
                 data['new_origin'] = _org.get('position')
                 #data['index_deviation'] = _org.get('deviation')
-                break
-            
+                break    
+    if data['index_origin_delta'] > 6 : data['quality_code'] |= 128
+    
     return data
 
 def load_spots(filename='SPOT.XDS'):

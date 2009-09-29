@@ -7,7 +7,7 @@ options:
     --mad, -m : Process each set, scale together and generate separate reflection files.
     --screen, -s : Process a few frames from characterize crystal from each set.
     --anom, -a : Process with Friedel's law False
-    --backup, -b : Backup previous directory if exists
+    --backup, -b : Backup previous output directory if it exists
     --prefix=p1,p2,p3 : comma separated list of prefixes to use for output files. 
             Default is first part of image name
             prefix order should correspond to the order of the data sets

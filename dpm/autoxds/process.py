@@ -49,7 +49,7 @@ class AutoXDS:
             _prefix = _prefix[:-1]
         work_dir = '%s-%s' % (_prefix, _suffix)
         self.top_directory = utils.prepare_work_dir(
-                self.options.get('directory', './'),  work_dir)
+                self.options.get('directory', './'),  work_dir, backup=self.options.get('backup', False))
         
         # for multiple data sets, process each in a separate subdirectory
         if len(self.dataset_info.keys()) ==1:
@@ -171,7 +171,7 @@ class AutoXDS:
                 file_text += str(pt)
             
             # Print out strategy information  
-            if dset.get('strategy', None):
+            if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
                 file_text  += "\n--- STRATEGY ---\n\n"
                 file_text  += '--- Recommended Strategy for Data Collection ---\n\n'
                 all_runs = []
@@ -263,14 +263,17 @@ class AutoXDS:
         sigma = 6
         sepmin, clustrad = 6, 3
         spot_size = 6
-                
+        _all_images = False
+               
         while info.get('failure') and _retries < 5:
             _logger.debug(utils.print_table(data))
+            if run_info['spot_range'][0] == run_info['data_range']:
+                _all_images == True
             _retries += 1
             utils.backup_file('IDXREF.LP')
             utils.backup_file('SPOT.XDS')
 
-            if data['quality_code'] in [1, 2, 3, 7, 134, 135]:
+            if data['quality_code'] in [1, 2, 3, 7, 134, 135, 34]:
                 _logger.warning(':-( Removing alien spots ...')
                 spot_list = utils.load_spots()
                 spot_list = utils.filter_spots(spot_list, unindexed=True)
@@ -294,7 +297,7 @@ class AutoXDS:
                 utils.execute_xds_par()
                 info = xds.parse_idxref()
                 data = utils.diagnose_index(info)
-            elif data['quality_code'] in [199] and _retries == 1:
+            elif data['quality_code'] in [199] and not _all_images:
                 _logger.warning(':-( Finding more spots ...')
                 run_info['spot_range'] = [run_info['data_range']]
                 io.write_xds_input('COLSPOT IDXREF', run_info)
@@ -557,11 +560,12 @@ class AutoXDS:
     def run(self):
         
         t1 = time.time()
-        description = 'PROCESSING'
         adj = 'NATIVE'
         if self.options.get('command',None) == 'screen':
             description = 'CHARACTERIZING'
-        elif self.options.get('command',None) == 'mad':
+        else:
+            description = 'PROCESSING'
+        if self.options.get('command',None) == 'mad':
             adj = 'MAD'
         elif self.options.get('anomalous', False):
             adj = 'ANOMALOUS'

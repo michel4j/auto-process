@@ -157,7 +157,6 @@ def get_dataset_params(img_file, screen=False):
     fm = file_pattern.search(file_list[0])
 
     reference_image = os.path.join(directory, file_list[0])
-    print reference_image
     
     parts = fm.groups()
     first_frame = int (parts[2])
@@ -296,20 +295,20 @@ def select_lattices(table):
     
 
 def execute_xds():
-    sts, output = commands.getstatusoutput('nice xds >> xds.log')
+    sts, output = commands.getstatusoutput('xds >> xds.log')
     return sts==0
 
 def execute_xds_par():
-    sts, output = commands.getstatusoutput('nice xds_par >> xds.log')
+    sts, output = commands.getstatusoutput('xds_par >> xds.log')
     return sts==0
 
 
 def execute_xscale():
-    sts, output = commands.getstatusoutput('nice xscale_par >> xds.log')
+    sts, output = commands.getstatusoutput('xscale_par >> xds.log')
     return sts==0
 
 def execute_xdsconv():
-    sts, output = commands.getstatusoutput('nice xdsconv >> xds.log')
+    sts, output = commands.getstatusoutput('xdsconv >> xds.log')
     return sts==0
 
 def execute_f2mtz():
@@ -317,7 +316,7 @@ def execute_f2mtz():
     return sts==0
        
 def execute_pointless():
-    sts, output = commands.getstatusoutput('nice pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> xds.log')
+    sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> xds.log')
     return sts==0
 
 def execute_best(time, anomalous=False):
@@ -546,4 +545,7 @@ def backup_file(filename):
             index += 1
         shutil.copy(filename, '%s.%0d' % (filename, index))
     return
-        
+
+def match_code(src, tgt):
+    # bitwise compare two integers
+    return src|tgt == src      

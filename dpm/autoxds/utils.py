@@ -167,7 +167,7 @@ def get_dataset_params(img_file, screen=False):
     info = marccd.read_header(reference_image)
     info['dataset_name'] = _dataset_name
     info['file_template'] = "%s/%s" % (directory, xds_template)        
-    info['file_format'] = magic.from_file(reference_frame)
+    info['file_format'] = magic.from_file(reference_image)
     #determine spot range
     spot_range = []
     # up to 5 deg at the beginning

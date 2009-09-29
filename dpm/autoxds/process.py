@@ -275,26 +275,15 @@ class AutoXDS:
             utils.backup_file('SPOT.XDS')
 
             if utils.match_code(data['quality_code'], 32):
-                if not utils.match_any(data['quality_code'], [11,13]):
-                    _logger.info('Removing alien spots ...')
-                    spot_list = utils.load_spots()
-                    spot_list = utils.filter_spots(spot_list, unindexed=True)
-                    utils.save_spots(spot_list)
-                    utils.execute_xds_par()
-                    info = xds.parse_idxref()
-                    data = utils.diagnose_index(info)
-                elif data['new_origin'] is not None:
-                    run_info['detector_origin'] = data['new_origin']
-                    _logger.info('Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
-                    io.write_xds_input(jobs, run_info)
-                    utils.execute_xds_par()
-                    info = xds.parse_idxref()
-                    data = utils.diagnose_index(info)
-                else:
-                    _logger.critical(':-( Unable to proceed! [%d]...'% data['quality_code'])
-                    _retries = 5
+                _logger.info('Removing alien spots ...')
+                spot_list = utils.load_spots()
+                spot_list = utils.filter_spots(spot_list, unindexed=True)
+                utils.save_spots(spot_list)
+                utils.execute_xds_par()
+                info = xds.parse_idxref()
+                data = utils.diagnose_index(info)
             elif utils.match_code(data['quality_code'],16):
-                if not utils.match_code(data['quality_code'], 8):
+                if data['percent_indexed'] > 50:
                     _logger.info('Removing alien spots ...')
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, unindexed=True)
@@ -308,6 +297,13 @@ class AutoXDS:
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, sigma=sigma)
                     utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                elif data['new_origin'] is not None:
+                    run_info['detector_origin'] = data['new_origin']
+                    _logger.info('Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
+                    io.write_xds_input(jobs, run_info)
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)

@@ -45,10 +45,13 @@ def write_xds_input(jobs, params):
         except:
             pass
         
-    # if template is still longer create symlink in tmp:
+    # if template is still longer create symlink in tmp/xds:
+    tmp_top = os.path.join(tempfile.gettempdir(), 'xds')
+    if not os.path.exists(tmp_top):
+        os.makedirs(tmp_top)
     if len(params['file_template']) > 50:
-        tmp_dir = tempfile.mktemp('','xds-')
-        os.symlink(directory, tmp_dir)
+        tmp_dir = tempfile.mktemp(prefix='', dir=tmp_top)
+        os.symlink(directory, tmp_dir)            
         params['file_template'] = os.path.join(tmp_dir, xds_template)
     
     

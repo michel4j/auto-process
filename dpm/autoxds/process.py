@@ -265,13 +265,13 @@ class AutoXDS:
         spot_size = 6
                 
         while info.get('failure') and _retries < 5:
-            utils.print_table(data)
+            _logger.debug(utils.print_table(data))
             _retries += 1
             utils.backup_file('IDXREF.LP')
             utils.backup_file('SPOT.XDS')
 
             if data['quality_code'] in [1, 2, 3, 7, 134, 135]:
-                _logger.info(':-( Removing alien spots ...')
+                _logger.warning(':-( Removing alien spots ...')
                 spot_list = utils.load_spots()
                 spot_list = utils.filter_spots(spot_list, unindexed=True)
                 utils.save_spots(spot_list)
@@ -280,7 +280,7 @@ class AutoXDS:
                 data = utils.diagnose_index(info)
             elif data['quality_code'] in [6]:
                 sigma *= 2
-                _logger.info(':-( Removing weak spots (Sigma < %2.0f) ...' % sigma)
+                _logger.warning(':-( Removing weak spots (Sigma < %2.0f) ...' % sigma)
                 spot_list = utils.load_spots()
                 spot_list = utils.filter_spots(spot_list, sigma=sigma)
                 utils.save_spots(spot_list)
@@ -289,20 +289,20 @@ class AutoXDS:
                 data = utils.diagnose_index(info)
             elif data['quality_code'] in [162]:
                 run_info['detector_origin'] = data['new_origin']
-                _logger.info(':-( Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
+                _logger.warning(':-( Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
                 io.write_xds_input(jobs, run_info)
                 utils.execute_xds_par()
                 info = xds.parse_idxref()
                 data = utils.diagnose_index(info)
             elif data['quality_code'] in [199] and _retries == 1:
-                _logger.info(':-( Finding more spots ...')
+                _logger.warning(':-( Finding more spots ...')
                 run_info['spot_range'] = [run_info['data_range']]
                 io.write_xds_input('COLSPOT IDXREF', run_info)
                 utils.execute_xds_par()
                 info = xds.parse_idxref()
                 data = utils.diagnose_index(info)               
             elif data['quality_code'] in [199]:
-                _logger.info(':-( Adjusting spot parameters ...')
+                _logger.warning(':-( Adjusting spot parameters ...')
                 spot_size *= 1.5
                 sepmin *= 1.5
                 clustrad *= 1.5
@@ -314,12 +314,12 @@ class AutoXDS:
                 data = utils.diagnose_index(info)                  
                 
             else:
-                _logger.info(':-( Unrecogmized quality Code [%d]...'% data['quality_code'])
+                _logger.critical(':-( Unrecogmized quality Code [%d]...'% data['quality_code'])
                 _retries = 5
 
         if info.get('failure') is None:
             _logger.info(':-) Auto-indexing succeeded.')
-            utils.print_table(data)
+            _logger.debug(utils.print_table(data))
             return {'success':True, 'data': info}
         else:
             return {'success':False, 'reason': info['failure']}
@@ -662,7 +662,7 @@ class AutoXDS:
             # Score dataset
             self.score_dataset(run_result)
         
-        # Score dataset
+        # Scale datasets
         self.scale_datasets(run_info)
         
         self.convert_files(run_info)            
@@ -670,5 +670,9 @@ class AutoXDS:
         self.save_log('process.log')
 
         elapsed = time.time() - t1
-        _logger.info("Done. Total time used:  %d min %d sec"  % (int(elapsed/60), int(elapsed % 60)))          
-       
+        total_frames = 0
+        for info in self.dataset_info.values():
+            total_frames += info['data_range'][1]-info['data_range'][0]
+        frame_rate = total_frames/elapsed
+        used_time = time.strftime('%H:%M:%S', time.gmtime(elapsed))
+        _logger.info("Done. Time used:  %s [ %0.1f/sec ]"  % (used_time, frame_rate))             

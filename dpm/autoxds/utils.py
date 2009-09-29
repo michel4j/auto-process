@@ -373,12 +373,13 @@ def _files_exist(file_list):
     return True
 
 def print_table(info, multiple=False):
+    txt = '*** Auto-indexing Diagnostics ***\n'
     
     if not multiple:
         length = max([len(v) for v in info.keys()])
-        format = "%%%ds: %%s" % length
+        format = "%%%ds: %%s\n" % length
         for k, v in info.items():
-            print format % (k, v)
+            txt += format % (k, v)
     else:
         formats = {}
         _t = Table(info)
@@ -387,12 +388,13 @@ def print_table(info, multiple=False):
             length = max(length, len(k))
             formats[k] = "%%%ds " % length
         for k, f in formats.items():
-            print f % (k),
-        print
+            txt += f % (k),
+        txt += '\n'
         for l in info:
             for k, v in l.items():
-                print f % (v),
-            print
+                txt += f % (v),
+            txt += '\n'
+    return txt
     
 
 def check_init():

@@ -102,7 +102,7 @@ def write_xds_input(jobs, params):
     POLARIZATION_PLANE_NORMAL= 1.0 0.0 0.0
     DIRECTION_OF_DETECTOR_X-AXIS= 1.000 0.000 0.000
     DIRECTION_OF_DETECTOR_Y-AXIS= 0.000 %0.3f %0.3f
-    AIR=%0.5f \n""" % (params.get('sigma', 6),
+    AIR=%0.5f \n""" % (params.get('sigma', 3),
                        math.cos(params['two_theta']), 
                        -1 * math.sin(params['two_theta']), 
                        utils.air(params['wavelength']) )

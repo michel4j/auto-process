@@ -22,7 +22,7 @@ scanf_cache = {}
 
 
 scanf_translate = [
-    (re.compile(_token), _pattern, _cast) for _token, _pattern, _cast in [
+    (re.compile(_token, re.DOTALL), _pattern, _cast) for _token, _pattern, _cast in [
     ("%c", "(.)", lambda x:x),
     ("%(\d+)c", "(.{%s})", lambda x:x),
     ("%(\d+)[di]", "([-+ \d]{%s})", int),

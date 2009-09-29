@@ -185,7 +185,7 @@ class ProgDisplay(threading.Thread):
         self.queue = q
         self.total = data_range[1] - data_range[0]
         self.data_range = data_range
-        self.length = 56
+        self.length = 53
         self._cursor = False
         self._stopped = False
         self.chars=[c.encode("utf-8") for c in unicode(self.spinner,"utf-8")]

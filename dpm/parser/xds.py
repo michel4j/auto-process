@@ -6,10 +6,38 @@ import re, numpy
 import os
 import utils
 
+_IDXREF_FAILURES = {
+    0: None,
+    1: 'Spot list not three dimensional!',
+    2: 'Less than 70% of reflections indexed!',
+    3: 'Insufficient number of spots!',
+    4: 'Solution is not good enough!',
+    5: 'Could not refine solution!',
+    6: 'Could not index reflections!'
+}
 def parse_idxref(filename='IDXREF.LP'):
     info = utils.parse_file(filename, config='idxref.ini')
     if os.path.getsize(filename) < 15000 and info.get('failure') is None:
-        info['failure'] = 'Indexing did not complete!'
+        info['failure_code'] = 6
+    else:
+        info['failure_code'] = 0
+
+    if info['failure'] == 'CANNOT CONTINUE WITH A TWO-DIMENSIONAL':
+        info['failure_code'] = 1
+    elif info['failure'] == 'DIMENSION OF DIFFERENCE VECTOR SET LESS THAN 3.':
+        info['failure_code'] = 1
+    elif info['failure'] == 'INSUFFICIENT PERCENTAGE (< 70%) OF INDEXED REFLECTIONS':
+        info['failure_code'] = 2
+    elif info['failure'] == 'INSUFFICIENT NUMBER OF ACCEPTED SPOTS.':
+        info['failure_code'] = 3
+    elif info['failure'] == 'SOLUTION IS INACCURATE':
+        info['failure_code'] = 4
+    elif  info['failure'] == 'RETURN CODE IS IER=           0':
+        info['failure_code'] = 5
+    elif  info['failure'] =='CANNOT INDEX REFLECTIONS':
+        info['failure_code'] = 6
+    
+    info['failure'] = _IDXREF_FAILURES[info['failure_code']]
     return info
         
 

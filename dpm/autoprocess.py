@@ -49,7 +49,7 @@ def main():
             
     # Parse options
     options = {}
-    options['directory'] = os.path.abspath('./')
+    options['directory'] = os.getcwd()
     for o, a in opts:
         if o in ("-h","--help"):
             usage()

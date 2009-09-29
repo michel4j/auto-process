@@ -195,7 +195,7 @@ class AutoXDS:
                     run_data.append('%8.1f' % run['phi_start'])
                     run_data.append('%8.2f' % run['phi_width'])
                     run_data.append('%8.0f' % run['number_of_images'])
-                    run_data.append('%8.2f' % (run['phi_width'] * run['number_of_images']) )
+                    run_data.append('%8.2f' % (run['phi_width'] * run['number_of_images']))
                     run_data.append('%8.1f' % run['exposure_time'])
                     run_data.append('%8s' % run['overlaps'])
                     all_runs.append(run_data)
@@ -260,12 +260,13 @@ class AutoXDS:
         info = xds.parse_idxref()
         data = utils.diagnose_index(info)
         _retries = 0
-        sigma = 6
+        sigma = 3
         sepmin, clustrad = 6, 3
         spot_size = 6
         _all_images = False
                
-        while info.get('failure') and _retries < 5:
+        while info.get('failure_code') > 0 and _retries < 5:
+            _logger.warning(':-( %s' % info.get('failure'))
             _logger.debug(utils.print_table(data))
             if run_info['spot_range'][0] == run_info['data_range']:
                 _all_images == True
@@ -273,54 +274,80 @@ class AutoXDS:
             utils.backup_file('IDXREF.LP')
             utils.backup_file('SPOT.XDS')
 
-            if data['quality_code'] in [1, 2, 3, 7, 134, 135, 34]:
-                _logger.warning(':-( Removing alien spots ...')
-                spot_list = utils.load_spots()
-                spot_list = utils.filter_spots(spot_list, unindexed=True)
-                utils.save_spots(spot_list)
-                utils.execute_xds_par()
-                info = xds.parse_idxref()
-                data = utils.diagnose_index(info)
-            elif data['quality_code'] in [6]:
-                sigma *= 2
-                _logger.warning(':-( Removing weak spots (Sigma < %2.0f) ...' % sigma)
-                spot_list = utils.load_spots()
-                spot_list = utils.filter_spots(spot_list, sigma=sigma)
-                utils.save_spots(spot_list)
-                utils.execute_xds_par()
-                info = xds.parse_idxref()
-                data = utils.diagnose_index(info)
-            elif data['quality_code'] in [162]:
-                run_info['detector_origin'] = data['new_origin']
-                _logger.warning(':-( Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
-                io.write_xds_input(jobs, run_info)
-                utils.execute_xds_par()
-                info = xds.parse_idxref()
-                data = utils.diagnose_index(info)
-            elif data['quality_code'] in [199] and not _all_images:
-                _logger.warning(':-( Finding more spots ...')
-                run_info['spot_range'] = [run_info['data_range']]
-                io.write_xds_input('COLSPOT IDXREF', run_info)
-                utils.execute_xds_par()
-                info = xds.parse_idxref()
-                data = utils.diagnose_index(info)               
-            elif data['quality_code'] in [199]:
-                _logger.warning(':-( Adjusting spot parameters ...')
+            if utils.match_code(data['quality_code'], 32):
+                if not utils.match_any(data['quality_code'], [11,13]):
+                    _logger.info('Removing alien spots ...')
+                    spot_list = utils.load_spots()
+                    spot_list = utils.filter_spots(spot_list, unindexed=True)
+                    utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                elif data['new_origin'] is not None:
+                    run_info['detector_origin'] = data['new_origin']
+                    _logger.info('Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
+                    io.write_xds_input(jobs, run_info)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                else:
+                    _logger.critical(':-( Unable to proceed! [%d]...'% data['quality_code'])
+                    _retries = 5
+            elif utils.match_code(data['quality_code'],16):
+                if not utils.match_code(data['quality_code'], 8):
+                    _logger.info('Removing alien spots ...')
+                    spot_list = utils.load_spots()
+                    spot_list = utils.filter_spots(spot_list, unindexed=True)
+                    utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                elif sigma < 48:
+                    sigma *= 2
+                    _logger.info('Removing weak spots (Sigma < %2.0f) ...' % sigma)
+                    spot_list = utils.load_spots()
+                    spot_list = utils.filter_spots(spot_list, sigma=sigma)
+                    utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                else:
+                    _logger.critical(':-( Unable to proceed! [%d]...'% data['quality_code'])
+                    _retries = 5
+            elif utils.match_any(data['quality_code'], [128,64]):
+                if not _all_images:
+                    run_info['spot_range'] = [run_info['data_range']]
+                    _logger.info('Increasing spot search range to (%d, %d) ...' % tuple(run_info['spot_range'][0]))
+                    io.write_xds_input('COLSPOT IDXREF', run_info)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                elif sigma > 3:
+                    sigma /= 2
+                    _logger.info('Including weaker spots (Sigma < %2.0f) ...' % sigma)
+                    io.write_xds_input('COLSPOT IDXREF', run_info)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                else:
+                    _logger.critical(':-( Unable to proceed! [%d]...'% data['quality_code'])
+                    _retries = 5    
+            elif utils.match_code(data['quality_code'], 256) :
+                _logger.info('Adjusting spot parameters ...')
                 spot_size *= 1.5
-                sepmin *= 1.5
-                clustrad *= 1.5
-                new_params = {'min_spot_size':spot_size, 'min_spot_separation':sepmin, 'cluster_radius': clustrad}
+                #sepmin *= 1.5
+                #clustrad *= 1.5
+                new_params = {'min_spot_size':spot_size}
                 run_info.update(new_params)
                 io.write_xds_input('COLSPOT IDXREF', run_info)
                 utils.execute_xds_par()
                 info = xds.parse_idxref()
-                data = utils.diagnose_index(info)                  
-                
+                data = utils.diagnose_index(info)                    
             else:
-                _logger.critical(':-( Unrecogmized quality Code [%d]...'% data['quality_code'])
+                _logger.critical(':-( Unable to proceed! [%d]...'% data['quality_code'])
                 _retries = 5
 
-        if info.get('failure') is None:
+        if info.get('failure_code') == 0:
             _logger.info(':-) Auto-indexing succeeded.')
             _logger.debug(utils.print_table(data))
             return {'success':True, 'data': info}
@@ -679,4 +706,4 @@ class AutoXDS:
             total_frames += info['data_range'][1]-info['data_range'][0]
         frame_rate = total_frames/elapsed
         used_time = time.strftime('%H:%M:%S', time.gmtime(elapsed))
-        _logger.info("Done. Time used:  %s [ %0.1f/sec ]"  % (used_time, frame_rate))             
+        _logger.info("Done. Time used:  %s [ %0.1f frames/sec ]"  % (used_time, frame_rate))             

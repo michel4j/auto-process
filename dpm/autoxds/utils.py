@@ -13,6 +13,7 @@ import shutil
 import commands
 from dpm.imageio import marccd
 from dpm.parser.utils import Table
+from dpm.utils import magic
 import numpy
 
 
@@ -166,7 +167,7 @@ def get_dataset_params(img_file, screen=False):
     info = marccd.read_header(reference_image)
     info['dataset_name'] = _dataset_name
     info['file_template'] = "%s/%s" % (directory, xds_template)        
-    
+    info['file_format'] = magic.from_file(reference_frame)
     #determine spot range
     spot_range = []
     # up to 5 deg at the beginning
@@ -323,7 +324,7 @@ def execute_best(time, anomalous=False):
     anom_flag = ''
     if anomalous:
         anom_flag = '-a'
-    command  = "nice best -t %f -i2s 1.5" % time
+    command  = "best -t %f -i2s 2.0" % time
     command += " -e none -M 1 -w 0.2 %s -dna best.xml" % anom_flag
     command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL >> best.log" 
     sts, output = commands.getstatusoutput(command)
@@ -416,16 +417,28 @@ def update_xparm():
     
 def diagnose_index(info):
     # quality_code is integer factors
-    # 1 = spot deviation bad
-    # 2 = percent indexed < 70
-    # 4 = cluster index error > 0.051
-    # 8 = cluster dimension < 3
-    # 16 = not enough spots
-    # 32 = more than one distinct subtree
-    # 64 = no distinct subtree
-    # 128 = index origin delta > 6
+    # 256 = irrecoverable failure 
+    # 128 = not enough spots 
+    #  64 = cluster dimension < 3 
+    #  32 = spot deviation > 3.0
+    #  16 = percent indexed < 70
+    #   8 = cluster index error > 0.05
+    #   4 = no distinct subtree
+    #   2 = more than one distinct subtree
+    #   1 = index origin delta > 6
     data = {}
     data['quality_code'] = 0
+    if info['failure_code'] == 1:
+        data['quality_code'] |=  64
+    elif info['failure_code'] == 2:
+        data['quality_code'] |=  16
+    elif info['failure_code'] == 3:
+        data['quality_code'] |=  128
+    elif info['failure_code'] == 4:
+        data['quality_code'] |=  32
+    elif info['failure_code'] in [5,6]:
+        data['quality_code'] |=  256
+        
     _refl = _spots = None
     _st = info.get('subtrees')
     _local_spots = info.get('local_indexed_spots')
@@ -445,7 +458,7 @@ def diagnose_index(info):
     
     if _spots is not None:
         data['percent_indexed'] = 100.0 * _spots/_refl
-    if data['percent_indexed'] < 70 : data['quality_code'] |= 2
+    if data['percent_indexed'] < 70 : data['quality_code'] |= 16
     
     # get number of subtrees
     data['distinct_subtrees'] = 0
@@ -462,9 +475,9 @@ def diagnose_index(info):
             else:
                 break
     if data['distinct_subtrees'] > 1 :
-        data['quality_code'] |= 32
+        data['quality_code'] |= 2
     elif data['distinct_subtrees'] == 0 :
-        data['quality_code'] |= 64
+        data['quality_code'] |= 4
         
     # get max, std deviation of integral indices
     _indices = info.get('cluster_indices')
@@ -476,18 +489,17 @@ def diagnose_index(info):
         _index_err = abs(_index_array - _index_array.round())
         data['index_error_max'] = _index_err.max()
         data['index_error_mean'] = _index_err.mean()
-    if data['index_error_mean'] > 0.05 : data['quality_code'] |= 4
+    if data['index_error_mean'] > 0.05 : data['quality_code'] |= 8
     
     # get spot deviation 
     data['spot_deviation'] = 999.
     if _summary  is not None:
         data['spot_deviation'] = info['summary'].get('stdev_spot')
-    if data['spot_deviation'] > 3 : data['quality_code'] |= 1
+    if data['spot_deviation'] > 3 : data['quality_code'] |= 32
     
-    # get rejects
-      
+    # get rejects     
     data['cluster_dimension'] = info.get('cluster_dimension', 0)
-    if data['cluster_dimension'] < 3 : data['quality_code'] |= 8
+    if data['cluster_dimension'] < 3 : data['quality_code'] |= 64
     
     # get quality of selected index origin
     _origins = info.get('index_origins')
@@ -501,7 +513,8 @@ def diagnose_index(info):
                 data['new_origin'] = _org.get('position')
                 #data['index_deviation'] = _org.get('deviation')
                 break    
-    if data['index_origin_delta'] > 6 : data['quality_code'] |= 128
+    if data['index_origin_delta'] > 6 : data['quality_code'] |= 1
+    data['failure_code'] = info['failure_code']
     
     return data
 
@@ -548,4 +561,16 @@ def backup_file(filename):
 
 def match_code(src, tgt):
     # bitwise compare two integers
-    return src|tgt == src      
+    return src|tgt == src
+
+def match_none(src, tgts):
+    for tgt in tgts:
+        if src|tgt == src:
+            return False
+    return True
+
+def match_any(src, tgts):
+    for tgt in tgts:
+        if src|tgt == src:
+            return True
+    return False 

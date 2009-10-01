@@ -151,7 +151,7 @@ class AutoXDS:
                         
             file_text += str(pt)
             resol = dset['correction']['resolution']
-            file_text += "\nResolution cut-off from preliminary analysis (I/SigI>1.5):  %5.2f\n\n" % (resol)
+            file_text += "\nResolution cut-off from preliminary analysis (I/SigI>1.0):  %5.2f\n\n" % (resol)
             
 
             # Print out scaling results
@@ -267,7 +267,7 @@ class AutoXDS:
                
         while info.get('failure_code') > 0 and _retries < 5:
             _logger.warning(':-( %s' % info.get('failure'))
-            _logger.debug('Indexing Quality [%d]' % (data['quality_code']))
+            _logger.debug('Indexing Quality [%08x]' % (data['quality_code']))
             #_logger.debug(utils.print_table(data))
             if run_info['spot_range'][0] == run_info['data_range']:
                 _all_images = True
@@ -316,7 +316,7 @@ class AutoXDS:
             elif info.get('failure_code') == xds.INSUFFICIENT_SPOTS or info.get('failure_code') == xds.SPOT_LIST_NOT_3D:
                 if not _all_images:
                     run_info['spot_range'] = [run_info['data_range']]
-                    _logger.info('Increasing spot search range to (%d, %d) ...' % tuple(run_info['spot_range'][0]))
+                    _logger.info('Increasing spot search range to [%d..%d] ...' % tuple(run_info['spot_range'][0]))
                     io.write_xds_input('COLSPOT IDXREF', run_info)
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
@@ -349,7 +349,7 @@ class AutoXDS:
         if info.get('failure_code') == 0:
             _logger.info(':-) Auto-indexing succeeded.')
             #_logger.debug(utils.print_table(data))
-            _logger.debug('Indexing Quality [%d]' % (data['quality_code']))
+            _logger.debug('Indexing Quality [%08x]' % (data['quality_code']))
             return {'success':True, 'data': info}
         else:
             return {'success':False, 'reason': info['failure']}
@@ -677,13 +677,13 @@ class AutoXDS:
                     _logger.error('Strategy failed! %s' % _out.get('reason'))
                 else:
                     run_result['strategy'] = _out.get('data')
-#                success = utils.execute_distl(run_info['reference_image'])
-#                if success:
-#                    info = parse_distl('distl.log')
-#                    run_result['image_analysis'] = info
-#                else:
-#                    print 'ERROR: Image analysis failed!'
-#                    run_result['image_analysis'] = {}
+                success = utils.execute_distl(run_info['reference_image'])
+                if success:
+                    info = parse_distl('distl.log')
+                    run_result['image_analysis'] = info
+                else:
+                    _logger.error(':-) Image analysis failed!')
+                    run_result['image_analysis'] = {}
                                             
             run_result['files'] = self.get_fileinfo(run_info)
             if _ref_run is None:

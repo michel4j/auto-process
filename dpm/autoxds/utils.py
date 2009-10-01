@@ -175,7 +175,7 @@ def get_dataset_params(img_file, screen=False):
     r_e = first_frame
     while r_e < (first_frame + frame_count) and (r_e - r_s)*info['oscillation_range'] <= 5.0:
         r_e += 1
-    spot_range.append( (r_s, r_e) )
+    spot_range.append( (r_s, r_e-1) )
     
     # up to 5 deg starting at 90 deg
     r_s = first_frame + int(90.0 / info['oscillation_range'])
@@ -260,7 +260,7 @@ def select_resolution(table):
     shells = table[:-1]
     resol = shells[-1]['shell']
     for pos, l in enumerate(shells):
-        if l['i_sigma'] >= 1.5:
+        if l['i_sigma'] >= 1.0:
             resol = l['shell']
         else:
             break
@@ -335,18 +335,26 @@ def execute_distl(filename):
     return sts==0
 
 def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
+#    score = [ 1.0,
+#        -0.7 * math.exp(-4.0/resolution),
+#        -0.2 * std_spindle ,
+#        -0.05 * std_spot ,
+#        -0.2 * mosaicity,
+#        -0.01 * abs(r_meas),
+#        -0.2 * 2.0 / i_sigma,
+#        -0.05 * ice_rings,
+#        ]
     score = [ 1.0,
-        -0.7 * math.exp(-4.0 / resolution),
-        -0.2 * std_spindle ,
-        -0.05 * std_spot ,
-        -0.2 * mosaicity,
-        -0.01 * abs(r_meas),
-        -0.2 * 2.0 / i_sigma,
-        -0.05 * ice_rings,
-        #-0.5 * subtree_skew
+        -0.5 * max(0.0, min(1.0, math.exp(-4.0 + resolution))),
+        -0.2 * max(0.0, min(1.0, math.exp(-3.0 + std_spot))),
+        -0.05 * max(0.0, min(1.0, math.exp(-1.0 + std_spindle))),
+        -0.1 * max(0.0, min(1.0, math.exp(-0.5 + mosaicity))),
+        -0.05 * max(0.0, min(1.0, math.exp(-5.0 + abs(r_meas)))),
+        -0.05 * max(0.0, min(1.0, math.exp(1.0 - abs(i_sigma)))),
+        #-0.05 * max(0.0, min(1.0, math.exp(ice_rings))),
         ]
     
-    names = ['Root', 'Resolution', 'Spindle', 'Spot', 'Mosaicity','R_meas', 'I/Sigma', 'Ice', 'Satellites']
+    #names = ['Root', 'Resolution', 'Spindle', 'Spot', 'Mosaicity','R_meas', 'I/Sigma', 'Ice', 'Satellites']
     #for name, contrib in zip(names,score):
     #    print '\t\t%s : %0.3f' % (name, contrib)
         

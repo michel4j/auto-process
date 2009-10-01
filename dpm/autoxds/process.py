@@ -267,9 +267,12 @@ class AutoXDS:
                
         while info.get('failure_code') > 0 and _retries < 5:
             _logger.warning(':-( %s' % info.get('failure'))
-            _logger.debug(utils.print_table(data))
+            _logger.debug('Indexing Quality [%d]' % (data['quality_code']))
+            #_logger.debug(utils.print_table(data))
             if run_info['spot_range'][0] == run_info['data_range']:
-                _all_images == True
+                _all_images = True
+            else:
+                _all_images = False
             _retries += 1
             utils.backup_file('IDXREF.LP')
             utils.backup_file('SPOT.XDS')
@@ -283,7 +286,7 @@ class AutoXDS:
                 info = xds.parse_idxref()
                 data = utils.diagnose_index(info)
             elif info.get('failure_code') == xds.INSUFFICIENT_INDEXED_SPOTS:
-                if data['distinct_subtrees'] > 0:
+                if data['distinct_subtrees'] >= 1:
                     _logger.info('Removing alien spots ...')
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, unindexed=True)
@@ -308,9 +311,9 @@ class AutoXDS:
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
                 else:
-                    _logger.critical(':-( Unable to proceed! [%d]...'% data['quality_code'])
+                    _logger.critical(':-( Unable to proceed!')
                     _retries = 5
-            elif utils.match_any(data['quality_code'], [128,64]):
+            elif info.get('failure_code') == xds.INSUFFICIENT_SPOTS or info.get('failure_code') == xds.SPOT_LIST_NOT_3D:
                 if not _all_images:
                     run_info['spot_range'] = [run_info['data_range']]
                     _logger.info('Increasing spot search range to (%d, %d) ...' % tuple(run_info['spot_range'][0]))
@@ -345,7 +348,8 @@ class AutoXDS:
 
         if info.get('failure_code') == 0:
             _logger.info(':-) Auto-indexing succeeded.')
-            _logger.debug(utils.print_table(data))
+            #_logger.debug(utils.print_table(data))
+            _logger.debug('Indexing Quality [%d]' % (data['quality_code']))
             return {'success':True, 'data': info}
         else:
             return {'success':False, 'reason': info['failure']}
@@ -394,7 +398,7 @@ class AutoXDS:
         _logger.info("Determining SpaceGroup...")
         success = utils.execute_pointless()
         if not success:
-            _logger.warning(':-( SpaceGroup Determination failed!')
+            _logger.warning(':-( SpaceGroup determination failed!')
             return {'success':False, 'reason': 'POINTLESS FAILED!'}
         else:
             sg_info = parse_pointless('pointless.xml')
@@ -605,20 +609,20 @@ class AutoXDS:
             # Initializing
             _out = self.initialize(run_info)
             if not _out['success']:
-                _logger.error('Initialization FAILED! Reason: %s' % _out.get('reason'))
+                _logger.error('Initialization failed! %s' % _out.get('reason'))
                 sys.exit(1)
             
             # Auto Indexing
             _out = self.auto_index(run_info)
             if not _out['success']:
-                _logger.error('Auto-indexing FAILED! Reason: %s' % _out.get('reason'))
+                _logger.error('Auto-indexing failed! %s' % _out.get('reason'))
                 sys.exit(1)
             run_result['indexing'] = _out.get('data')
             
             #Integration
             _out = self.integrate(run_info)
             if not _out['success']:
-                _logger.error('Integration FAILED! Reason: %s' % _out.get('reason'))
+                _logger.error('Integration failed! %s' % _out.get('reason'))
                 sys.exit(1)
             run_result['integration'] = _out.get('data')
 
@@ -627,7 +631,7 @@ class AutoXDS:
                 run_info['reference_data'] = os.path.join('..', self.results[_ref_run]['files']['correct'])
             _out = self.correct(run_info)
             if not _out['success']:
-                _logger.error('Correction FAILED! Reason: %s' % _out.get('reason'))
+                _logger.error('Correction failed! %s' % _out.get('reason'))
                 sys.exit(1)
             run_result['correction'] = _out.get('data')
             _sel_pgn = _out['data']['symmetry']['space_group']['sg_number']
@@ -659,7 +663,7 @@ class AutoXDS:
             # Final correction
             _out = self.correct(run_info)
             if not _out['success']:
-                _logger.error('Correction FAILED! Reason: %s' % _out.get('reason'))
+                _logger.error('Correction failed! %s' % _out.get('reason'))
             else:
                 run_result['correction'] = _out.get('data')
 
@@ -670,7 +674,7 @@ class AutoXDS:
             if self.options.get('command', None) == 'screen':
                 _out = self.calc_strategy(run_info)
                 if not _out['success']:
-                    _logger.error('Strategy FAILED! Reason: %s' % _out.get('reason'))
+                    _logger.error('Strategy failed! %s' % _out.get('reason'))
                 else:
                     run_result['strategy'] = _out.get('data')
 #                success = utils.execute_distl(run_info['reference_image'])

@@ -183,12 +183,12 @@ def get_dataset_params(img_file, screen=False):
         r_e = r_s
         while r_e < (first_frame + frame_count) and (r_e - r_s)*info['oscillation_range'] <= 5.0:
             r_e += 1
-        spot_range.append( (r_s, r_e) )
+        spot_range.append( (r_s, r_e-1) )
     info['spot_range'] = spot_range
     if screen:
         info['data_range'] = spot_range[0]
     else:
-        info['data_range'] = (first_frame, first_frame + frame_count - 1)
+        info['data_range'] = (first_frame, first_frame + frame_count-1)
     
     #info['spot_range'] = [info['data_range']]
     
@@ -453,7 +453,7 @@ def diagnose_index(info):
     # get percent of indexed reflections
     data['percent_indexed'] = 0.0
     data['primary_subtree'] = 0.0
-    if _refl is not None and _st is not None and len(_st)>3:
+    if _refl is not None and _st is not None and len(_st)>0:
         data['primary_subtree'] = 100.0 * _st[0].get('population')/float(_local_spots)
     
     if _spots is not None:

@@ -6,6 +6,14 @@ import re, numpy
 import os
 import utils
 
+(NO_FAILURE,
+SPOT_LIST_NOT_3D,
+INSUFFICIENT_INDEXED_SPOTS,
+INSUFFICIENT_SPOTS,
+POOR_SOLUTION,
+REFINE_ERROR,
+INDEX_ERROR ) = range(7)
+
 _IDXREF_FAILURES = {
     0: None,
     1: 'Spot list not three dimensional!',

@@ -274,7 +274,7 @@ class AutoXDS:
             utils.backup_file('IDXREF.LP')
             utils.backup_file('SPOT.XDS')
 
-            if utils.match_code(data['quality_code'], 32):
+            if info.get('failure_code') == xds.POOR_SOLUTION:
                 _logger.info('Removing alien spots ...')
                 spot_list = utils.load_spots()
                 spot_list = utils.filter_spots(spot_list, unindexed=True)
@@ -282,8 +282,8 @@ class AutoXDS:
                 utils.execute_xds_par()
                 info = xds.parse_idxref()
                 data = utils.diagnose_index(info)
-            elif utils.match_code(data['quality_code'],16):
-                if data['percent_indexed'] > 50:
+            elif info.get('failure_code') == xds.INSUFFICIENT_INDEXED_SPOTS:
+                if data['distinct_subtrees'] > 0:
                     _logger.info('Removing alien spots ...')
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, unindexed=True)
@@ -300,7 +300,7 @@ class AutoXDS:
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
-                elif data['new_origin'] is not None:
+                elif data['index_origin_delta'] > 6:
                     run_info['detector_origin'] = data['new_origin']
                     _logger.info('Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
                     io.write_xds_input(jobs, run_info)

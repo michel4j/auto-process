@@ -267,7 +267,7 @@ def select_resolution(table):
         if abs(l['r_mrgdf']) <= 40.0:
             resol_r = l['shell']
     
-    return (resol_i, resol_r)
+    return (float(resol_i), float(resol_r))
 
 def select_lattices(table):
     """

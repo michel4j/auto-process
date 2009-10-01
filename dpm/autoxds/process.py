@@ -151,7 +151,7 @@ class AutoXDS:
                         
             file_text += str(pt)
             resol = dset['correction']['resolution']
-            file_text += "\nResolution cut-off from preliminary analysis (I/SigI>1.0):  %5.2f\n\n" % (resol)
+            file_text += "\nResolution cut-off from preliminary analysis (I/SigI>1.0):  %5.2f\n\n" % (resol[0])
             
 
             # Print out scaling results
@@ -267,7 +267,7 @@ class AutoXDS:
                
         while info.get('failure_code') > 0 and _retries < 5:
             _logger.warning(':-( %s' % info.get('failure'))
-            _logger.debug('Indexing Quality [%08x]' % (data['quality_code']))
+            _logger.debug('Indexing Quality [%08o]' % (data['quality_code']))
             #_logger.debug(utils.print_table(data))
             if run_info['spot_range'][0] == run_info['data_range']:
                 _all_images = True
@@ -349,7 +349,7 @@ class AutoXDS:
         if info.get('failure_code') == 0:
             _logger.info(':-) Auto-indexing succeeded.')
             #_logger.debug(utils.print_table(data))
-            _logger.debug('Indexing Quality [%08x]' % (data['quality_code']))
+            _logger.debug('Indexing Quality [%08o]' % (data['quality_code']))
             return {'success':True, 'data': info}
         else:
             return {'success':False, 'reason': info['failure']}
@@ -413,7 +413,7 @@ class AutoXDS:
             sections = []
             _crystal_name = os.path.commonprefix(self.results.keys())
             for name, rres in self.results.items():
-                resol = rres['correction']['resolution']
+                resol = rres['correction']['resolution'][0]
                 in_file = rres['files']['correct']
                 out_file = os.path.join(name, "XSCALE.HKL")
                 sections.append(
@@ -431,7 +431,7 @@ class AutoXDS:
                 if command == "screen":
                     resol = 0.0
                 else:
-                    resol = rres['correction']['resolution']
+                    resol = rres['correction']['resolution'][0]
                 in_file = rres['files']['correct']
                 inputs.append( {'input_file': in_file, 'resolution': resol} )
             sections = [
@@ -453,9 +453,16 @@ class AutoXDS:
         raw_info = xds.parse_xscale('XSCALE.LP')
         
         if len(raw_info.keys()) == 1:
-            self.results.values()[-1]['scaling'] =  raw_info.values()[0]     
+            info = raw_info.values()[0]
+            # Select resolution
+            resol = utils.select_resolution(info['statistics'])
+            info['resolution'] = resol
+            self.results.values()[-1]['scaling'] =  info  
         else:
             for name, info in raw_info.items():
+                # Select resolution
+                resol = utils.select_resolution(info['statistics'])
+                info['resolution'] = resol
                 self.results[name]['scaling'] = info
         if not success:
             _logger.error(':-( Scaling failed!')
@@ -475,7 +482,7 @@ class AutoXDS:
                 # CNS File
                 out_files.append(out_file_root + ".cns")
                 xdsconv_options = {
-                    'resolution': rres['correction']['resolution'],
+                    'resolution': 0,
                     'unit_cell': rres['correction']['symmetry']['space_group']['unit_cell'],
                     'space_group': rres['correction']['symmetry']['space_group']['sg_number'],
                     'format': 'CNS',
@@ -490,7 +497,7 @@ class AutoXDS:
                 #SHELX File
                 out_files.append(out_file_root + ".shelx")
                 xdsconv_options = {
-                    'resolution': rres['correction']['resolution'],
+                    'resolution': 0,
                     'unit_cell': rres['correction']['symmetry']['space_group']['unit_cell'],
                     'space_group': rres['correction']['symmetry']['space_group']['sg_number'],
                     'format': 'SHELX',
@@ -505,7 +512,7 @@ class AutoXDS:
                 #MTZ File
                 out_files.append(out_file_root + ".mtz")
                 xdsconv_options = {
-                    'resolution': rres['correction']['resolution'],
+                    'resolution': 0,
                     'unit_cell': rres['correction']['symmetry']['space_group']['unit_cell'],
                     'space_group': rres['correction']['symmetry']['space_group']['sg_number'],
                     'format': 'CCP4_F',
@@ -531,7 +538,7 @@ class AutoXDS:
         utils.update_xparm()
         _logger.info('Calculating Strategy ...')
         jobs = "XPLAN"
-        _reso = 1.0 #self.results[run_info['dataset_name']]['correction']['resolution']
+        _reso = 1.0 
         run_info['shells'] = utils.resolution_shells(_reso, 10)
         io.write_xds_input(jobs, run_info)
         success = utils.execute_xds_par()
@@ -565,12 +572,12 @@ class AutoXDS:
         return files
     
     def score_dataset(self, rres):
-        resolution = rres['correction']['resolution']
+        resolution = rres['scaling']['resolution'][1]
         mosaicity = rres['correction']['summary']['mosaicity']
         std_spot = rres['correction']['summary']['stdev_spot']
         std_spindle= rres['correction']['summary']['stdev_spindle']
-        i_sigma = rres['correction']['summary']['i_sigma']
-        r_meas = rres['correction']['summary']['r_meas']
+        i_sigma = rres['scaling']['summary']['i_sigma']
+        r_meas = rres['scaling']['summary']['r_meas']
         st_table = rres['indexing']['subtrees']            
         st_array = [i['population'] for i in st_table]
         subtree_skew = sum(st_array[1:]) / float(sum(st_array))
@@ -684,17 +691,18 @@ class AutoXDS:
                 else:
                     _logger.error(':-) Image analysis failed!')
                     run_result['image_analysis'] = {}
-                                            
+                                                            
             run_result['files'] = self.get_fileinfo(run_info)
             if _ref_run is None:
                 _ref_run = run_name
             self.results[run_name] = run_result 
                            
-            # Score dataset
-            self.score_dataset(run_result)
         
         # Scale datasets
         self.scale_datasets(run_info)
+        
+        # Score dataset
+        self.score_dataset(run_result)
         
         self.convert_files(run_info)            
         self.save_xml('process.xml')

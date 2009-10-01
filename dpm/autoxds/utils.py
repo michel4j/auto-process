@@ -248,26 +248,26 @@ def cell_volume(unit_cell):
 
 def select_resolution(table):
     """
-    Takes a table of statistics and determines the optimal resolution
+    Takes a table of statistics and determines the optimal resolutions
     The table is a list of dictionaries each with at least the following fields
     record = {
         'shell': string convertible to float
         'r_meas': float
+        'r_mrgdf': float
         'i_sigma' : float
     }
     
     """
     shells = table[:-1]
-    resol = shells[-1]['shell']
+    resol_i = shells[-1]['shell']
+    resol_r = shells[-1]['shell']
     for pos, l in enumerate(shells):
         if l['i_sigma'] >= 1.0:
-            resol = l['shell']
-        else:
-            break
-    if pos < len(shells) and shells[pos]['i_sigma'] <= -99.0:
-        resol = shells[-1]['shell']
+            resol_i = l['shell']
+        if abs(l['r_mrgdf']) <= 40.0:
+            resol_r = l['shell']
     
-    return float(resol)
+    return (resol_i, resol_r)
 
 def select_lattices(table):
     """
@@ -351,7 +351,7 @@ def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle,
         -0.1 * max(0.0, min(1.0, math.exp(-0.5 + mosaicity))),
         -0.05 * max(0.0, min(1.0, math.exp(-5.0 + abs(r_meas)))),
         -0.05 * max(0.0, min(1.0, math.exp(1.0 - abs(i_sigma)))),
-        #-0.05 * max(0.0, min(1.0, math.exp(ice_rings))),
+        -0.05 * max(0.0, min(1.0, math.exp(ice_rings))),
         ]
     
     #names = ['Root', 'Resolution', 'Spindle', 'Spot', 'Mosaicity','R_meas', 'I/Sigma', 'Ice', 'Satellites']

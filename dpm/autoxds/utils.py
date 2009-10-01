@@ -259,8 +259,8 @@ def select_resolution(table):
     
     """
     shells = table[:-1]
-    resol_i = shells[-1]['shell']
-    resol_r = shells[-1]['shell']
+    resol_i = shells[0]['shell']
+    resol_r = shells[0]['shell']
     for pos, l in enumerate(shells):
         if l['i_sigma'] >= 1.0:
             resol_i = l['shell']

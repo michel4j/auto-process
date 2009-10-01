@@ -183,7 +183,7 @@ class ProgDisplay(threading.Thread):
     def __init__(self, data_range, q):
         threading.Thread.__init__(self)
         self.queue = q
-        self.total = data_range[1] - data_range[0]
+        self.total = (data_range[1] - data_range[0])+1
         self.data_range = data_range
         self.length = 53
         self._cursor = False

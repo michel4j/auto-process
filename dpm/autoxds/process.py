@@ -265,9 +265,9 @@ class AutoXDS:
         spot_size = 6
         _all_images = False
                
-        while info.get('failure_code') > 0 and _retries < 5:
+        while info.get('failure_code') > 0 and _retries < 8:
             _logger.warning(':-( %s' % info.get('failure'))
-            _logger.debug('Indexing Quality [%08o]' % (data['quality_code']))
+            _logger.debug('Indexing Quality [%04d]' % (data['quality_code']))
             #_logger.debug(utils.print_table(data))
             if run_info['spot_range'][0] == run_info['data_range']:
                 _all_images = True
@@ -312,7 +312,7 @@ class AutoXDS:
                     data = utils.diagnose_index(info)
                 else:
                     _logger.critical(':-( Unable to proceed!')
-                    _retries = 5
+                    _retries = 999
             elif info.get('failure_code') == xds.INSUFFICIENT_SPOTS or info.get('failure_code') == xds.SPOT_LIST_NOT_3D:
                 if not _all_images:
                     run_info['spot_range'] = [run_info['data_range']]
@@ -323,15 +323,15 @@ class AutoXDS:
                     data = utils.diagnose_index(info)
                 elif sigma > 3:
                     sigma /= 2
-                    _logger.info('Including weaker spots (Sigma < %2.0f) ...' % sigma)
+                    _logger.info('Including weaker spots (Sigma > %2.0f) ...' % sigma)
                     io.write_xds_input('COLSPOT IDXREF', run_info)
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
                 else:
-                    _logger.critical(':-( Unable to proceed! [%d]...'% data['quality_code'])
-                    _retries = 5    
-            elif utils.match_code(data['quality_code'], 256) :
+                    _logger.critical(':-( Unable to proceed!')
+                    _retries = 999   
+            elif utils.match_code(data['quality_code'], 512) :
                 _logger.info('Adjusting spot parameters ...')
                 spot_size *= 1.5
                 #sepmin *= 1.5
@@ -343,13 +343,13 @@ class AutoXDS:
                 info = xds.parse_idxref()
                 data = utils.diagnose_index(info)                    
             else:
-                _logger.critical(':-( Unable to proceed! [%d]...'% data['quality_code'])
-                _retries = 5
+                _logger.critical(':-( Unable to proceed!')
+                _retries = 999
 
         if info.get('failure_code') == 0:
             _logger.info(':-) Auto-indexing succeeded.')
             #_logger.debug(utils.print_table(data))
-            _logger.debug('Indexing Quality [%08o]' % (data['quality_code']))
+            _logger.debug('Indexing Quality [%04d]' % (data['quality_code']))
             return {'success':True, 'data': info}
         else:
             return {'success':False, 'reason': info['failure']}

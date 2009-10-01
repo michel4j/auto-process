@@ -5,6 +5,7 @@ Generic Utiltites for AutoXDS
 
     
 import os
+import sys
 import re
 import math
 from math import exp
@@ -163,7 +164,10 @@ def get_dataset_params(img_file, screen=False):
     first_frame = int (parts[2])
     if first_frame == 0: first_frame = 1
     frame_count = len(file_list)
-    
+    if frame_count < 4:
+        print 'AutoXDS ERROR: You need at least 4 frames in the set! Only %d found' % frame_count
+        sys.exit(1)
+        
     info = marccd.read_header(reference_image)
     info['dataset_name'] = _dataset_name
     info['file_template'] = "%s/%s" % (directory, xds_template)        
@@ -345,11 +349,11 @@ def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle,
 #        -0.05 * ice_rings,
 #        ]
     score = [ 1.0,
-        -0.5 * max(0.0, min(1.0, math.exp(-4.0 + resolution))),
+        -0.45 * max(0.0, min(1.0, math.exp(-4.0 + resolution))),
         -0.2 * max(0.0, min(1.0, math.exp(-3.0 + std_spot))),
         -0.05 * max(0.0, min(1.0, math.exp(-1.0 + std_spindle))),
         -0.1 * max(0.0, min(1.0, math.exp(-0.5 + mosaicity))),
-        -0.05 * max(0.0, min(1.0, math.exp(-5.0 + abs(r_meas)))),
+        -0.1 * max(0.0, min(1.0, math.exp(-5.0 + abs(r_meas)))),
         -0.05 * max(0.0, min(1.0, math.exp(1.0 - abs(i_sigma)))),
         -0.05 * max(0.0, min(1.0, math.exp(ice_rings))),
         ]

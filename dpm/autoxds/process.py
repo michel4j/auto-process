@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ 
 Data Processing Class
 
@@ -10,7 +11,7 @@ from dpm.parser.distl import parse_distl
 from dpm.parser import xds
 from dpm.parser.best import parse_best
 from dpm.utils.log import get_module_logger, log_to_console
-from dpm.utils.prettytable import PrettyTable
+from dpm.utils.prettytable import PrettyTable, MSWORD_FRIENDLY
 from dpm.utils.progress import ProgDisplay, ProgChecker
 from dpm.parser.utils import Table
 from gnosis.xml import pickle
@@ -61,30 +62,57 @@ class AutoXDS:
                                                              run_info['dataset_name'])
         os.chdir(self.top_directory)
         
-    def save_log(self, filename='autoxds.log'):
+    def save_log(self, filename='process.log'):
         os.chdir(self.top_directory)
         fh = open(filename, 'w')
-        file_text = ""
+        file_text = "DATA PROCESSING SUMMARY\n"
+        file_text += '-'*80+'\n\n'
+        
+        pt = PrettyTable()
+        pt.add_column('Statistic', [
+                      'Score [a]', 'Wavelength',    'Space Group',
+                      'Cell parameters', 'Resolution [b]', 'Total Reflections',
+                      'Unique Reflections', 'Multiplicity', 'Completeness',
+                      'Mosaicity', 'I/sigma(I) [c]', 'R-mrgd-F [e]',
+                      'R-meas [d]', 'sigma(spot)', 'sigma(angle)','No. Ice rings',
+                      ])
+        
         for dataset_name, dset in self.results.items():
-            file_text += "\n###--- Results for data in %s\n" % dataset_name
-            img_anal_res = dset.get('image_analysis', None)
-            file_text += '\n CRYSTAL SCORE %8.3f \n' % dset['crystal_score']
-            if img_anal_res is not None:
-                file_text += '\n--- IMAGE ANALYSIS ---\n\n'
-                good_percent = 100.0 * (img_anal_res['summary']['bragg_spots'])/img_anal_res['summary']['resolution_spots']
-                file_text += "%20s:  %s\n" % ('File', img_anal_res['summary']['file'] )
-                file_text += "%20s:  %8d\n" % ('Total Spots', img_anal_res['summary']['total_spots'] )
-                file_text += "%20s:  %7.0f%%\n" % ('% Good Spots', good_percent )
-                file_text += "%20s:  %8d\n" % ('Ice Rings', img_anal_res['summary']['ice_rings'] )
-                file_text += "%20s:  %8.2f\n" % ('Estimated Resolution', img_anal_res['summary']['resolution'] )
-                file_text += "%20s:  %7.0f%%\n\n" % ('Saturation(top %d)' % img_anal_res['summary']['peaks'], img_anal_res['summary']['saturation'] )
-
-
-            file_text += "\n--- INDEXING ---\n\n"
-            file_text += "Standard deviation of spot position:    %5.3f (pix)\n" % dset['indexing']['summary']['stdev_spot']
-            file_text += "Standard deviation of spindle position: %5.3f (deg)\n" % dset['indexing']['summary']['stdev_spindle']
-            file_text += "Mosaicity:  %5.3f\n" % dset['indexing']['summary']['mosaicity']
-            file_text += "\n--- Likely Lattice Types ---\n"
+            if dset.get('image_analysis', None) is not None:
+                _ice_rings = dset['image_analysis']['summary']['ice_rings']
+            else:
+                _ice_rings = 'N/C'
+            pt.add_column(dataset_name, [
+                        dset['crystal_score'],
+                        self.dataset_info[dataset_name]['wavelength'],
+                        utils.SPACE_GROUP_NAMES[ dset['correction']['symmetry']['space_group']['sg_number'] ],
+                        '%7.1f %7.1f %7.1f %7.1f %7.1f %7.1f' % dset['correction']['symmetry']['space_group']['unit_cell'],
+                        '%0.1f (%0.1f)' % dset['scaling']['resolution'],
+                        dset['scaling']['summary']['observed'],
+                        dset['scaling']['summary']['unique'],
+                        float(dset['scaling']['summary']['observed'])/dset['scaling']['summary']['unique'],
+                        dset['scaling']['summary']['completeness'],
+                        dset['correction']['summary']['mosaicity'],
+                        dset['scaling']['summary']['i_sigma'],
+                        dset['scaling']['summary']['r_mrgdf'],
+                        dset['scaling']['summary']['r_meas'],
+                        dset['correction']['summary']['stdev_spot'],
+                        dset['correction']['summary']['stdev_spindle'],
+                        _ice_rings,
+                        ])
+        file_text += str(pt)
+        file_text += '\n[a] Data Quality Score for comparing similar data sets. > 0.8 Excellent, \n'
+        file_text += '    > 0.6 Good, > 0.5 Acceptable, > 0.4 Marginal, > 0.3 Barely usable\n'
+        file_text += '[b] Resolution selected based on I/sigma(I) > 1 cut-off. Value in parenthesis,\n'
+        file_text += '    based on R-mergd-F < 40% cut-off\n'
+        file_text += '[c] Average I/sigma(I) for all data in scaled output file\n'
+        file_text += '[d] Redundancy independent R-factor.\n    Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n'
+        file_text += '[e] Quality of amplitudes.\n    see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n\n' 
+        
+        for dataset_name, dset in self.results.items():
+            file_text += "\nDETAILED DATA PROCESSING RESULTS FOR DATASET %s\n" % (dataset_name)
+            file_text += '-'*80+'\n\n'
+            file_text += '*'*10 + " AUTOMATIC SPACEGROUP DETERMINATION " + '*'*10 + '\n\n'
             file_text += "\n%16s %10s %7s %35s %8s %s\n" % (
                 'Lattice Type',
                 'PointGroup',
@@ -129,7 +157,8 @@ class AutoXDS:
             # Print out integration results
             file_text += "\n--- INTEGRATION and CORRECTION ---\n"
             file_text  += '\n--- Summary ---\n'
-            file_text += 'Observed Reflections: %11d\n' %  dset['correction']['summary']['observed']
+            
+            
             file_text += 'Unique Reflections:   %11d\n' %  dset['correction']['summary']['unique']
             file_text += 'Redundancy: %7.1f\n' %  ( float(dset['correction']['summary']['observed'])/dset['correction']['summary']['unique'] )
             file_text += 'Unit Cell:  %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n' % dset['correction']['summary']['unit_cell']
@@ -285,6 +314,7 @@ class AutoXDS:
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, unindexed=True)
                     utils.save_spots(spot_list)
+                    io.write_xds_input(jobs, run_info)
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
@@ -295,6 +325,7 @@ class AutoXDS:
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, sigma=sigma)
                     utils.save_spots(spot_list)
+                    io.write_xds_input(jobs, run_info)
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
@@ -307,6 +338,7 @@ class AutoXDS:
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, unindexed=True)
                     utils.save_spots(spot_list)
+                    io.write_xds_input(jobs, run_info)
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
@@ -316,6 +348,7 @@ class AutoXDS:
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, sigma=sigma)
                     utils.save_spots(spot_list)
+                    io.write_xds_input(jobs, run_info)
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
@@ -330,6 +363,7 @@ class AutoXDS:
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, unindexed=True)
                     utils.save_spots(spot_list)
+                    io.write_xds_input(jobs, run_info)
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
@@ -412,7 +446,6 @@ class AutoXDS:
                 del info['summary']['shell']
         
         if info.get('failure') is None:
-            #_logger.info(':-) Correction succeeded.')
             return {'success':True, 'data': info}
         else:
             return {'success':False, 'reason': info['failure']}
@@ -596,17 +629,22 @@ class AutoXDS:
         return files
     
     def score_dataset(self, rres):
-        resolution = rres['scaling']['resolution'][1]
         mosaicity = rres['correction']['summary']['mosaicity']
         std_spot = rres['correction']['summary']['stdev_spot']
         std_spindle= rres['correction']['summary']['stdev_spindle']
-        i_sigma = rres['scaling']['summary']['i_sigma']
-        r_meas = rres['scaling']['summary']['r_meas']
+        if rres.get('scaling') is not None:
+            resolution = rres['scaling']['resolution'][1]
+            i_sigma = rres['scaling']['summary']['i_sigma']
+            r_meas = rres['scaling']['summary']['r_meas']
+        else:
+            resolution = rres['correction']['resolution'][1]
+            i_sigma = rres['correction']['summary']['i_sigma']
+            r_meas = rres['correction']['summary']['r_meas']          
         st_table = rres['indexing']['subtrees']            
         st_array = [i['population'] for i in st_table]
         subtree_skew = sum(st_array[1:]) / float(sum(st_array))
-        if rres.has_key('image_analysis'):
-            ice_rings = rres['image_analysis']['ice_rings']
+        if rres.get('image_analysis') is not None:
+            ice_rings = rres['image_analysis']['summary']['ice_rings']
         else:
             ice_rings = 0
         score = utils.score_crystal(resolution, mosaicity, r_meas, i_sigma,
@@ -689,6 +727,7 @@ class AutoXDS:
                         run_info['unit_cell'] = self.results[_ref_run]['unit_cell']
                         run_info['space_group'] = _ref_sgn
             else:
+                run_result['space_group'] = run_result['correction']['space_group']
                 _logger.info('Proceeding with PointGroup: %s (#%d)' % (utils.SPACE_GROUP_NAMES[_sel_pgn], _sel_pgn))
                 
             # Final correction
@@ -714,7 +753,6 @@ class AutoXDS:
                     run_result['image_analysis'] = info
                 else:
                     _logger.error(':-) Image analysis failed!')
-                    run_result['image_analysis'] = {}
                                                             
             run_result['files'] = self.get_fileinfo(run_info)
             if _ref_run is None:
@@ -728,7 +766,9 @@ class AutoXDS:
         # Score dataset
         self.score_dataset(run_result)
         
-        self.convert_files(run_info)            
+        if self.options.get('command', None) != 'screen':       
+            self.convert_files(run_info)
+                      
         self.save_xml('process.xml')
         self.save_log('process.log')
 

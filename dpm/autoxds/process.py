@@ -264,7 +264,9 @@ class AutoXDS:
         sepmin, clustrad = 6, 3
         spot_size = 6
         _all_images = False
-               
+        _aliens_tried = False
+        _sigma_tried = False
+          
         while info.get('failure_code') > 0 and _retries < 8:
             _logger.warning(':-( %s' % info.get('failure'))
             _logger.debug('Indexing Quality [%04d]' % (data['quality_code']))
@@ -278,13 +280,27 @@ class AutoXDS:
             utils.backup_file('SPOT.XDS')
 
             if info.get('failure_code') == xds.POOR_SOLUTION:
-                _logger.info('Removing alien spots ...')
-                spot_list = utils.load_spots()
-                spot_list = utils.filter_spots(spot_list, unindexed=True)
-                utils.save_spots(spot_list)
-                utils.execute_xds_par()
-                info = xds.parse_idxref()
-                data = utils.diagnose_index(info)
+                if not _aliens_tried:
+                    _logger.info('Removing alien spots ...')
+                    spot_list = utils.load_spots()
+                    spot_list = utils.filter_spots(spot_list, unindexed=True)
+                    utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                    _aliens_tried = True
+                elif sigma < 48:
+                    sigma *= 2
+                    _logger.info('Removing weak spots (Sigma < %2.0f) ...' % sigma)
+                    spot_list = utils.load_spots()
+                    spot_list = utils.filter_spots(spot_list, sigma=sigma)
+                    utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                else:
+                    _logger.critical(':-( Unable to proceed!')
+                    _retries = 999
             elif info.get('failure_code') == xds.INSUFFICIENT_INDEXED_SPOTS:
                 if data['distinct_subtrees'] >= 1:
                     _logger.info('Removing alien spots ...')
@@ -294,7 +310,7 @@ class AutoXDS:
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
-                elif sigma < 48:
+                elif sigma < 48 and data['index_origin_delta'] <= 6:
                     sigma *= 2
                     _logger.info('Removing weak spots (Sigma < %2.0f) ...' % sigma)
                     spot_list = utils.load_spots()
@@ -310,6 +326,14 @@ class AutoXDS:
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
+                elif not _aliens_tried:
+                    spot_list = utils.load_spots()
+                    spot_list = utils.filter_spots(spot_list, unindexed=True)
+                    utils.save_spots(spot_list)
+                    utils.execute_xds_par()
+                    info = xds.parse_idxref()
+                    data = utils.diagnose_index(info)
+                    _aliens_tried = True                    
                 else:
                     _logger.critical(':-( Unable to proceed!')
                     _retries = 999

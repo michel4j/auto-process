@@ -266,12 +266,18 @@ def select_resolution(table):
     resol_i = float(shells[0]['shell'])
     resol_r = float(shells[0]['shell'])
     pos = 0
-    while shells[pos]['i_sigma'] >= 1.0 and pos < len(shells):
-        resol_i = float(shells[pos]['shell'])
+    while pos < len(shells):
+        if shells[pos]['i_sigma'] >= 1.0:
+            resol_i = float(shells[pos]['shell'])
+        else:
+            break
         pos += 1
     pos = 0   
-    while abs(shells[pos]['r_mrgdf']) <= 40.0 and pos < len(shells):
-        resol_r = float(shells[pos]['shell'])
+    while pos < len(shells):
+        if abs(shells[pos]['r_mrgdf']) <= 40.0:
+            resol_r = float(shells[pos]['shell'])
+        else:
+            break
         pos += 1
 
     return (float(resol_i), float(resol_r))

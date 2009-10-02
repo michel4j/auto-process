@@ -263,14 +263,17 @@ def select_resolution(table):
     
     """
     shells = table[:-1]
-    resol_i = shells[0]['shell']
-    resol_r = shells[0]['shell']
-    for pos, l in enumerate(shells):
-        if l['i_sigma'] >= 1.0:
-            resol_i = l['shell']
-        if abs(l['r_mrgdf']) <= 40.0:
-            resol_r = l['shell']
-    
+    resol_i = float(shells[0]['shell'])
+    resol_r = float(shells[0]['shell'])
+    pos = 0
+    while shells[pos]['i_sigma'] >= 1.0:
+        resol_i = float(shells[pos]['shell'])
+        pos += 1
+    pos = 0   
+    while abs(shells[pos]['r_mrgdf']) <= 40.0:
+        resol_r = float(shells[pos]['shell'])
+        pos += 1
+
     return (float(resol_i), float(resol_r))
 
 def select_lattices(table):
@@ -586,3 +589,26 @@ def match_any(src, tgts):
         if src|tgt == src:
             return True
     return False 
+
+def text_heading(txt, level=1):
+    if level in [1,2]:
+        _pad = ' '*((78 - len(txt))//2)
+        txt = '%s%s%s' % (_pad, txt, _pad)
+        _banner = '*'*78
+        if level == 1:
+            txt = txt.upper()
+        _out = '\n%s\n%s\n%s\n\n' % (_banner, txt, _banner)
+    elif level == 3:
+        _pad = '*'*((74 - len(txt))//2)
+        _out = '\n%s  %s  %s\n\n' % (_pad, txt, _pad)
+    elif level == 4:
+        _pad = '='*10
+        _out = '\n%s %s %s\n' % (_pad, txt, _pad)
+    else:
+        _out = txt
+    return _out
+
+def add_margin(txt, size=1):
+    _margin = ' '*size
+    return '\n'.join([_margin+s for s in txt.split('\n')]) 
+    

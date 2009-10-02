@@ -65,17 +65,17 @@ class AutoXDS:
     def save_log(self, filename='process.log'):
         os.chdir(self.top_directory)
         fh = open(filename, 'w')
-        file_text = " DATA PROCESSING SUMMARY\n "
-        file_text += '-'*80+'\n\n'
+        file_text = utils.text_heading('Data Processing Summary', level=1)
         
         pt = PrettyTable()
         pt.add_column('Statistic', [
-                      'Score [a]', 'Wavelength',    'Space Group',
-                      'Cell parameters', 'Resolution [b]', 'Total Reflections',
+                      'Score [a]', 'Wavelength (A)',    'Space Group [b]',
+                      'Cell parameters (A)', '              (deg)', 
+                      'Cell Volume (A^3)', 'Resolution (A)[c]', 'Total Reflections',
                       'Unique Reflections', 'Multiplicity', 'Completeness',
-                      'Mosaicity', 'I/sigma(I) [c]', 'R-mrgd-F [e]',
-                      'R-meas [d]', 'sigma(spot)', 'sigma(angle)','No. Ice rings',
-                      ])
+                      'Mosaicity', 'I/sigma(I) [d]', 'R-mrgd-F [e]',
+                      'R-meas [f]', 'sigma(spot) (pix)', 'sigma(angle) (deg)','No. Ice rings',
+                      ], 'l')
         
         for dataset_name, dset in self.results.items():
             if dset.get('image_analysis', None) is not None:
@@ -83,36 +83,77 @@ class AutoXDS:
             else:
                 _ice_rings = 'N/C'
             pt.add_column(dataset_name, [
-                        dset['crystal_score'],
-                        self.dataset_info[dataset_name]['wavelength'],
-                        utils.SPACE_GROUP_NAMES[ dset['correction']['symmetry']['space_group']['sg_number'] ],
-                        '%7.1f %7.1f %7.1f\n%7.1f %7.1f %7.1f' % dset['correction']['symmetry']['space_group']['unit_cell'],
-                        '%0.1f (%0.1f)' % dset['scaling']['resolution'],
-                        dset['scaling']['summary']['observed'],
-                        dset['scaling']['summary']['unique'],
-                        float(dset['scaling']['summary']['observed'])/dset['scaling']['summary']['unique'],
-                        dset['scaling']['summary']['completeness'],
-                        dset['correction']['summary']['mosaicity'],
-                        dset['scaling']['summary']['i_sigma'],
-                        dset['scaling']['summary']['r_mrgdf'],
-                        dset['scaling']['summary']['r_meas'],
-                        dset['correction']['summary']['stdev_spot'],
-                        dset['correction']['summary']['stdev_spindle'],
-                        _ice_rings,
-                        ])
+                '%0.2f' % (dset['crystal_score'],),
+                '%7.4f' % (self.dataset_info[dataset_name]['wavelength'],),
+                utils.SPACE_GROUP_NAMES[ dset['correction']['symmetry']['space_group']['sg_number'] ],
+                '%5.1f %5.1f %5.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][:3],
+                '%5.1f %5.1f %5.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][3:],
+                '%0.0f' % (utils.cell_volume(dset['correction']['symmetry']['space_group']['unit_cell']),),
+                '%0.2f (%0.2f)' % dset['scaling']['resolution'],
+                dset['scaling']['summary']['observed'],
+                dset['scaling']['summary']['unique'],
+                '%0.1f' % (float(dset['scaling']['summary']['observed'])/dset['scaling']['summary']['unique'],),
+                '%0.1f%%' % (dset['scaling']['summary']['completeness'],),
+                '%0.2f' % (dset['correction']['summary']['mosaicity'],),
+                '%0.1f' % (dset['scaling']['summary']['i_sigma'],),
+                '%0.1f%%' % (dset['scaling']['summary']['r_mrgdf'],),
+                '%0.1f%%' % (dset['scaling']['summary']['r_meas'],),
+                '%0.1f' % (dset['correction']['summary']['stdev_spot'],),
+                '%0.1f' % (dset['correction']['summary']['stdev_spindle'],),
+                _ice_rings,
+                        ],'r')
         file_text += pt.get_string()
-        file_text += '\n [a] Data Quality Score for comparing similar data sets. > 0.8 Excellent, \n'
+        file_text += '\n[a] Data Quality Score for comparing similar data sets. > 0.8 Excellent, \n'
         file_text += '    > 0.6 Good, > 0.5 Acceptable, > 0.4 Marginal, > 0.3 Barely usable\n'
-        file_text += ' [b] Resolution selected based on I/sigma(I) > 1 cut-off. Value in parenthesis,\n'
-        file_text += '    based on R-mergd-F < 40% cut-off\n'
-        file_text += ' [c] Average I/sigma(I) for all data in scaled output file\n'
-        file_text += ' [d] Redundancy independent R-factor.\n    Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n'
-        file_text += ' [e] Quality of amplitudes.\n    see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n\n' 
+        file_text += '[b] NOTE: Automatic Space group selection is unreliable for incomplete\n'
+        file_text += '    data. See detailed results below.\n'
+        file_text += '[c] Resolution selected based on I/sigma(I) > 1 cut-off. Value in parenthesis,\n'
+        file_text += '    based on R-mergd-F < 40% cut-off.\n'
+        file_text += '[d] Average I/sigma(I) for all data in scaled output file\n'
+        file_text += '[e] Redundancy independent R-factor.\n    Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n'
+        file_text += '[f] Quality of amplitudes.\n    see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n\n' 
         
         for dataset_name, dset in self.results.items():
-            file_text += "\nDETAILED DATA PROCESSING RESULTS FOR DATASET %s\n" % (dataset_name)
-            file_text += '-'*80+'\n\n'
-            file_text += '*'*10 + " AUTOMATIC SPACEGROUP DETERMINATION " + '*'*10 + '\n\n'
+            file_text += utils.text_heading("DETAILED RESULTS FOR DATASET: '%s'" % (dataset_name), level=2)
+            # Print out strategy information  
+            if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
+                file_text  += utils.text_heading('Recommended Strategy for Data Collection', level=3)
+                pt = PrettyTable()
+                pt.add_column('Parameter', [
+                      'Attenuation', 'Distance (mm)',    'Start Angle',
+                      'Delta (deg)', 'No. Frames', 'Total Angle (deg)', 'Exposure Time (s) [b]',
+                      'Overlaps?' ], 'l')
+                
+        
+                for run in dset['strategy']['runs']:
+                    pt.add_column('Run %d [a]' % (run['number'],), [
+                      '%7.0f%%' % (dset['strategy']['attenuation'],), 
+                      '%8.1f' % (run['distance'],), 
+                      '%8.1f' % (run['phi_start'],),
+                      '%8.2f' % (run['phi_width'],), 
+                      '%8.0f' % (run['number_of_images'],), 
+                      '%8.2f' % (run['phi_width'] * run['number_of_images'],), 
+                      '%8.1f' % (run['exposure_time'],),
+                      '%8s' % (run['overlaps'],)], 'r')
+                
+                file_text += pt.get_string()
+                
+                file_text += '\n[a] For this strategy, the expected data quality is as follows\n'
+                file_text += '    %s: %8.2f\n' % ('Resolution', dset['strategy']['resolution'] )
+                file_text += '    %s: %7.1f%%\n' % ('Completeness', dset['strategy']['completeness'])
+                file_text += '    %s: %8.1f\n' % ('Redundancy', dset['strategy']['redundancy'])
+                file_text += '    %s: %8.1f (%0.1f)\n' % (
+                    'I/Sigma (hires)', 
+                    dset['strategy']['prediction_all']['average_i_over_sigma'],
+                    dset['strategy']['prediction_hi']['average_i_over_sigma'])
+                file_text += '    %s: %7.1f%% (%0.1f%%)\n' % (
+                    'R-factor (hires)', 
+                    dset['strategy']['prediction_all']['R_factor'],
+                    dset['strategy']['prediction_hi']['R_factor'])
+                file_text += '[b] NOTE: Recommended exposure time does not take into \n'
+                file_text += '    account overloads at low resolution!\n'
+                
+            file_text += utils.text_heading('Automatic Space Group Assignment', level=3)
             file_text += "\n%16s %10s %7s %35s %8s %s\n" % (
                 'Lattice Type',
                 'PointGroup',
@@ -132,7 +173,6 @@ class AutoXDS:
                 txt_subst += utils.tidy_cell(l['unit_cell'], lat_type) + (vol, reindex)
                 file_text += "%16s %3d %6s %7.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %8d %s\n" % txt_subst
             
-            file_text += "\n--- SPACEGROUP SELECTION ---\n\n"
             file_text  += '--- Likely Space Groups ---\n'
             file_text += '%15s %4s %9s\n' % (
                 'SpaceGroup',
@@ -155,19 +195,7 @@ class AutoXDS:
                 file_text += "Space Group selection ambiguous. Current selection is not final!\n"  
             
             # Print out integration results
-            file_text += "\n--- INTEGRATION and CORRECTION ---\n"
-            file_text  += '\n--- Summary ---\n'
-            
-            
-            file_text += 'Unique Reflections:   %11d\n' %  dset['correction']['summary']['unique']
-            file_text += 'Redundancy: %7.1f\n' %  ( float(dset['correction']['summary']['observed'])/dset['correction']['summary']['unique'] )
-            file_text += 'Unit Cell:  %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n' % dset['correction']['summary']['unit_cell']
-            file_text += 'Cell E.S.D: %7.2g %7.2g %7.2g %7.2g %7.2g %7.2g\n' % dset['correction']['summary']['unit_cell_esd']
-            file_text += 'Mosaicity:  %7.2f\n' % dset['correction']['summary']['mosaicity']
-            file_text += "Standard deviation of spot position:    %5.3f (pix)\n" % dset['correction']['summary']['stdev_spot']
-            file_text += "Standard deviation of spindle position: %5.3f (deg)\n" % dset['correction']['summary']['stdev_spindle']
-            file_text += '\n--- Statistics ---\n'
-            
+            file_text += utils.text_heading("Integration and Correction Statistics", level=3)
             pt = PrettyTable()
             tbl = Table(dset['correction']['statistics'])
             pt.add_column('Resolution', tbl['shell'], 'r')
@@ -185,8 +213,7 @@ class AutoXDS:
 
             # Print out scaling results
             if dset.get('scaling', None):
-                file_text += "\n--- SCALING ---\n"
-                file_text += '\n--- Statistics of scaled output data set ---\n'
+                file_text += utils.text_heading("Scaling Statistics", level=3)
                 pt = PrettyTable()
                 tbl = Table(dset['scaling']['statistics'])
                 pt.add_column('Resolution', tbl['shell'], 'r')
@@ -198,57 +225,10 @@ class AutoXDS:
                 pt.add_column('AnoCorr', tbl['cor_ano'], 'r')
                         
                 file_text += pt.get_string()
-            
-            # Print out strategy information  
-            if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
-                file_text  += "\n--- STRATEGY ---\n\n"
-                file_text  += '--- Recommended Strategy for Data Collection ---\n\n'
-                all_runs = []
-                data_labels = []
-                data_labels.append('%20s:' % 'Run Number')
-                data_labels.append('%20s:' % 'Attenuation')
-                data_labels.append('%20s:' % 'Distance')
-                data_labels.append('%20s:' % 'Start Angle')
-                data_labels.append('%20s:' % 'Delta')
-                data_labels.append('%20s:' % 'Frames')
-                data_labels.append('%20s:' % 'Total Angle')
-                data_labels.append('%20s:' % 'Exposure Time')
-                data_labels.append('%20s' % 'Overlaps?')
-        
-                file_text  += 'NOTE: Recommended exposure time does not take into account overloads at low resolution!\n\n'
-                for run in dset['strategy']['runs']:
-                    run_data = []
-                    run_data.append('%8d' % run['number'])
-                    run_data.append('%7.0f%%' % dset['strategy']['attenuation'])
-                    run_data.append('%8.1f' % run['distance'])
-                    run_data.append('%8.1f' % run['phi_start'])
-                    run_data.append('%8.2f' % run['phi_width'])
-                    run_data.append('%8.0f' % run['number_of_images'])
-                    run_data.append('%8.2f' % (run['phi_width'] * run['number_of_images']))
-                    run_data.append('%8.1f' % run['exposure_time'])
-                    run_data.append('%8s' % run['overlaps'])
-                    all_runs.append(run_data)
-                
-                for i in range(len(data_labels)):
-                    line = data_labels[i]
-                    for run_data in all_runs:
-                        line += run_data[i]
-                    file_text += "%s\n" % line
                     
-                file_text += '\n--- Expected data quality ---\n\n'
-                file_text += ' %20s: %8.2f\n' % ('Resolution', dset['strategy']['resolution'] )
-                file_text += ' %20s: %7.1f%%\n' % ('Completeness', dset['strategy']['completeness'])
-                file_text += ' %20s: %8.1f\n' % ('Redundancy', dset['strategy']['redundancy'])
-                file_text += ' %20s: %8.1f (%0.1f)\n' % (
-                    'I/Sigma (hires)', 
-                    dset['strategy']['prediction_all']['average_i_over_sigma'],
-                    dset['strategy']['prediction_hi']['average_i_over_sigma'])
-                file_text += ' %20s: %7.1f%% (%0.1f%%)\n' % (
-                    'R-factor (hires)', 
-                    dset['strategy']['prediction_all']['R_factor'],
-                    dset['strategy']['prediction_hi']['R_factor'])
-        file_text += '\n\n'   
-        fh.write(file_text)    
+        file_text += '\n\n'
+        out_text = utils.add_margin(file_text, 1)
+        fh.write(out_text)    
         fh.close()
 
     def save_xml(self, filename='process.xml'):

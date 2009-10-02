@@ -628,7 +628,7 @@ class AutoXDS:
                 }
         return files
     
-    def score_dataset(self):
+    def score_datasets(self):
         for dataset_name, rres in self.results.items():
             mosaicity = rres['correction']['summary']['mosaicity']
             std_spot = rres['correction']['summary']['stdev_spot']

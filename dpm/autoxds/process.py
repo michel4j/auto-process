@@ -63,6 +63,10 @@ class AutoXDS:
         os.chdir(self.top_directory)
         
     def save_log(self, filename='process.log'):
+        if self.options.get('anomalous', False):
+            adj = 'ANOMALOUS'
+        else:
+            adj = 'NATIVE'
         os.chdir(self.top_directory)
         fh = open(filename, 'w')
         file_text = utils.text_heading('Data Processing Summary', level=1)
@@ -114,44 +118,69 @@ class AutoXDS:
         file_text += '[f] Quality of amplitudes.\n    see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n\n' 
         
         for dataset_name, dset in self.results.items():
-            file_text += utils.text_heading("DETAILED RESULTS FOR DATASET: '%s'" % (dataset_name), level=2)
+            file_text += utils.text_heading("DETAILED RESULTS FOR %s DATASET: '%s'" % (adj, dataset_name), level=2)
             # Print out strategy information  
             if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
                 file_text  += utils.text_heading('Recommended Strategy for Data Collection', level=3)
                 pt = PrettyTable()
                 pt.add_column('Parameter', [
                       'Attenuation', 'Distance (mm)',    'Start Angle',
-                      'Delta (deg)', 'No. Frames', 'Total Angle (deg)', 'Exposure Time (s) [b]',
-                      'Overlaps?' ], 'l')
+                      'Delta (deg)', 'No. Frames', 'Total Angle (deg)', 'Exposure Time (s) [a]',
+                      'Overlaps?', '-- Expected Quality --', 'Resolution',
+                      'Completeness', 'Multiplicity',
+                      'I/sigma(I) [b]', 'R-factor [b]' ], 'l')
                 
         
                 for run in dset['strategy']['runs']:
-                    pt.add_column('Run %d [a]' % (run['number'],), [
-                      '%7.0f%%' % (dset['strategy']['attenuation'],), 
-                      '%8.1f' % (run['distance'],), 
-                      '%8.1f' % (run['phi_start'],),
-                      '%8.2f' % (run['phi_width'],), 
-                      '%8.0f' % (run['number_of_images'],), 
-                      '%8.2f' % (run['phi_width'] * run['number_of_images'],), 
-                      '%8.1f' % (run['exposure_time'],),
-                      '%8s' % (run['overlaps'],)], 'r')
+                    _name = run['name']
+                    if run['number'] == 1:
+                        _res = '%0.2f [c]' % (dset['strategy']['resolution'],)
+                        _cmpl = '%0.1f%%' % (dset['strategy']['completeness'],)
+                        _mlt = '%0.1f' % (dset['strategy']['redundancy'],)
+                        _i_sigma = '%0.1f (%0.1f)' % (dset['strategy']['prediction_all']['average_i_over_sigma'],
+                                                      dset['strategy']['prediction_hi']['average_i_over_sigma'])
+                        _r_fac = '%0.1f%% (%0.1f%%)' % (dset['strategy']['prediction_all']['R_factor'],
+                                                    dset['strategy']['prediction_hi']['R_factor'])
+                    else:
+                        _res = _cmpl = _mlt = _i_sigma = _r_fac = '<--'
+                        
+
+                    pt.add_column(_name, [
+                      '%0.0f%%' % (dset['strategy']['attenuation'],), 
+                      '%0.1f' % (run['distance'],), 
+                      '%0.1f' % (run['phi_start'],),
+                      '%0.2f' % (run['phi_width'],), 
+                      '%0.0f' % (run['number_of_images'],), 
+                      '%0.2f' % (run['phi_width'] * run['number_of_images'],), 
+                      '%0.1f' % (run['exposure_time'],),
+                      '%s' % (run['overlaps'],), '-------------',
+                      _res, _cmpl, _mlt, _i_sigma, _r_fac,                      
+                      ], 'r')
+                
+                run = utils.get_xplan_strategy(dset)
+                if run:
+                    pt.add_column('Alternate [d]', [
+                      'N/C', 
+                      '', 
+                      '%0.1f' % (run['start_angle'],),
+                      '%0.2f' % (run['delta_angle'],), 
+                      '%0.0f' % (run['number_of_images'],), 
+                      '%0.2f' % (run['total_angle'],), 
+                      '',
+                      '', '-------------',
+                      run['resolution'], run['completeness'], 
+                      run['multiplicity'], 'N/C', 'N/C',                      
+                      ], 'r')
+                        
                 
                 file_text += pt.get_string()
                 
-                file_text += '\n[a] For this strategy, the expected data quality is as follows\n'
-                file_text += '    %s: %8.2f\n' % ('Resolution', dset['strategy']['resolution'] )
-                file_text += '    %s: %7.1f%%\n' % ('Completeness', dset['strategy']['completeness'])
-                file_text += '    %s: %8.1f\n' % ('Redundancy', dset['strategy']['redundancy'])
-                file_text += '    %s: %8.1f (%0.1f)\n' % (
-                    'I/Sigma (hires)', 
-                    dset['strategy']['prediction_all']['average_i_over_sigma'],
-                    dset['strategy']['prediction_hi']['average_i_over_sigma'])
-                file_text += '    %s: %7.1f%% (%0.1f%%)\n' % (
-                    'R-factor (hires)', 
-                    dset['strategy']['prediction_all']['R_factor'],
-                    dset['strategy']['prediction_hi']['R_factor'])
-                file_text += '[b] NOTE: Recommended exposure time does not take into \n'
+                file_text += '\n[a] NOTE: Recommended exposure time does not take into \n'
                 file_text += '    account overloads at low resolution!\n'
+                file_text += '[b] Values in parenthesis represent the high resolution shell.\n'
+                file_text += '[c] %s\n' %  dset['strategy']['resolution_reasoning']
+                file_text += '[d] Strategy Calculated according to XDS and XPLAN.\n' 
+                file_text += '    NOTE:Delta angle does not take mosaicity into account.\n' 
                 
             file_text += utils.text_heading('Automatic Space Group Assignment', level=3)
             file_text += "\n%16s %10s %7s %35s %8s %s\n" % (

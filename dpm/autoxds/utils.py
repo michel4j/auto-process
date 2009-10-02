@@ -15,6 +15,7 @@ import commands
 from dpm.imageio import marccd
 from dpm.parser.utils import Table
 from dpm.utils import magic
+from dpm.utils import fitting
 import numpy
 
 
@@ -337,9 +338,9 @@ def execute_best(time, anomalous=False):
     anom_flag = ''
     if anomalous:
         anom_flag = '-a'
-    command  = "best -t %f -i2s 2.0" % time
+    command  = "best -t %f -q " % time
     command += " -e none -M 1 -w 0.2 %s -dna best.xml" % anom_flag
-    command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL >> best.log" 
+    command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL >> best.log"
     sts, output = commands.getstatusoutput(command)
     return sts==0
 
@@ -570,7 +571,29 @@ def filter_spots(spot_list, sigma=0, unindexed=False):
     if unindexed and len(new_list[0]) > 4:
         new_list = [sp for sp in new_list if _indexed(sp[4:])]
     return new_list
-        
+
+def get_xplan_strategy(info):
+    plan = {}
+    xplan = info['strategy'].get('xplan')
+    res = info['scaling']['resolution'][0]
+    osc = Table(info['indexing']['oscillation_ranges'])
+    x = numpy.array(osc['resolution'])
+    y = numpy.array(osc['angle'])
+    p1 = fitting.linear_fit(x, y)
+    plan['resolution'] = res
+    plan['delta_angle'] = fitting.line_func(res, p1)
+    
+    _scens = info['strategy']['xplan'].get('summary')
+    pos = len(_scens)
+    _sel = _scens[-1]
+    while pos > 0:
+        pos -=1
+        if _scens[pos]['completeness'] >= min(99.0, _sel['completeness']):
+            _sel = _scens[pos]
+            
+    plan.update(_sel)
+    plan['number_of_images'] = int(plan['total_angle']/plan['delta_angle'])
+    return plan    
 
 def backup_file(filename):
     if os.path.exists(filename):

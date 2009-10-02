@@ -31,6 +31,7 @@ def parse_best(filename):
                         summary[key] = value
                 if name == 'collection_run':
                     run = {}
+                    run[u'name'] = 'Run %d' % (int(index))
                     run[u'number'] = int(index)
                     for item in subnode.getElementsByTagName('item'):
                         key = item.getAttribute('name')

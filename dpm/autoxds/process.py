@@ -65,7 +65,7 @@ class AutoXDS:
     def save_log(self, filename='process.log'):
         os.chdir(self.top_directory)
         fh = open(filename, 'w')
-        file_text = "DATA PROCESSING SUMMARY\n"
+        file_text = " DATA PROCESSING SUMMARY\n "
         file_text += '-'*80+'\n\n'
         
         pt = PrettyTable()
@@ -86,7 +86,7 @@ class AutoXDS:
                         dset['crystal_score'],
                         self.dataset_info[dataset_name]['wavelength'],
                         utils.SPACE_GROUP_NAMES[ dset['correction']['symmetry']['space_group']['sg_number'] ],
-                        '%7.1f %7.1f %7.1f %7.1f %7.1f %7.1f' % dset['correction']['symmetry']['space_group']['unit_cell'],
+                        '%7.1f %7.1f %7.1f\n%7.1f %7.1f %7.1f' % dset['correction']['symmetry']['space_group']['unit_cell'],
                         '%0.1f (%0.1f)' % dset['scaling']['resolution'],
                         dset['scaling']['summary']['observed'],
                         dset['scaling']['summary']['unique'],
@@ -100,14 +100,14 @@ class AutoXDS:
                         dset['correction']['summary']['stdev_spindle'],
                         _ice_rings,
                         ])
-        file_text += str(pt)
-        file_text += '\n[a] Data Quality Score for comparing similar data sets. > 0.8 Excellent, \n'
+        file_text += pt.get_string()
+        file_text += '\n [a] Data Quality Score for comparing similar data sets. > 0.8 Excellent, \n'
         file_text += '    > 0.6 Good, > 0.5 Acceptable, > 0.4 Marginal, > 0.3 Barely usable\n'
-        file_text += '[b] Resolution selected based on I/sigma(I) > 1 cut-off. Value in parenthesis,\n'
+        file_text += ' [b] Resolution selected based on I/sigma(I) > 1 cut-off. Value in parenthesis,\n'
         file_text += '    based on R-mergd-F < 40% cut-off\n'
-        file_text += '[c] Average I/sigma(I) for all data in scaled output file\n'
-        file_text += '[d] Redundancy independent R-factor.\n    Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n'
-        file_text += '[e] Quality of amplitudes.\n    see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n\n' 
+        file_text += ' [c] Average I/sigma(I) for all data in scaled output file\n'
+        file_text += ' [d] Redundancy independent R-factor.\n    Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n'
+        file_text += ' [e] Quality of amplitudes.\n    see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n\n' 
         
         for dataset_name, dset in self.results.items():
             file_text += "\nDETAILED DATA PROCESSING RESULTS FOR DATASET %s\n" % (dataset_name)
@@ -178,7 +178,7 @@ class AutoXDS:
             pt.add_column('SigAno', tbl['sig_ano'], 'r')
             pt.add_column('AnoCorr', tbl['cor_ano'], 'r')
                         
-            file_text += str(pt)
+            file_text += pt.get_string()
             resol = dset['correction']['resolution']
             file_text += "\nResolution cut-off from preliminary analysis (I/SigI>1.0):  %5.2f\n\n" % (resol[0])
             
@@ -197,7 +197,7 @@ class AutoXDS:
                 pt.add_column('SigAno', tbl['sig_ano'], 'r')
                 pt.add_column('AnoCorr', tbl['cor_ano'], 'r')
                         
-                file_text += str(pt)
+                file_text += pt.get_string()
             
             # Print out strategy information  
             if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
@@ -251,7 +251,7 @@ class AutoXDS:
         fh.write(file_text)    
         fh.close()
 
-    def save_xml(self, filename='autoxds.xml'):
+    def save_xml(self, filename='process.xml'):
         os.chdir(self.top_directory)
         fh = open(filename, 'w')
         pickle.dump(self.results, fh)
@@ -461,7 +461,7 @@ class AutoXDS:
             sg_info = parse_pointless('pointless.xml')
             return {'success':True, 'data': sg_info}        
     
-    def scale_datasets(self, run_info):
+    def scale_datasets(self):
         os.chdir(self.top_directory)
         _logger.info("Scaling ...")
         command = self.options.get('command', None)
@@ -525,7 +525,7 @@ class AutoXDS:
             _logger.error(':-( Scaling failed!')
             return {'success': False, 'reason': None}
     
-    def convert_files(self, run_info):
+    def convert_files(self):
         os.chdir(self.top_directory)
         # GENERATE MTZ and CNS output files    
         _logger.info('Generating MTZ, SHELX and CNS files ...')
@@ -628,30 +628,31 @@ class AutoXDS:
                 }
         return files
     
-    def score_dataset(self, rres):
-        mosaicity = rres['correction']['summary']['mosaicity']
-        std_spot = rres['correction']['summary']['stdev_spot']
-        std_spindle= rres['correction']['summary']['stdev_spindle']
-        if rres.get('scaling') is not None:
-            resolution = rres['scaling']['resolution'][1]
-            i_sigma = rres['scaling']['summary']['i_sigma']
-            r_meas = rres['scaling']['summary']['r_meas']
-        else:
-            resolution = rres['correction']['resolution'][1]
-            i_sigma = rres['correction']['summary']['i_sigma']
-            r_meas = rres['correction']['summary']['r_meas']          
-        st_table = rres['indexing']['subtrees']            
-        st_array = [i['population'] for i in st_table]
-        subtree_skew = sum(st_array[1:]) / float(sum(st_array))
-        if rres.get('image_analysis') is not None:
-            ice_rings = rres['image_analysis']['summary']['ice_rings']
-        else:
-            ice_rings = 0
-        score = utils.score_crystal(resolution, mosaicity, r_meas, i_sigma,
-                            std_spot, std_spindle,
-                            subtree_skew, ice_rings)
-        _logger.info("Dataset Score: %0.2f" % score)
-        rres['crystal_score'] = score
+    def score_dataset(self):
+        for dataset_name, rres in self.results.items():
+            mosaicity = rres['correction']['summary']['mosaicity']
+            std_spot = rres['correction']['summary']['stdev_spot']
+            std_spindle= rres['correction']['summary']['stdev_spindle']
+            if rres.get('scaling') is not None:
+                resolution = rres['scaling']['resolution'][1]
+                i_sigma = rres['scaling']['summary']['i_sigma']
+                r_meas = rres['scaling']['summary']['r_meas']
+            else:
+                resolution = rres['correction']['resolution'][1]
+                i_sigma = rres['correction']['summary']['i_sigma']
+                r_meas = rres['correction']['summary']['r_meas']          
+            st_table = rres['indexing']['subtrees']            
+            st_array = [i['population'] for i in st_table]
+            subtree_skew = sum(st_array[1:]) / float(sum(st_array))
+            if rres.get('image_analysis') is not None:
+                ice_rings = rres['image_analysis']['summary']['ice_rings']
+            else:
+                ice_rings = 0
+            score = utils.score_crystal(resolution, mosaicity, r_meas, i_sigma,
+                                std_spot, std_spindle,
+                                subtree_skew, ice_rings)
+            _logger.info("Dataset '%s' Score: %0.2f" % (dataset_name, score))
+            rres['crystal_score'] = score
                   
     def run(self):
         
@@ -761,13 +762,13 @@ class AutoXDS:
                            
         
         # Scale datasets
-        self.scale_datasets(run_info)
+        self.scale_datasets()
         
         # Score dataset
-        self.score_dataset(run_result)
+        self.score_datasets()
         
         if self.options.get('command', None) != 'screen':       
-            self.convert_files(run_info)
+            self.convert_files()
                       
         self.save_xml('process.xml')
         self.save_log('process.log')

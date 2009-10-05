@@ -29,7 +29,7 @@ class AutoXDS:
         self.dataset_info = {}
         self.cpu_count = utils.get_cpu_count()
         _logger.info('Using %d CPUs.' % self.cpu_count)
-
+        self.dataset_names = []
         # prepare dataset info
         for i, img in enumerate(self.options['images']):
             run_info = utils.get_dataset_params(img, is_screening)
@@ -38,6 +38,7 @@ class AutoXDS:
             if self.options.get('prefix'):
                 run_info['dataset_name'] = self.options['prefix'][i]
             self.dataset_info[run_info['dataset_name']] =  run_info
+            self.dataset_names.append(run_info['dataset_name'])
             
         
         # prepare top level working directory
@@ -83,7 +84,8 @@ class AutoXDS:
                       'R-meas [f]', 'sigma(spot) (pix)', 'sigma(angle) (deg)','No. Ice rings',
                       ], 'l')
         
-        for dataset_name, dset in self.results.items():
+        for dataset_name in self.dataset_names:
+            dset = self.results[dataset_name]
             if dset.get('image_analysis', None) is not None:
                 _ice_rings = dset['image_analysis']['summary']['ice_rings']
             else:
@@ -119,7 +121,8 @@ class AutoXDS:
         file_text += '[e] Redundancy independent R-factor.\n    Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n'
         file_text += '[f] Quality of amplitudes.\n    see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n\n' 
         
-        for dataset_name, dset in self.results.items():
+        for dataset_name in self.dataset_names:
+            dset = self.results[dataset_name]
             file_text += utils.text_heading("DETAILED RESULTS FOR %s DATASET: '%s'" % (adj, dataset_name), level=2)
             # Print out strategy information  
             if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
@@ -699,7 +702,8 @@ class AutoXDS:
             adj = 'ANOMALOUS'
         _ref_run = None
         _logger.info("Directory: '%s'" % self.top_directory)
-        for run_name, run_info in self.dataset_info.items():
+        for run_name in self.dataset_names:
+            run_info = self.dataset_info[dataset_name]
             if not os.path.isdir(run_info['working_directory']):
                 os.mkdir(os.path.abspath(run_info['working_directory']))
             _logger.info("%s %s DATASET: '%s'" % (description, adj, run_name))

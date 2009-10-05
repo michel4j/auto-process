@@ -756,13 +756,16 @@ class AutoXDS:
                     if _sel_sgn != _ref_sgn:
                         _logger.warning('WARNING: SpaceGroup differs from reference data set!')                           
                         _logger.info('Proceeding with %s: %s (#%d) instead.' % (_ref_type, utils.SPACE_GROUP_NAMES[_ref_sgn], _ref_sgn))
-                        run_info['unit_cell'] = self.results[_ref_run]['unit_cell']
+                        _ref_sginfo = self.results[_ref_run]['space_group']
+                        run_info['unit_cell'] = utils.tidy_cell(_ref_sginfo['unit_cell'], _ref_sginfo['character'])
                         run_info['space_group'] = _ref_sgn
             else:
                 run_result['space_group'] = run_result['correction']['space_group']
                 _logger.info('Proceeding with PointGroup: %s (#%d)' % (utils.SPACE_GROUP_NAMES[_sel_pgn], _sel_pgn))
                 
             # Final correction
+            utils.backup_file('CORRECT.LP')
+            utils.backup_file('XDS_ASCII.HKL')
             _out = self.correct(run_info)
             if not _out['success']:
                 _logger.error('Correction failed! %s' % _out.get('reason'))

@@ -703,7 +703,7 @@ class AutoXDS:
         _ref_run = None
         _logger.info("Directory: '%s'" % self.top_directory)
         for run_name in self.dataset_names:
-            run_info = self.dataset_info[dataset_name]
+            run_info = self.dataset_info[run_name]
             if not os.path.isdir(run_info['working_directory']):
                 os.mkdir(os.path.abspath(run_info['working_directory']))
             _logger.info("%s %s DATASET: '%s'" % (description, adj, run_name))

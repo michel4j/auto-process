@@ -90,22 +90,26 @@ class AutoXDS:
                 _ice_rings = dset['image_analysis']['summary']['ice_rings']
             else:
                 _ice_rings = 'N/C'
+            if dset.get('scaling', None) is not None:
+                _summary = dset['scaling']
+            else:
+                _summary= dset['correction']
             pt.add_column(dataset_name, [
                 '%0.2f' % (dset['crystal_score'],),
                 '%7.4f' % (self.dataset_info[dataset_name]['wavelength'],),
                 utils.SPACE_GROUP_NAMES[ dset['correction']['symmetry']['space_group']['sg_number'] ],
-                '%5.1f %5.1f %5.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][:3],
-                '%5.1f %5.1f %5.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][3:],
+                '%0.1f %0.1f %0.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][:3],
+                '%0.1f %0.1f %0.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][3:],
                 '%0.0f' % (utils.cell_volume(dset['correction']['symmetry']['space_group']['unit_cell']),),
-                '%0.2f (%0.2f)' % dset['scaling']['resolution'],
-                dset['scaling']['summary']['observed'],
-                dset['scaling']['summary']['unique'],
-                '%0.1f' % (float(dset['scaling']['summary']['observed'])/dset['scaling']['summary']['unique'],),
-                '%0.1f%%' % (dset['scaling']['summary']['completeness'],),
+                '%0.2f (%0.2f)' % _summary['resolution'],
+                _summary['summary']['observed'],
+                _summary['summary']['unique'],
+                '%0.1f' % (float(_summary['summary']['observed'])/_summary['summary']['unique'],),
+                '%0.1f%%' % (_summary['summary']['completeness'],),
                 '%0.2f' % (dset['correction']['summary']['mosaicity'],),
-                '%0.1f' % (dset['scaling']['summary']['i_sigma'],),
-                '%0.1f%%' % (dset['scaling']['summary']['r_mrgdf'],),
-                '%0.1f%%' % (dset['scaling']['summary']['r_meas'],),
+                '%0.1f' % (_summary['summary']['i_sigma'],),
+                '%0.1f%%' % (_summary['summary']['r_mrgdf'],),
+                '%0.1f%%' % (_summary['summary']['r_meas'],),
                 '%0.1f' % (dset['correction']['summary']['stdev_spot'],),
                 '%0.1f' % (dset['correction']['summary']['stdev_spindle'],),
                 _ice_rings,
@@ -117,7 +121,7 @@ class AutoXDS:
         file_text += '    data. See detailed results below.\n'
         file_text += '[c] Resolution selected based on I/sigma(I) > 1 cut-off. Value in parenthesis,\n'
         file_text += '    based on R-mergd-F < 40% cut-off.\n'
-        file_text += '[d] Average I/sigma(I) for all data in scaled output file\n'
+        file_text += '[d] Average I/sigma(I) for all data in\n'
         file_text += '[e] Redundancy independent R-factor.\n    Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n'
         file_text += '[f] Quality of amplitudes.\n    see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.\n\n' 
         
@@ -227,8 +231,10 @@ class AutoXDS:
             file_text += utils.text_heading('Likely Space Groups and their probabilities', level=4)
             pt = PrettyTable()
             pt.field_names = ['Space Group','No.', 'Probability']
+            sg_mum = dset['correction']['symmetry']['space_group']['sg_number']
+            sg_name = utils.SPACE_GROUP_NAMES[ sg_num ]
             for i, sol in enumerate(dset['space_group']['candidates']):
-                if i == 0:
+                if sg_num == sol['number'] and i== 0:
                     sg_name = '* %13s' % (utils.SPACE_GROUP_NAMES[ sol['number'] ])
                 else:
                     sg_name = '  %13s' % (utils.SPACE_GROUP_NAMES[ sol['number'] ])
@@ -236,7 +242,6 @@ class AutoXDS:
                     sol['number'],
                     sol['probability']])
             file_text += pt.get_string()                
-            sg_name = utils.SPACE_GROUP_NAMES[ dset['space_group']['sg_number'] ]
             file_text += "\n[*] Selected:  %s,  #%s\n" % ( 
                 sg_name, dset['space_group']['sg_number'] )
             u_cell = utils.tidy_cell(dset['space_group']['unit_cell'], dset['space_group']['character'])

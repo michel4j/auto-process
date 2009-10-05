@@ -270,12 +270,16 @@ def select_resolution(table):
     while pos < len(shells):
         if shells[pos]['i_sigma'] >= 1.0:
             resol_i = float(shells[pos]['shell'])
+        elif shells[pos]['i_sigma'] == -99.0:
+            resol_i = float(shells[pos]['shell'])
         else:
             break
         pos += 1
     pos = 0   
     while pos < len(shells):
         if abs(shells[pos]['r_mrgdf']) <= 40.0:
+            resol_r = float(shells[pos]['shell'])
+        elif shells[pos]['r_mrgdf'] == -99.0:
             resol_r = float(shells[pos]['shell'])
         else:
             break
@@ -631,8 +635,7 @@ def text_heading(txt, level=1):
         _pad = '*'*((74 - len(txt))//2)
         _out = '\n%s  %s  %s\n\n' % (_pad, txt, _pad)
     elif level == 4:
-        _pad = '='*10
-        _out = '\n%s %s %s\n' % (_pad, txt, _pad)
+        _out = '\n%s:\n' % (txt.upper(),)
     else:
         _out = txt
     return _out

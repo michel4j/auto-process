@@ -34,9 +34,11 @@ class AutoXDS:
         for i, img in enumerate(self.options['images']):
             run_info = utils.get_dataset_params(img, is_screening)
             run_info['cpu_count'] = self.cpu_count
+            run_info['anomalous'] = self.options.get('anomalous', False)
             if self.options.get('prefix'):
                 run_info['dataset_name'] = self.options['prefix'][i]
             self.dataset_info[run_info['dataset_name']] =  run_info
+            
         
         # prepare top level working directory
         if is_screening:
@@ -74,8 +76,8 @@ class AutoXDS:
         pt = PrettyTable()
         pt.add_column('Statistic', [
                       'Score [a]', 'Wavelength (A)',    'Space Group [b]',
-                      'Cell parameters (A)', '              (deg)', 
-                      'Cell Volume (A^3)', 'Resolution (A)[c]', 'Total Reflections',
+                      'Unit Cell (A)', '        (deg)', 
+                      'Cell Volume (A^3)', 'Resolution (A)[c]', 'All Reflections',
                       'Unique Reflections', 'Multiplicity', 'Completeness',
                       'Mosaicity', 'I/sigma(I) [d]', 'R-mrgd-F [e]',
                       'R-meas [f]', 'sigma(spot) (pix)', 'sigma(angle) (deg)','No. Ice rings',
@@ -172,56 +174,75 @@ class AutoXDS:
                       run['multiplicity'], 'N/C', 'N/C',                      
                       ], 'r')
                         
-                
                 file_text += pt.get_string()
-                
                 file_text += '\n[a] NOTE: Recommended exposure time does not take into \n'
                 file_text += '    account overloads at low resolution!\n'
                 file_text += '[b] Values in parenthesis represent the high resolution shell.\n'
                 file_text += '[c] %s\n' %  dset['strategy']['resolution_reasoning']
                 file_text += '[d] Strategy Calculated according to XDS and XPLAN.\n' 
-                file_text += '    NOTE:Delta angle does not take mosaicity into account.\n' 
+                file_text += '    Determined from the following tables.\n' 
+                
+                file_text += utils.text_heading('Alternate Optimal Selection of Collection Range', level=4)
+                pt = PrettyTable()
+                dt = Table(dset['strategy']['xplan']['summary'])
+                for k,t in [('Start Angle','start_angle'),('Total Angle', 'total_angle'),('Completeness','completeness'), ('Multiplicity','multiplicity') ]:
+                    pt.add_column(k, dt[t],'r')
+                file_text += pt.get_string()
+                file_text += '\n'
+                file_text += utils.text_heading('Maximum Delta Angle to Prevent Angular Overlap', level=4)
+                pt = PrettyTable()
+                dt = Table(dset['indexing']['oscillation_ranges'])
+                for k,t in [('High Resolution Limit','resolution'),('Max. Angle Delta [a]', 'angle')]:
+                    pt.add_column(k, dt[t])
+                file_text += pt.get_string()
+                file_text += '\n[a] NOTE: Assumes a mosaicity of zero!\n'
                 
             file_text += utils.text_heading('Automatic Space Group Assignment', level=3)
-            file_text += "\n%16s %10s %7s %35s %8s %s\n" % (
-                'Lattice Type',
-                'PointGroup',
-                'Quality',
-                '_______ Unit Cell Parameters ______',
-                'Cell Vol',
-                'Reindex',
-                )
+            file_text += utils.text_heading('Compatible Lattice Character and Bravais Lattices', level=4)
+            pt = PrettyTable()
+            pt.field_names = ['No.', 'Character', 'Cell Parameters', 'Quality']
             for l in dset['correction']['symmetry']['lattices']:
-                vol = utils.cell_volume( l['unit_cell'] )
-                lat_type = l['id'][1]
-                descr = "%s(%s)" % (utils.CRYSTAL_SYSTEMS[ lat_type[0] ], lat_type)
+                id, lat_type = l['id']
                 sg = utils.POINT_GROUPS[ lat_type ][0]
                 sg_name = utils.SPACE_GROUP_NAMES[ sg ]
-                txt_subst = (descr, sg, sg_name, l['quality'])
+                pt.add_row([id, 
+                    '%6s %3d %2s' % (sg_name, sg, lat_type), 
+                    '%5.1f %5.1f %5.1f %5.1f %5.1f %5.1f' % utils.tidy_cell(l['unit_cell'], lat_type),
+                    l['quality'],
+                    ])               
+            file_text += pt.get_string()
+            file_text += '\n'
+            pt = PrettyTable()
+            pt.field_names = ['No.', 'Cell Volume', 'Reindexing Matrix']
+            for l in dset['correction']['symmetry']['lattices']:
+                vol = utils.cell_volume( l['unit_cell'] )
+                id, lat_type = l['id']
                 reindex = '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % l['reindex_matrix']
-                txt_subst += utils.tidy_cell(l['unit_cell'], lat_type) + (vol, reindex)
-                file_text += "%16s %3d %6s %7.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %8d %s\n" % txt_subst
-            
-            file_text  += '--- Likely Space Groups ---\n'
-            file_text += '%15s %4s %9s\n' % (
-                'SpaceGroup',
-                '(#)',
-                'Probability',
-                )
-            for sol in dset['space_group']['candidates']:
-                file_text += '%13s (%4d) %9.3f\n' % (
-                    sol['name'],
+                pt.add_row([id, '%10.0f' % vol, reindex])
+            file_text += pt.get_string()
+            file_text += '\n'
+            file_text += utils.text_heading('Likely Space Groups and their probabilities', level=4)
+            pt = PrettyTable()
+            pt.field_names = ['Space Group','No.', 'Probability']
+            for i, sol in enumerate(dset['space_group']['candidates']):
+                if i == 0:
+                    sg_name = '* %13s' % (utils.SPACE_GROUP_NAMES[ sol['number'] ])
+                else:
+                    sg_name = '  %13s' % (utils.SPACE_GROUP_NAMES[ sol['number'] ])
+                pt.add_row([ sg_name,
                     sol['number'],
-                    sol['probability']
-                    )
+                    sol['probability']])
+            file_text += pt.get_string()                
             sg_name = utils.SPACE_GROUP_NAMES[ dset['space_group']['sg_number'] ]
-            file_text += "\nSelected Group is:    %s,  #%s\n" % ( 
+            file_text += "\n[*] Selected:  %s,  #%s\n" % ( 
                 sg_name, dset['space_group']['sg_number'] )
             u_cell = utils.tidy_cell(dset['space_group']['unit_cell'], dset['space_group']['character'])
-            file_text += "\nUnit Cell:    %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n" % u_cell
-            
-            if dset['space_group']['type'] == 'pointgroup':
-                file_text += "Space Group selection ambiguous. Current selection is not final!\n"  
+            file_text += "    Unit Cell: %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f\n" % u_cell 
+            file_text += "    NOTE: Detailed statistics reported below use this selection.\n"    
+            if dset['space_group']['type'] == 'PointGroup':
+                file_text += '[!] Space Group is ambiguous. The lowest symmetry group of\n'
+                file_text += '    the high probability candidates has been chosen to permit reindexing \n'
+                file_text += '    in the future without loss of data!\n'
             
             # Print out integration results
             file_text += utils.text_heading("Integration and Correction Statistics", level=3)
@@ -599,17 +620,18 @@ class AutoXDS:
             _logger.info('Output Files: %s' % ( ', '.join(out_files)))
             rres['files']['xdsconv'] = out_files               
 
-    def calc_strategy(self,run_info):
+    def calc_strategy(self, run_info, resolution=1.0):
         os.chdir(run_info['working_directory'])
         utils.update_xparm()
         _logger.info('Calculating Strategy ...')
         jobs = "XPLAN"
-        _reso = 1.0 
-        run_info['shells'] = utils.resolution_shells(_reso, 10)
+        # use resolution from correction step since we haven't scaled yet
+        _reso = resolution
+        run_info['shells'] = utils.resolution_shells(_reso, 5)
         io.write_xds_input(jobs, run_info)
         success = utils.execute_xds_par()
         info_x = xds.parse_xplan()
-        _logger.info('Calculating Strategy ...')
+        _logger.info('Calculating Alternate Strategy ...')
         success = utils.execute_best(run_info['exposure_time'], self.options.get('anomalous', False))
         info_b = parse_best('best.xml')
         info_b['xplan'] = info_x
@@ -750,28 +772,29 @@ class AutoXDS:
             # Select Cut-off resolution
             resol = utils.select_resolution( run_result['correction']['statistics'])
             run_result['correction']['resolution'] = resol
-            
-            if self.options.get('command', None) == 'screen':
-                _out = self.calc_strategy(run_info)
-                if not _out['success']:
-                    _logger.error('Strategy failed! %s' % _out.get('reason'))
-                else:
-                    run_result['strategy'] = _out.get('data')
-                success = utils.execute_distl(run_info['reference_image'])
-                if success:
-                    info = parse_distl('distl.log')
-                    run_result['image_analysis'] = info
-                else:
-                    _logger.error(':-) Image analysis failed!')
-                                                            
+                           
             run_result['files'] = self.get_fileinfo(run_info)
             if _ref_run is None:
                 _ref_run = run_name
-            self.results[run_name] = run_result 
-                           
+            self.results[run_name] = run_result             
         
         # Scale datasets
         self.scale_datasets()
+
+        # Calculate Strategy if screening
+        for name, run_info in self.dataset_info.items():
+            if self.options.get('command', None) == 'screen':
+                _out = self.calc_strategy(run_info, self.results[name]['scaling']['resolution'][0])
+                if not _out['success']:
+                    _logger.error('Strategy failed! %s' % _out.get('reason'))
+                else:
+                    self.results[name]['strategy'] = _out.get('data')
+                success = utils.execute_distl(run_info['reference_image'])
+                if success:
+                    info = parse_distl('distl.log')
+                    self.results[name]['image_analysis'] = info
+                else:
+                    _logger.error(':-( Image analysis failed!')                                                           
         
         # Score dataset
         self.score_datasets()
@@ -788,4 +811,4 @@ class AutoXDS:
             total_frames += info['data_range'][1]-info['data_range'][0]
         frame_rate = total_frames/elapsed
         used_time = time.strftime('%H:%M:%S', time.gmtime(elapsed))
-        _logger.info("Done. Time used:  %s [ %0.1f frames/sec ]"  % (used_time, frame_rate))             
+        _logger.info("Done in: %s [ %0.1f frames/sec ]"  % (used_time, frame_rate))             

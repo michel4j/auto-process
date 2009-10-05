@@ -73,6 +73,8 @@ def main():
         print "ERROR: no image sets provided."
         usage()
         sys.exit(1)
+    if len(args) == 1 and options['command'] == 'mad':
+        del options['command']
     
     # Check that images from arguments actually exist on disk
     for img in args:

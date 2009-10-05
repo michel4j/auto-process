@@ -231,7 +231,7 @@ class AutoXDS:
             file_text += utils.text_heading('Likely Space Groups and their probabilities', level=4)
             pt = PrettyTable()
             pt.field_names = ['Space Group','No.', 'Probability']
-            sg_mum = dset['correction']['symmetry']['space_group']['sg_number']
+            sg_num = dset['correction']['symmetry']['space_group']['sg_number']
             sg_name = utils.SPACE_GROUP_NAMES[ sg_num ]
             for i, sol in enumerate(dset['space_group']['candidates']):
                 if sg_num == sol['number'] and i== 0:

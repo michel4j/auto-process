@@ -493,6 +493,8 @@ class AutoXDS:
         _logger.info("Determining SpaceGroup...")
         success = utils.execute_pointless()
         if not success:
+            success = utils.execute_pointless_retry()
+        if not success:
             _logger.warning(':-( SpaceGroup determination failed!')
             return {'success':False, 'reason': 'POINTLESS FAILED!'}
         else:
@@ -769,7 +771,7 @@ class AutoXDS:
                         run_info['unit_cell'] = utils.tidy_cell(_ref_sginfo['unit_cell'], _ref_sginfo['character'])
                         run_info['space_group'] = _ref_sgn
             else:
-                run_result['space_group'] = run_result['correction']['space_group']
+                run_result['space_group'] = run_result['correction']['symmetry']['space_group']
                 _logger.info('Proceeding with PointGroup: %s (#%d)' % (utils.SPACE_GROUP_NAMES[_sel_pgn], _sel_pgn))
                 
             # Final correction

@@ -338,6 +338,19 @@ def execute_pointless():
     sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> xds.log')
     return sts==0
 
+def execute_pointless_retry():
+    f = open('pointless.com', 'w')
+    cmd = """pointless << eof
+xdsin INTEGRATE.HKL
+xmlout pointless.xml
+choose solution 1
+eof
+"""
+    f.write(cmd)
+    f.close()
+    sts, output = commands.getstatusoutput('sh pointless.com >> xds.log')
+    return sts==0     
+
 def execute_best(time, anomalous=False):
     anom_flag = ''
     if anomalous:

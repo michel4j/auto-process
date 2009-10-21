@@ -264,8 +264,7 @@ class AutoXDS:
                     _section['table'].append(n_row.items())
                 _section['notes'] ='[a] NOTE: Assumes a mosaicity of zero!'
                 _strategy['overlap'] = _section
-            
-            info['details'][dataset_name]['strategy'] = _strategy
+                info['details'][dataset_name]['strategy'] = _strategy
              
             _section = {}
             _section['lattices'] = {}

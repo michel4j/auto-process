@@ -703,7 +703,7 @@ def format_section(section, level=1, invert=False, fields=[], show_title=True):
         all_notes = _section.get('notes').split('\n')
         notes = []
         for note in all_notes:
-            notes += textwrap.wrap( note, width=60, subsequent_indent="    ", drop_whitespace=True )
+            notes += textwrap.wrap( note, width=60, subsequent_indent="    ")
         file_text += '\n'.join(notes)
     file_text += '\n'
     return file_text

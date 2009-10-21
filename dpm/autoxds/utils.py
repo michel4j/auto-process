@@ -17,6 +17,9 @@ from dpm.parser.utils import Table
 from dpm.utils import magic
 from dpm.utils import fitting
 import numpy
+from dpm.utils.prettytable import PrettyTable, MSWORD_FRIENDLY
+from dpm.utils.odict import SortedDict
+import textwrap
 
 
 # each rule is a list of 9 boolean values representing
@@ -170,6 +173,7 @@ def get_dataset_params(img_file, screen=False):
         sys.exit(1)
         
     info = marccd.read_header(reference_image)
+    info['frame_count'] = frame_count
     info['dataset_name'] = _dataset_name
     info['file_template'] = "%s/%s" % (directory, xds_template)        
     info['file_format'] = magic.from_file(reference_image)
@@ -640,8 +644,10 @@ def text_heading(txt, level=1):
     if level in [1,2]:
         _pad = ' '*((78 - len(txt))//2)
         txt = '%s%s%s' % (_pad, txt, _pad)
-        _banner = '*'*78
-        if level == 1:
+        if level == 2:
+            _banner = '-'*78
+        else:
+            _banner = '*'*78
             txt = txt.upper()
         _out = '\n%s\n%s\n%s\n\n' % (_banner, txt, _banner)
     elif level == 3:
@@ -656,4 +662,49 @@ def text_heading(txt, level=1):
 def add_margin(txt, size=1):
     _margin = ' '*size
     return '\n'.join([_margin+s for s in txt.split('\n')]) 
+
+
+def format_section(section, level=1, invert=False, fields=[], show_title=True):
+    _section = section
+    if show_title:
+        file_text = text_heading(_section['title'], level)
+    else:
+        file_text = ''
+        
+    if _section.get('table') is not None:
+        _key = 'table'
+    elif _section.get('table+plot') is not None:
+        _key = 'table+plot'
+    else:
+        return str(section)
+    pt = PrettyTable()
+    if not invert:
+        for i, d in enumerate(_section[_key]):
+            dd = SortedDict(d)
+            values = dd.values()
+            if i == 0:
+                keys = dd.keys()
+                pt.add_column(keys[0], keys[1:],'l')
+            pt.add_column(values[0], values[1:], 'r')
+    else:
+        for i, d in enumerate(_section[_key]):
+            dd = SortedDict(d)
+            values = dd.values()
+            if i == 0:
+                keys = dd.keys()
+                pt.field_names = keys
+            pt.add_row(values)
+    if len(fields) == 0:
+        file_text += pt.get_string()
+    else:
+        file_text += pt.get_string(fields=fields)
+    file_text +='\n'
+    if _section.get('notes'):
+        all_notes = _section.get('notes').split('\n')
+        notes = []
+        for note in all_notes:
+            notes += textwrap.wrap( note, width=60, subsequent_indent="    ", drop_whitespace=True )
+        file_text += '\n'.join(notes)
+    file_text += '\n'
+    return file_text
     

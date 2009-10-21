@@ -44,10 +44,11 @@ def write_xds_input(jobs, params):
     
     directory, xds_template = os.path.split(params['file_template'])
     # if template is longer calculate relative path:
-    if len(params['file_template']) > 50:
+    _file_template = params['file_template']
+    if len(_file_template) > 50:
         try:
             rel_dir = os.path.relpath(directory)
-            params['file_template'] = os.path.join(rel_dir, xds_template)
+            file_template = os.path.join(rel_dir, xds_template)
         except:
             pass
         
@@ -55,10 +56,10 @@ def write_xds_input(jobs, params):
     tmp_top = os.path.join(tempfile.gettempdir(), 'xds')
     if not os.path.exists(tmp_top):
         os.makedirs(tmp_top)
-    if len(params['file_template']) > 50:
+    if len(_file_template) > 50:
         tmp_dir = tempfile.mktemp(prefix='', dir=tmp_top)
         os.symlink(directory, tmp_dir)            
-        params['file_template'] = os.path.join(tmp_dir, xds_template)
+        _file_template = os.path.join(tmp_dir, xds_template)
     
     
     
@@ -78,7 +79,7 @@ def write_xds_input(jobs, params):
     if params['reindex_matrix'] is not None:
         file_text += "REIDX=%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d\n" % (params['reindex_matrix'])
         
-    file_text += "NAME_TEMPLATE_OF_DATA_FRAMES=%s\n" % (params['file_template'])
+    file_text += "NAME_TEMPLATE_OF_DATA_FRAMES=%s\n" % (_file_template)
     file_text += "DATA_RANGE=%d %d \n" % (params['data_range'][0], params['data_range'][1])
     
     for r_s, r_e in params['spot_range']:

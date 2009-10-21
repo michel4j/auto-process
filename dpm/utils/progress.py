@@ -176,10 +176,10 @@ class ProgChecker(object):
 # but under bitstream vera mono at least the characters
 # vary between single and double width?
 #spinner="▏▎▍▌▋▊▉█▉▊▌▍▎" #utf8
+#spinner="▁▂▃▄▅▆▇█▇▆▅▄▃▂" #utf8
 class ProgDisplay(threading.Thread):
     ESC = chr(27)
-    #spinner="▁▂▃▄▅▆▇█▇▆▅▄▃▂" #utf8
-    spinner="⇐⇖⇑⇗⇒⇘⇓⇙" #utf8
+    spinner="|/-\\"
     def __init__(self, data_range, q):
         threading.Thread.__init__(self)
         self.queue = q

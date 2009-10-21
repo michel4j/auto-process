@@ -15,6 +15,7 @@ from dpm.utils.prettytable import PrettyTable, MSWORD_FRIENDLY
 from dpm.utils.progress import ProgDisplay, ProgChecker
 from dpm.parser.utils import Table
 from gnosis.xml import pickle
+from dpm.utils.odict import SortedDict
 import pprint
 import utils, io
 
@@ -66,6 +67,41 @@ class AutoXDS:
         os.chdir(self.top_directory)
         
     def save_log(self, filename='process.log'):
+        if self.options.get('anomalous', False):
+            adj = 'ANOMALOUS'
+        else:
+            adj = 'NATIVE'
+        info = self.get_log_dict()
+        os.chdir(self.top_directory)
+        fh = open(filename, 'w')
+
+        # print summary
+        file_text = utils.format_section(info['summary'], level=1)
+        for name, dset in info['details'].items():
+            file_text += utils.text_heading("DETAILED RESULTS FOR %s DATASET: '%s'" % (adj, name), level=1)
+            file_text += utils.format_section(dset['parameters'], level=2)
+            file_text += utils.text_heading("Data Collection Strategy", level=2)
+            for key in ['summary','oscillation', 'overlap']:
+                if key in ['oscillation', 'overlap']:
+                    invert = True
+                else:
+                    invert = False
+                file_text += utils.format_section(dset['strategy'][key], level=3, invert=invert)
+            file_text += utils.text_heading("Lattice Character and Space Group Determination", level=2)
+            file_text += utils.format_section(dset['symmetry']['lattices'], level=3, 
+                            invert=True, fields=['No.','Character', 'Cell Parameters', 'Quality'])
+            file_text += utils.format_section(dset['symmetry']['lattices'], level=3, 
+                            invert=True, fields=['No.', 'Cell Volume','Reindexing Matrix'], show_title=False)
+            file_text += utils.format_section(dset['symmetry']['space_groups'], level=3, invert=True)
+            file_text += utils.format_section(dset['correction'], level=2, invert=True)
+            file_text += utils.format_section(dset['scaling'], level=2, invert=True)
+        
+        file_text += '\n\n'
+        out_text = utils.add_margin(file_text, 1)
+        fh.write(out_text)    
+        fh.close()
+        
+    def save_log1(self, filename='process.log'):
         if self.options.get('anomalous', False):
             adj = 'ANOMALOUS'
         else:
@@ -289,10 +325,273 @@ class AutoXDS:
         fh.write(out_text)    
         fh.close()
 
-    def save_xml(self, filename='process.xml'):
+    def get_log_dict(self):
+        if self.options.get('anomalous', False):
+            adj = 'Anomalous'
+        else:
+            adj = 'Native'
+        info = {}
+        
+        _section = {}
+        _section['title'] = '%s Data Processing Summary' % adj
+        _sum_keys = ['Dataset','Score [a]', 'Wavelength (A)',    'Space Group [b]',
+                      'Unit Cell (A)', '        (deg)', 
+                      'Cell Volume (A^3)', 'Resolution (A)[c]', 'All Reflections',
+                      'Unique Reflections', 'Multiplicity', 'Completeness',
+                      'Mosaicity', 'I/sigma(I) [d]', 'R-mrgd-F [e]',
+                      'R-meas [f]', 'sigma(spot) (pix)', 'sigma(angle) (deg)','No. Ice rings',
+                      ]
+        _section['table'] = []
+        for dataset_name in self.dataset_names:
+            dset = self.results[dataset_name]
+            if dset.get('image_analysis', None) is not None:
+                _ice_rings = dset['image_analysis']['summary']['ice_rings']
+            else:
+                _ice_rings = 'N/C'
+            if dset.get('scaling', None) is not None:
+                _summary = dset['scaling']
+            else:
+                _summary= dset['correction']
+            _sum_values = [ dataset_name,
+                '%0.2f' % (dset['crystal_score'],),
+                '%7.4f' % (self.dataset_info[dataset_name]['wavelength'],),
+                utils.SPACE_GROUP_NAMES[ dset['correction']['symmetry']['space_group']['sg_number'] ],
+                '%0.1f %0.1f %0.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][:3],
+                '%0.1f %0.1f %0.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][3:],
+                '%0.0f' % (utils.cell_volume(dset['correction']['symmetry']['space_group']['unit_cell']),),
+                '%0.2f (%0.2f)' % _summary['resolution'],
+                _summary['summary']['observed'],
+                _summary['summary']['unique'],
+                '%0.1f' % (float(_summary['summary']['observed'])/_summary['summary']['unique'],),
+                '%0.1f%%' % (_summary['summary']['completeness'],),
+                '%0.2f' % (dset['correction']['summary']['mosaicity'],),
+                '%0.1f' % (_summary['summary']['i_sigma'],),
+                '%0.1f%%' % (_summary['summary']['r_mrgdf'],),
+                '%0.1f%%' % (_summary['summary']['r_meas'],),
+                '%0.1f' % (dset['correction']['summary']['stdev_spot'],),
+                '%0.1f' % (dset['correction']['summary']['stdev_spindle'],),
+                _ice_rings,
+                ]
+            _section['table'].append(zip(_sum_keys, _sum_values))
+        _section['notes'] = """[a] Data Quality Score for comparing similar data sets. > 0.8 Excellent, > 0.6 Good, > 0.5 Acceptable, > 0.4 Marginal, > 0.3 Barely usable
+[b] NOTE: Automatic Space group selection is unreliable for incomplete data. See detailed results below.
+[c] Resolution selected based on I/sigma(I) > 1 cut-off. Value in parenthesis based on R-mergd-F < 40% cut-off.
+[d] Average I/sigma(I) for all data.
+[e] Redundancy independent R-factor. Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.
+[f] Quality of amplitudes. see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275."""
+        info['summary'] = _section
+        
+        info['details'] = {}
+        for dataset_name in self.dataset_names:
+            info['details'][dataset_name] = {}
+            dset = self.results[dataset_name]
+            # print out data collection parameters
+            if dset.get('parameters', None) is not None:
+                _section = {}
+                _section['title'] = 'Data Collection and Processing Parameters'
+                _section['table'] = []
+                _keys = ['Description', 'Detector Distance (mm)','Exposure Time (sec)', 'No. Frames', 'Starting Angle (deg)',
+                         'Delta (deg)', 'Two Theta (deg)', 'Detector Origin (pix)', 'Detector Size (pix)',
+                         'Pixel Size (um)', 'File Template','Data Directory', 'Output Directory', 'Output Files']
+                _rows = ['Parameters', dset['parameters']['distance'],
+                        dset['parameters']['exposure_time'],
+                        dset['parameters']['frame_count'],
+                        dset['parameters']['starting_angle'],
+                        dset['parameters']['oscillation_range'], 
+                        dset['parameters']['two_theta'], 
+                        '%0.0f x %0.0f' %  dset['parameters']['detector_origin'],
+                        '%d x %d' %  dset['parameters']['detector_size'], 
+                        '%0.5f x %0.5f' %  dset['parameters']['pixel_size'],
+                         os.path.basename(dset['parameters']['file_template']),
+                         os.path.dirname(dset['parameters']['file_template']),
+                         dset['parameters']['working_directory'],
+                         dset['files']['output']]
+                _section['table'].append(zip(_keys, _rows))
+                _section['notes'] = ''
+                info['details'][dataset_name]['parameters'] = _section
+            
+            # Print out strategy information
+            if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
+                _strategy = {}
+                _strategy['summary'] = {}
+                _strategy['summary']['title'] = 'Recommended Strategy for %s Data Collection' % adj
+                _strategy['summary']['table'] = []
+                _strategy_keys = ['Attenuation', 'Distance (mm)',    'Start Angle',
+                      'Delta (deg)', 'No. Frames', 'Total Angle (deg)', 'Exposure Time (s) [a]',
+                      'Overlaps?', '-- Expected Quality --', 'Resolution',
+                      'Completeness', 'Multiplicity',
+                      'I/sigma(I) [b]', 'R-factor [b]' ]
+                for run in dset['strategy']['runs']:
+                    _name = run['name']
+                    if run['number'] == 1:
+                        _res = '%0.2f [c]' % (dset['strategy']['resolution'],)
+                        _cmpl = '%0.1f%%' % (dset['strategy']['completeness'],)
+                        _mlt = '%0.1f' % (dset['strategy']['redundancy'],)
+                        _i_sigma = '%0.1f (%0.1f)' % (dset['strategy']['prediction_all']['average_i_over_sigma'],
+                                                      dset['strategy']['prediction_hi']['average_i_over_sigma'])
+                        _r_fac = '%0.1f%% (%0.1f%%)' % (dset['strategy']['prediction_all']['R_factor'],
+                                                    dset['strategy']['prediction_hi']['R_factor'])
+                    else:
+                        _res = _cmpl = _mlt = _i_sigma = _r_fac = '<--'
+                        
+
+                    _strategy_vals = [_name, '%0.0f%%' % (dset['strategy']['attenuation'],), 
+                      '%0.1f' % (run['distance'],), 
+                      '%0.1f' % (run['phi_start'],),
+                      '%0.2f' % (run['phi_width'],), 
+                      '%0.0f' % (run['number_of_images'],), 
+                      '%0.2f' % (run['phi_width'] * run['number_of_images'],), 
+                      '%0.1f' % (run['exposure_time'],),
+                      '%s' % (run['overlaps'],), '-------------',
+                      _res, _cmpl, _mlt, _i_sigma, _r_fac,                      
+                      ]
+                    _strategy['summary']['table'].append(zip(_strategy_keys,_strategy_vals))
+                
+                run = utils.get_xplan_strategy(dset)
+                if run:
+                    _strategy_vals = ['Alternate [d]', 'N/C', 
+                      '', 
+                      '%0.1f' % (run['start_angle'],),
+                      '%0.2f' % (run['delta_angle'],), 
+                      '%0.0f' % (run['number_of_images'],), 
+                      '%0.2f' % (run['total_angle'],), 
+                      '',
+                      '', '-------------',
+                      run['resolution'], run['completeness'], 
+                      run['multiplicity'], 'N/C', 'N/C',                      
+                      ]
+                        
+                    _strategy['summary']['table'].append(zip(_strategy_keys, _strategy_vals))
+                _strategy['summary']['notes'] = """[a] NOTE: Recommended exposure time does not take into account overloads at low resolution!
+[b] Values in parenthesis represent the high resolution shell.
+[c] %s
+[d] Strategy Calculated according to XDS and XPLAN.  Determined from the following tables."""  %  dset['strategy']['resolution_reasoning']
+                
+                _section = {}
+                _section['title'] = 'Alternate Optimal Selection of Collection Range'
+                _section['table'] = []
+                for row in dset['strategy']['xplan']['summary']:
+                    n_row = SortedDict()
+                    for k,t in [('Start Angle','start_angle'),('Total Angle', 'total_angle'),('Completeness','completeness'), ('Multiplicity','multiplicity') ]:
+                        n_row[k] = row[t]
+                    _section['table'].append(n_row.items())
+                _section['notes'] = ''
+                _strategy['oscillation'] = _section
+                
+                _section = {}
+                _section['title'] = 'Maximum Delta Angle to Prevent Angular Overlap'
+                _section['table'] = []
+                for row in dset['indexing']['oscillation_ranges']:
+                    n_row = SortedDict()                
+                    for k,t in [('High Resolution Limit','resolution'),('Max. Angle Delta [a]', 'angle')]:
+                        n_row[k] = row[t]
+                    _section['table'].append(n_row.items())
+                _section['notes'] ='[a] NOTE: Assumes a mosaicity of zero!'
+                _strategy['overlap'] = _section
+            
+            info['details'][dataset_name]['strategy'] = _strategy
+             
+            _section = {}
+            _section['lattices'] = {}
+            _section['lattices']['title'] = 'Compatible Lattice Character and Bravais Lattices'
+            _section['lattices']['table'] = []
+            _sec_keys = ['No.', 'Character', 'Cell Parameters', 'Quality', 'Cell Volume', 'Reindexing Matrix']
+            for l in dset['correction']['symmetry']['lattices']:
+                id, lat_type = l['id']
+                sg = utils.POINT_GROUPS[ lat_type ][0]
+                sg_name = utils.SPACE_GROUP_NAMES[ sg ]
+                row = [id, 
+                    '%6s %3d %2s' % (sg_name, sg, lat_type), 
+                    '%5.1f %5.1f %5.1f %5.1f %5.1f %5.1f' % utils.tidy_cell(l['unit_cell'], lat_type),
+                    l['quality'], utils.cell_volume( l['unit_cell'] ),
+                    '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % l['reindex_matrix'] ]
+                _section['lattices']['table'].append(zip(_sec_keys, row))
+            
+            _section['space_groups'] = {}
+            _section['space_groups']['title'] = 'Likely Space Groups and their probabilities'
+            _section['space_groups']['table'] = []
+            _sec_keys = ['Space Group','No.', 'Probability']
+            sg_num = dset['correction']['symmetry']['space_group']['sg_number']
+            sg_name = utils.SPACE_GROUP_NAMES[ sg_num ]
+            for i, sol in enumerate(dset['space_group']['candidates']):
+                if sg_num == sol['number'] and i== 0:
+                    sg_name = '* %s' % (utils.SPACE_GROUP_NAMES[ sol['number'] ])
+                else:
+                    sg_name = '  %s' % (utils.SPACE_GROUP_NAMES[ sol['number'] ])
+                row = [ sg_name,   sol['number'],    sol['probability']]
+                _section['space_groups']['table'].append(zip(_sec_keys, row)) 
+            u_cell = utils.tidy_cell(dset['space_group']['unit_cell'], dset['space_group']['character'])
+            _section['space_groups']['notes'] = "[*] Selected:  %s,  #%s. " % ( 
+                sg_name, dset['space_group']['sg_number'] )
+            _section['space_groups']['notes'] += " Unit Cell: %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f." % u_cell 
+            _section['space_groups']['notes'] += " NOTE: Detailed statistics reported below use this selection. "    
+            if dset['space_group']['type'] == 'PointGroup':
+                _section['space_groups']['notes'] += """
+[!] Space Group is ambiguous. The lowest symmetry group of the high probability candidates has been chosen to permit reindexing in the future without loss of data!"""
+            
+            info['details'][dataset_name]['symmetry'] = _section
+            
+            # Print out integration results
+            _section = {}
+            _section['title'] = "Integration Statistics"
+            _section['plot'] = []
+            _keymap = [('Frame No.','frame'),('Scale Factor', 'scale'),('Overloads','overloads'), 
+                       ('Reflections','reflections'), ('Mosaicity', 'mosaicity'),
+                       ('Unexpected Spots','unexpected'), ('Divergence','divergence')]
+            for row in dset['integration']['scale_factors']:
+                n_row = SortedDict()
+                for k,t in _keymap:
+                    n_row[k] = row[t]
+                _section['plot'].append(n_row.items())
+            _section['plot_axes'] = [('Frame No.',['Scale Factor']), ('Frame No.', ['Mosaicity']),('Frame No.',['Divergence'])]   
+            info['details'][dataset_name]['integration'] = _section
+
+            # Print out correction results
+            _section = {}
+            _section['title'] = "Correction Statistics"
+            if dset.get('scaling', None) is not None:
+                _data_key = 'table'
+            else:
+                _data_key = 'table+plot'
+                _section['plot_axes'] = [('Resolution',['R_meas', 'R_mrgd-F', 'Completeness']),('Resolution', ['I/Sigma'])]
+                if dset['parameters']['anomalous'] == True:
+                      _section['plot_axes'].append(('Resolution', ['SigAno']))
+            _section[_data_key] = []
+            for row in dset['correction']['statistics']:
+                n_row = SortedDict()
+                for k,t in [('Resolution','shell'),('Completeness', 'completeness'),('R_meas','r_meas'), ('R_mrgd-F','r_mrgdf'), ('I/Sigma','i_sigma'), ('SigAno','sig_ano'), ('AnoCorr','cor_ano')]:
+                    n_row[k] = row[t]
+                _section[_data_key].append(n_row.items())
+            resol = dset['correction']['resolution']
+            _section['notes'] = "Preliminary resolution cut-off (I/SigI>1.0):  %5.2f" % (resol[0])        
+            info['details'][dataset_name]['correction'] = _section
+            
+            # Print out scaling results
+            if dset.get('scaling', None) is not None:
+                _section = {}
+                _section['title'] = "Scaling Statistics"
+                pt = PrettyTable()
+                _data_key = 'table+plot' 
+                _section[_data_key] = []
+                for row in dset['scaling']['statistics']:
+                    n_row = SortedDict()
+                    for k,t in [('Resolution','shell'),('Completeness', 'completeness'),('R_meas','r_meas'), ('R_mrgd-F','r_mrgdf'), ('I/Sigma','i_sigma'), ('SigAno','sig_ano'), ('AnoCorr','cor_ano')]:
+                        n_row[k] = row[t]
+                    _section[_data_key].append(n_row.items())
+                    
+                _section['plot_axes'] = [('Resolution',['R_meas', 'R_mrgd-F', 'Completeness']),('Resolution', ['I/Sigma'])]
+                if self.options.get('anomalous', False):
+                      _section['plot_axes'].append(('Resolution', ['SigAno']))
+                info['details'][dataset_name]['scaling'] = _section   
+
+        return info
+
+    def save_xml(self, info=None, filename='debug.xml'):
         os.chdir(self.top_directory)
         fh = open(filename, 'w')
-        pickle.dump(self.results, fh)
+        if info is None:
+            info = self.results
+        pickle.dump(info, fh)
         fh.close()
 
     def find_spots(self, run_info):
@@ -628,7 +927,7 @@ class AutoXDS:
                 utils.execute_f2mtz()
             
             _logger.info('Output Files: %s' % ( ', '.join(out_files)))
-            rres['files']['xdsconv'] = out_files               
+            rres['files']['output'] = out_files               
 
     def calc_strategy(self, run_info, resolution=1.0):
         os.chdir(run_info['working_directory'])
@@ -788,6 +1087,7 @@ class AutoXDS:
             run_result['correction']['resolution'] = resol
                            
             run_result['files'] = self.get_fileinfo(run_info)
+            run_result['files']['output'] = None
             if _ref_run is None:
                 _ref_run = run_name
             self.results[run_name] = run_result             
@@ -816,7 +1116,8 @@ class AutoXDS:
         if self.options.get('command', None) != 'screen':       
             self.convert_files()
                       
-        self.save_xml('process.xml')
+        self.save_xml(self.results, 'debug.xml')
+        self.save_xml(self.get_log_dict(), 'process.xml')
         self.save_log('process.log')
 
         elapsed = time.time() - t1

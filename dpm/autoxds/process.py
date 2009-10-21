@@ -80,13 +80,14 @@ class AutoXDS:
         for name, dset in info['details'].items():
             file_text += utils.text_heading("DETAILED RESULTS FOR %s DATASET: '%s'" % (adj, name), level=1)
             file_text += utils.format_section(dset['parameters'], level=2)
-            file_text += utils.text_heading("Data Collection Strategy", level=2)
-            for key in ['summary','oscillation', 'overlap']:
-                if key in ['oscillation', 'overlap']:
-                    invert = True
-                else:
-                    invert = False
-                file_text += utils.format_section(dset['strategy'][key], level=3, invert=invert)
+            if dset.get('strategy', None) is not None: 
+                file_text += utils.text_heading("Data Collection Strategy", level=2)
+                for key in ['summary','oscillation', 'overlap']:
+                    if key in ['oscillation', 'overlap']:
+                        invert = True
+                    else:
+                        invert = False
+                    file_text += utils.format_section(dset['strategy'][key], level=3, invert=invert)
             file_text += utils.text_heading("Lattice Character and Space Group Determination", level=2)
             file_text += utils.format_section(dset['symmetry']['lattices'], level=3, 
                             invert=True, fields=['No.','Character', 'Cell Parameters', 'Quality'])

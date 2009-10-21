@@ -95,7 +95,8 @@ class AutoXDS:
                             invert=True, fields=['No.', 'Cell Volume','Reindexing Matrix'], show_title=False)
             file_text += utils.format_section(dset['symmetry']['space_groups'], level=3, invert=True)
             file_text += utils.format_section(dset['correction'], level=2, invert=True)
-            file_text += utils.format_section(dset['scaling'], level=2, invert=True)
+            if dset.get('scaling',None) is not None:
+                file_text += utils.format_section(dset['scaling'], level=2, invert=True)
         
         file_text += '\n\n'
         out_text = utils.add_margin(file_text, 1)

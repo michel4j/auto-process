@@ -694,6 +694,7 @@ def format_section(section, level=1, invert=False, fields=[], show_title=True):
                 keys = dd.keys()
                 pt.field_names = keys
             pt.add_row(values)
+        pt.align = "r"
     if len(fields) == 0:
         file_text += pt.get_string()
     else:

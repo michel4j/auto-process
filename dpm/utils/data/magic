@@ -24,4 +24,4 @@
 >1108	ulong	>0		%d,
 >1120	ulong	>0		%d bits/pixel
 
-0	string	{\nHEADER_BYTES=	SMV Area Detector Image
+0	string	{\nHEADER_BYTES=	SMV Area Detector Image 

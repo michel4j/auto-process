@@ -6,9 +6,12 @@ _magic_map = {
 }
 
 def read_header(filename):
-    full_id = magic.from_file(filename)
+    full_id = magic.from_file(filename).strip()
     key = full_id.split(', ')[0]
     if _magic_map.get(key) is not None:
         func = _magic_map.get(key)
         info = func(filename)
-    return info
+        return info
+    else:
+        print 'AutoXDS|File format not recognized'
+        sys.exit(1)

@@ -50,5 +50,15 @@ def read_header(filename):
     info['starting_angle'] = goniostat_pars[8] / 1e3
     info['two_theta'] = (goniostat_pars[7] / 1e3) * math.pi / -180.0
     info['file_format'] = 'TIFF'
+    det_mm = info['pixel_size'][0]*info['detector_size'][0]
+    if abs(round(det_mm)-165) < 2:
+        info['detector_type'] = 'mar165'
+    elif abs(round(det_mm)-225) < 2:
+        info['detector_type'] = 'mar225'
+    elif abs(round(det_mm)-300) < 2:
+        info['detector_type'] = 'mx300'
+        #FIXME distinguish mx300 from mx300he
+    elif abs(round(det_mm)-325) < 2:
+        info['detector_type'] = 'mar325'
     
     return info

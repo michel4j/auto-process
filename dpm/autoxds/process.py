@@ -96,7 +96,9 @@ class AutoXDS:
             file_text += utils.format_section(dset['symmetry']['space_groups'], level=3, invert=True)
             file_text += utils.format_section(dset['correction'], level=2, invert=True)
             if dset.get('scaling',None) is not None:
-                file_text += utils.format_section(dset['scaling'], level=2, invert=True)
+                file_text += utils.text_heading(dset['scaling']['title'], level=2)
+                for key in ['shells','frames','frame_difference']:
+                    file_text += utils.format_section(dset['scaling'][key], level=3, invert=True)
         
         file_text += '\n\n'
         out_text = utils.add_margin(file_text, 1)
@@ -170,7 +172,11 @@ class AutoXDS:
                 _section['table'] = []
                 _keys = ['Description', 'Detector Distance (mm)','Exposure Time (sec)', 'No. Frames', 'Starting Angle (deg)',
                          'Delta (deg)', 'Two Theta (deg)', 'Detector Origin (pix)', 'Detector Size (pix)',
-                         'Pixel Size (um)', 'File Template','Data Directory', 'Output Directory', 'Output Files']
+                         'Pixel Size (um)', 'File Template','Data Directory', 'Output Directory']
+                _data_dir = os.path.dirname(dset['parameters']['file_template'])
+                _out_dir = dset['parameters']['working_directory']
+                _data_dir = utils.shorten_path(_data_dir, os.environ['HOME'])
+                _out_dir = utils.shorten_path(_out_dir, os.environ['HOME'])
                 _rows = ['Parameters', dset['parameters']['distance'],
                         dset['parameters']['exposure_time'],
                         dset['parameters']['frame_count'],
@@ -181,11 +187,13 @@ class AutoXDS:
                         '%d x %d' %  dset['parameters']['detector_size'], 
                         '%0.5f x %0.5f' %  dset['parameters']['pixel_size'],
                          os.path.basename(dset['parameters']['file_template']),
-                         os.path.dirname(dset['parameters']['file_template']),
-                         dset['parameters']['working_directory'],
-                         dset['files']['output']]
+                         _data_dir,
+                         _out_dir]
                 _section['table'].append(zip(_keys, _rows))
-                _section['notes'] = ''
+                if dset['files']['output'] is not None:
+                    _section['notes'] = " *  Output Files: %s " % (', '.join(dset['files']['output']))
+                else:
+                    _section['notes'] = ''
                 info['details'][dataset_name]['parameters'] = _section
             
             # Print out strategy information
@@ -194,26 +202,26 @@ class AutoXDS:
                 _strategy['summary'] = {}
                 _strategy['summary']['title'] = 'Recommended Strategy for %s Data Collection' % adj
                 _strategy['summary']['table'] = []
-                _strategy_keys = ['Attenuation', 'Distance (mm)',    'Start Angle',
+                _strategy_keys = ['', 'Attenuation (%)', 'Distance (mm)',    'Start Angle',
                       'Delta (deg)', 'No. Frames', 'Total Angle (deg)', 'Exposure Time (s) [a]',
                       'Overlaps?', '-- Expected Quality --', 'Resolution',
-                      'Completeness', 'Multiplicity',
-                      'I/sigma(I) [b]', 'R-factor [b]' ]
+                      'Completeness (%)', 'Multiplicity',
+                      'I/sigma(I) [b]', 'R-factor (%) [b]' ]
                 for run in dset['strategy']['runs']:
                     _name = run['name']
                     if run['number'] == 1:
                         _res = '%0.2f [c]' % (dset['strategy']['resolution'],)
-                        _cmpl = '%0.1f%%' % (dset['strategy']['completeness'],)
+                        _cmpl = '%0.1f' % (dset['strategy']['completeness'],)
                         _mlt = '%0.1f' % (dset['strategy']['redundancy'],)
                         _i_sigma = '%0.1f (%0.1f)' % (dset['strategy']['prediction_all']['average_i_over_sigma'],
                                                       dset['strategy']['prediction_hi']['average_i_over_sigma'])
-                        _r_fac = '%0.1f%% (%0.1f%%)' % (dset['strategy']['prediction_all']['R_factor'],
+                        _r_fac = '%0.1f (%0.1f)' % (dset['strategy']['prediction_all']['R_factor'],
                                                     dset['strategy']['prediction_hi']['R_factor'])
                     else:
                         _res = _cmpl = _mlt = _i_sigma = _r_fac = '<--'
                         
 
-                    _strategy_vals = [_name, '%0.0f%%' % (dset['strategy']['attenuation'],), 
+                    _strategy_vals = [_name, '%0.0f' % (dset['strategy']['attenuation'],), 
                       '%0.1f' % (run['distance'],), 
                       '%0.1f' % (run['phi_start'],),
                       '%0.2f' % (run['phi_width'],), 
@@ -347,18 +355,40 @@ class AutoXDS:
             if dset.get('scaling', None) is not None:
                 _section = {}
                 _section['title'] = "Scaling Statistics"
-                pt = PrettyTable()
+                _section['shells'] = {}
+                _section['shells']['title'] = "Statistics presented by resolution shell"
                 _data_key = 'table+plot' 
-                _section[_data_key] = []
+                _section['shells'][_data_key] = []
                 for row in dset['scaling']['statistics']:
                     n_row = SortedDict()
-                    for k,t in [('Resolution','shell'),('Completeness', 'completeness'),('R_meas','r_meas'), ('R_mrgd-F','r_mrgdf'), ('I/Sigma','i_sigma'), ('SigAno','sig_ano'), ('AnoCorr','cor_ano')]:
+                    for k, t in [('Resolution', 'shell'), ('Completeness', 'completeness'), ('R_meas', 'r_meas'), ('R_mrgd-F', 'r_mrgdf'), ('I/Sigma', 'i_sigma'), ('SigAno', 'sig_ano'), ('AnoCorr', 'cor_ano')]:
                         n_row[k] = row[t]
-                    _section[_data_key].append(n_row.items())
+                    _section['shells'][_data_key].append(n_row.items())
                     
-                _section['plot_axes'] = [('Resolution',['R_meas', 'R_mrgd-F', 'Completeness']),('Resolution', ['I/Sigma'])]
+                _section['shells']['plot_axes'] = [('Resolution', ['R_meas', 'R_mrgd-F', 'Completeness']), ('Resolution', ['I/Sigma'])]
                 if self.options.get('anomalous', False):
-                      _section['plot_axes'].append(('Resolution', ['SigAno']))
+                      _section['shells']['plot_axes'].append(('Resolution', ['SigAno']))
+                      
+                _section['frames'] = {}
+                _section['frames']['title'] = "Statistics presented by frame"
+                _section['frames']['plot'] = []
+                for row in dset['scaling']['frame_statistics']:
+                    n_row = SortedDict()
+                    for k, t in [('Frame No', 'frame'), ('Intensity', 'i_obs'), ('No. Misfits', 'n_misfit'), ('R_meas', 'r_meas'), ('I/Sigma', 'i_sigma'), ('Unique', 'unique'), ('Corr', 'corr')]:
+                        n_row[k] = row[t]
+                    _section['frames']['plot'].append(n_row.items())
+                _section['frames']['plot_axes'] = [('Frame No.', ['R_meas']), ('Frame No.', ['I/Sigma', 'Corr']), ('Frame No.', ['No. Misfits', 'Unique'])]
+               
+                _section['frame_difference'] = {}
+                _section['frame_difference']['title'] = "Statistics presented by frame difference"
+                _section['frame_difference']['plot'] = []
+                for row in dset['scaling']['diff_statistics']:
+                    n_row = SortedDict()
+                    for k, t in [('Frame difference', 'frame_diff'), ('R_d', 'rd'), ('R_d (friedel)', 'rd_friedel'), ('R_d (non-friedel)', 'rd_non_friedel'), ('No. Reflections', 'n_refl'), ('Friedel Reflections', 'n_friedel'), ('Non-Friedel Reflections', 'n_non_friedel')]:
+                        n_row[k] = row[t]
+                    _section['frame_difference']['plot'].append(n_row.items())
+                _section['frame_difference']['plot_axes'] = [('Frame difference.', ['R_d', 'R_d (friedel)', 'R_d (non-friedel)']), ('Frame difference', ['No. Reflections', 'Friedel Reflections', 'Non-Friedel Reflections'])]
+            
                 info['details'][dataset_name]['scaling'] = _section   
 
         return info
@@ -447,7 +477,7 @@ class AutoXDS:
                     _logger.critical(':-( Unable to proceed!')
                     _retries = 999
             elif info.get('failure_code') == xds.INSUFFICIENT_INDEXED_SPOTS:
-                if data['distinct_subtrees'] >= 1:
+                if data['distinct_subtrees'] == 1:
                     _logger.info('Removing alien spots ...')
                     spot_list = utils.load_spots()
                     spot_list = utils.filter_spots(spot_list, unindexed=True)
@@ -466,7 +496,7 @@ class AutoXDS:
                     utils.execute_xds_par()
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
-                elif data['index_origin_delta'] > 6:
+                elif data['quality_code'] in [19]:
                     run_info['detector_origin'] = data['new_origin']
                     _logger.info('Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
                     io.write_xds_input(jobs, run_info)
@@ -640,7 +670,18 @@ class AutoXDS:
         if not success:
             _logger.error(':-( Scaling failed!')
             return {'success': False, 'reason': None}
-    
+
+    def calc_statistics(self):
+        os.chdir(self.top_directory)
+        for name, rres in self.results.items():
+            if rres['files'].get('xscale') is None:
+                continue
+            for filename in rres['files']['xscale']:
+                success = utils.execute_xdsstat(filename)
+                if success:
+                    raw_info = xds.parse_xdsstat('XDSSTAT.LP')
+                    rres['scaling'].update(raw_info)
+                
     def convert_files(self):
         os.chdir(self.top_directory)
         # GENERATE MTZ and CNS output files    
@@ -718,7 +759,7 @@ class AutoXDS:
         success = utils.execute_xds_par()
         info_x = xds.parse_xplan()
         _logger.info('Calculating Alternate Strategy ...')
-        success = utils.execute_best(run_info['exposure_time'], self.options.get('anomalous', False))
+        success = utils.execute_best(run_info)
         info_b = parse_best('best.xml')
         info_b['xplan'] = info_x
         if not success:
@@ -770,7 +811,7 @@ class AutoXDS:
                                 subtree_skew, ice_rings)
             _logger.info("Dataset '%s' Score: %0.2f" % (dataset_name, score))
             rres['crystal_score'] = score
-                  
+
     def run(self):
         
         t1 = time.time()
@@ -808,6 +849,9 @@ class AutoXDS:
             run_result['indexing'] = _out.get('data')
             
             #Integration
+            if self.options.get('command', None) == 'screen':
+                run_info['data_range'] = run_info['spot_range'][0]
+
             _out = self.integrate(run_info)
             if not _out['success']:
                 _logger.error('Integration failed! %s' % _out.get('reason'))
@@ -871,7 +915,8 @@ class AutoXDS:
         
         # Scale datasets
         self.scale_datasets()
-
+        self.calc_statistics()
+        
         # Calculate Strategy if screening
         for name, run_info in self.dataset_info.items():
             if self.options.get('command', None) == 'screen':

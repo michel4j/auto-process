@@ -173,6 +173,7 @@ def get_dataset_params(img_file, screen=False):
         sys.exit(1)
         
     info = read_header(reference_image)
+    info['starting_frame'] = first_frame
     info['frame_count'] = frame_count
     info['dataset_name'] = _dataset_name
     info['file_template'] = "%s/%s" % (directory, xds_template)        
@@ -194,10 +195,7 @@ def get_dataset_params(img_file, screen=False):
             r_e += 1
         spot_range.append( (r_s, r_e-1) )
     info['spot_range'] = spot_range
-    if screen:
-        info['data_range'] = spot_range[0]
-    else:
-        info['data_range'] = (first_frame, first_frame + frame_count-1)
+    info['data_range'] = (first_frame, first_frame + frame_count-1)
     
     #info['spot_range'] = [info['data_range']]
     
@@ -337,9 +335,25 @@ def execute_xdsconv():
 def execute_f2mtz():
     sts, output = commands.getstatusoutput('sh f2mtz.com >> xds.log')
     return sts==0
+
+def execute_xdsstat(filename):
+    file_text = "#!/bin/csh \n"
+    file_text += "xdsstat <<EOF > XDSSTAT.LP\n" 
+    file_text += "%s\n" % filename 
+    file_text += "EOF\n"
+    try:
+        outfile = open('xdsstat.com','w')
+        outfile.write(file_text)
+    except IOError, eStr:
+        print "ERROR: Cannot open xdsstat.com for writing: ", eStr
+        return 1
+    outfile.close()
+    sts, output = commands.getstatusoutput('sh xdsstat.com >> xds.log')
+    return sts==0
+
        
 def execute_pointless():
-    sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml >> xds.log')
+    sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml > pointless.log')
     return sts==0
 
 def execute_pointless_retry():
@@ -352,16 +366,22 @@ eof
 """
     f.write(cmd)
     f.close()
-    sts, output = commands.getstatusoutput('sh pointless.com >> xds.log')
+    sts, output = commands.getstatusoutput('sh pointless.com > pointless.log')
     return sts==0     
 
-def execute_best(time, anomalous=False):
+def execute_best(info):
     anom_flag = ''
-    if anomalous:
+    if info['anomalous']:
         anom_flag = '-a'
-    command  = "best -t %f -q " % time
+    else:
+        anom_flag = ''
+    if info.get('detector_type') is not None:
+        det_flag = '-f %s' % info['detector_type']
+    else:
+        det_flag = ''
+    command  = "best %s -t %f -q " % (det_flag, info['exposure_time'])
     command += " -e none -M 1 -w 0.2 %s -dna best.xml" % anom_flag
-    command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL >> best.log"
+    command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL > best.log"
     sts, output = commands.getstatusoutput(command)
     return sts==0
 
@@ -676,7 +696,7 @@ def format_section(section, level=1, invert=False, fields=[], show_title=True):
     elif _section.get('table+plot') is not None:
         _key = 'table+plot'
     else:
-        return str(section)
+        return ''
     pt = PrettyTable()
     if not invert:
         for i, d in enumerate(_section[_key]):
@@ -709,3 +729,6 @@ def format_section(section, level=1, invert=False, fields=[], show_title=True):
     file_text += '\n'
     return file_text
     
+def shorten_path(path, start):
+    start = os.path.abspath(start)+os.path.sep
+    return path.replace(start,'')

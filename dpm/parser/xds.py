@@ -55,6 +55,9 @@ def parse_correct(filename='CORRECT.LP'):
 def parse_xplan(filename='XPLAN.LP'):
     return utils.parse_file(filename, config='xplan.ini')
 
+def parse_xdsstat(filename='XDSSTAT.LP'):
+    return utils.parse_file(filename, config='xdsstat.ini')
+
 
 def parse_xscale(filename='XSCALE.LP'):
     data = file(filename).read()

@@ -52,5 +52,18 @@ def read_header(filename):
     else:
         info['two_theta'] = 0.0
     info['file_format'] = 'SMV'
+    
+    if info['detector_size'][0] == 2304:
+        info['detector_type'] = 'q4'
+    elif info['detector_size'][0] == 1152:
+        info['detector_type'] = 'q4-2x'
+    elif info['detector_size'][0] == 4096:
+        info['detector_type'] = 'q210'
+    elif info['detector_size'][0] == 2048:
+        info['detector_type'] = 'q210-2x'
+    elif info['detector_size'][0] == 6144:
+        info['detector_type'] = 'q315'
+    elif info['detector_size'][0] == 3072:
+        info['detector_type'] = 'q315-2x'
 
     return info

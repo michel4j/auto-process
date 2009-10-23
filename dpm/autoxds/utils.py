@@ -12,7 +12,7 @@ from math import exp
 import fnmatch
 import shutil
 import commands
-from dpm.imageio import marccd
+from dpm.imageio import read_header
 from dpm.parser.utils import Table
 from dpm.utils import magic
 from dpm.utils import fitting
@@ -172,7 +172,7 @@ def get_dataset_params(img_file, screen=False):
         print 'AutoXDS ERROR: You need at least 4 frames in the set! Only %d found' % frame_count
         sys.exit(1)
         
-    info = marccd.read_header(reference_image)
+    info = read_header(reference_image)
     info['frame_count'] = frame_count
     info['dataset_name'] = _dataset_name
     info['file_template'] = "%s/%s" % (directory, xds_template)        

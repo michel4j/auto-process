@@ -26,6 +26,8 @@ import ctypes.util
 
 from ctypes import c_char_p, c_int, c_size_t, c_void_p
 
+MAGIC_FILE = os.path.join(os.path.dirname(__file__), 'data', 'magic')
+
 class MagicException(Exception): pass
 
 class Magic:
@@ -34,7 +36,7 @@ class Magic:
     
     """
 
-    def __init__(self, mime=False, magic_file=None):
+    def __init__(self, mime=False, magic_file=MAGIC_FILE):
         """
         Create a new libmagic wrapper.
 

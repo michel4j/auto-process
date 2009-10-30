@@ -379,8 +379,9 @@ def execute_best(info):
         det_flag = '-f %s' % info['detector_type']
     else:
         det_flag = ''
-    command  = "best %s -t %f -q " % (det_flag, info['exposure_time'])
-    command += " -e none -M 1 -w 0.2 %s -dna best.xml" % anom_flag
+    # removed -q option
+    command  = "best %s -t %f " % (det_flag, info['exposure_time'])
+    command += " -e none -M 0.5 -w 0.2 %s -dna best.xml" % anom_flag
     command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL > best.log"
     sts, output = commands.getstatusoutput(command)
     return sts==0
@@ -629,7 +630,7 @@ def get_xplan_strategy(info):
     _sel = _scens[-1]
     while pos > 0:
         pos -=1
-        if _scens[pos]['completeness'] >= min(99.0, _sel['completeness']):
+        if (_scens[pos]['completeness'] - _sel['completeness']) < 1.0 and _scens[pos]['completeness'] > 95:
             _sel = _scens[pos]
             
     plan.update(_sel)

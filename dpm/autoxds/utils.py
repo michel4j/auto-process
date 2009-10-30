@@ -630,7 +630,7 @@ def get_xplan_strategy(info):
     _sel = _scens[-1]
     while pos > 0:
         pos -=1
-        if (_scens[pos]['completeness'] - _sel['completeness']) < 1.0 and _scens[pos]['completeness'] > 95:
+        if (_scens[pos]['completeness'] - _sel['completeness']) > -0.5:
             _sel = _scens[pos]
             
     plan.update(_sel)

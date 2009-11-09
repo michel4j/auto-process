@@ -614,7 +614,6 @@ class AutoXDS:
         output_file_list = []
         if command == 'mad':
             sections = []
-            _crystal_name = os.path.commonprefix(self.results.keys())
             for name, rres in self.results.items():
                 resol = rres['correction']['resolution'][0]
                 in_file = rres['files']['correct']
@@ -622,7 +621,7 @@ class AutoXDS:
                 sections.append(
                     {'anomalous': self.options.get('anomalous', True),
                      'output_file': out_file,
-                     'crystal': _crystal_name,
+                     'crystal': 'cryst1',
                      'inputs': [{'input_file': in_file, 'resolution': resol}],
                     }
                     )

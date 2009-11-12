@@ -95,7 +95,7 @@ def main():
 if __name__ == "__main__":
     try:
         log_to_console()
-        log_to_file('/tmp/autoprocess.log')
+        #log_to_file('/tmp/autoprocess.log')
         main()
     except KeyboardInterrupt:
         sys.exit(1)

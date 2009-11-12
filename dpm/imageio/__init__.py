@@ -8,7 +8,6 @@ _magic_map = {
 def read_header(filename):
     full_id = magic.from_file(filename).strip()
     key = full_id.split(', ')[0]
-    print key
     if _magic_map.get(key) is not None:
         func = _magic_map.get(key)
         info = func(filename)

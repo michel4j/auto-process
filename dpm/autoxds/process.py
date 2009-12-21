@@ -400,6 +400,21 @@ class AutoXDS:
             info = self.results
         pickle.dump(info, fh)
         fh.close()
+    
+    def save_json(self, info=None, filename='debug.json'):
+        try:
+            import json
+        except:
+            _logger.info('JSON exporter not available ...')
+            return
+        else:
+            os.chdir(self.top_directory)
+            fh = open(filename, 'w')
+            if info is None:
+                info = self.results
+            json.dump(info, fh)
+            fh.close()
+            
 
     def find_spots(self, run_info):
         os.chdir(run_info['working_directory'])
@@ -939,6 +954,7 @@ class AutoXDS:
                       
         self.save_xml(self.results, 'debug.xml')
         self.save_xml(self.get_log_dict(), 'process.xml')
+        self.save_json(self.get_log_dict(), 'process.json')
         self.save_log('process.log')
 
         elapsed = time.time() - t1

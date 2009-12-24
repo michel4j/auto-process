@@ -49,7 +49,7 @@ def write_xds_input(jobs, params):
     if len(_file_template) > 50:
         try:
             rel_dir = os.path.relpath(directory)
-            file_template = os.path.join(rel_dir, xds_template)
+            _file_template = os.path.join(rel_dir, xds_template)
         except:
             pass
         
@@ -62,9 +62,9 @@ def write_xds_input(jobs, params):
         os.symlink(directory, tmp_dir)            
         _file_template = os.path.join(tmp_dir, xds_template)
     
-    if params['detector_type'] in ['q4', 'q210','q4-2x','q210-2x','q315','q315-2x']:
+    if params.get('detector_type') in ['q4', 'q210','q4-2x','q210-2x','q315','q315-2x']:
         detector = 'ADSC'
-    elif params['detector_type'] in ['mar165','mx300','mx300he','mar225','mar325']:
+    elif params.get('detector_type') in ['mar165','mx300','mx300he','mar225','mar325']:
         detector = 'CCDCHESS'
     else:
         detector = 'CCDCHESS'

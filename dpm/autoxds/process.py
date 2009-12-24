@@ -4,19 +4,19 @@ Data Processing Class
 
 """
 
-import os, sys, time
+import os
+import sys
+import time
 
 from dpm.parser.pointless import parse_pointless
 from dpm.parser.distl import parse_distl
 from dpm.parser import xds
 from dpm.parser.best import parse_best
-from dpm.utils.log import get_module_logger, log_to_console
-from dpm.utils.prettytable import PrettyTable, MSWORD_FRIENDLY
+from dpm.utils.log import get_module_logger
 from dpm.utils.progress import ProgDisplay, ProgChecker
 from dpm.parser.utils import Table
 from gnosis.xml import pickle
 from dpm.utils.odict import SortedDict
-import pprint
 import utils, io
 
 _logger = get_module_logger('AutoXDS')
@@ -58,10 +58,10 @@ class AutoXDS:
         
         # for multiple data sets, process each in a separate subdirectory
         if len(self.dataset_info.keys()) ==1:
-            for name, run_info in self.dataset_info.items():
+            for run_info in self.dataset_info.values():
                 run_info['working_directory'] = self.top_directory
         else:   
-            for name, run_info in self.dataset_info.items():
+            for run_info in self.dataset_info.values():
                 run_info['working_directory'] = os.path.join(self.top_directory,
                                                              run_info['dataset_name'])
         os.chdir(self.top_directory)
@@ -340,7 +340,7 @@ class AutoXDS:
                 _data_key = 'table+plot'
                 _section['plot_axes'] = [('Resolution',['R_meas', 'R_mrgd-F', 'Completeness']),('Resolution', ['I/Sigma'])]
                 if dset['parameters']['anomalous'] == True:
-                      _section['plot_axes'].append(('Resolution', ['SigAno']))
+                    _section['plot_axes'].append(('Resolution', ['SigAno']))
             _section[_data_key] = []
             for row in dset['correction']['statistics']:
                 n_row = SortedDict()
@@ -367,7 +367,7 @@ class AutoXDS:
                     
                 _section['shells']['plot_axes'] = [('Resolution', ['R_meas', 'R_mrgd-F', 'Completeness']), ('Resolution', ['I/Sigma'])]
                 if self.options.get('anomalous', False):
-                      _section['shells']['plot_axes'].append(('Resolution', ['SigAno']))
+                    _section['shells']['plot_axes'].append(('Resolution', ['SigAno']))
                       
                 _section['frames'] = {}
                 _section['frames']['title'] = "Statistics presented by frame"
@@ -391,6 +391,146 @@ class AutoXDS:
             
                 info['details'][dataset_name]['scaling'] = _section   
 
+        return info
+
+    
+    def get_info_dict(self):
+        if self.options.get('anomalous', False):
+            adj = 'Anomalous'
+        else:
+            adj = 'Native'
+        info = {}
+        
+        for dataset_name in self.dataset_names:
+            info[dataset_name] = {}
+            dset = self.results[dataset_name]
+            if dset.get('image_analysis', None) is not None:
+                _ice_rings = dset['image_analysis']['summary']['ice_rings']
+            else:
+                _ice_rings = -1
+            
+            if dset.get('scaling', None) is not None:
+                _summary = dset['scaling']
+            else:
+                _summary= dset['correction']
+            _sum_keys = ['name', 'score', 'wavelength','space_group', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
+                     'resolution','reflections', 'unique','multiplicity', 'completeness','mosaicity', 'i_sigma',
+                     'r_meas','r_mrgd', 'sigma_spot', 'sigma_angle','ice_rings', 'path']
+            _sum_values = [ dataset_name, dset['crystal_score'], 
+                dset['parameters']['wavelength'],
+                dset['correction']['symmetry']['space_group']['sg_number'],
+                dset['correction']['symmetry']['space_group']['unit_cell'][0],
+                dset['correction']['symmetry']['space_group']['unit_cell'][1],
+                dset['correction']['symmetry']['space_group']['unit_cell'][2],
+                dset['correction']['symmetry']['space_group']['unit_cell'][3],
+                dset['correction']['symmetry']['space_group']['unit_cell'][4],
+                dset['correction']['symmetry']['space_group']['unit_cell'][5],
+                _summary['resolution'],
+                _summary['summary']['observed'],
+                _summary['summary']['unique'],
+                float(_summary['summary']['observed'])/_summary['summary']['unique'],
+                _summary['summary']['completeness'],
+                dset['correction']['summary']['mosaicity'],
+                _summary['summary']['i_sigma'],
+                _summary['summary']['r_mrgdf'],
+                _summary['summary']['r_meas'],
+                dset['correction']['summary']['stdev_spot'],
+                dset['correction']['summary']['stdev_spindle'],
+                _ice_rings,
+                ]
+            info[dataset_name]['summary'] = dict(zip(_sum_keys, _sum_values))
+            info[dataset_name]['details'] = {}
+            # print out data collection parameters
+            if dset.get('parameters', None) is not None:
+                _keys = ['distance', 'start_angle', 'delta_angle', 'num_frames',
+                         'exposure_time', 'two_theta', 'wavelength', 'detector_size',
+                         'detector_origin', 'pixel_size', 'detector_type',]
+                _values = [dset['parameters']['distance'],
+                        dset['parameters']['starting_angle'],
+                        dset['parameters']['oscillation_range'],                     
+                        dset['parameters']['frame_count'],
+                        dset['parameters']['exposure_time'],
+                        dset['parameters']['two_theta'], 
+                        dset['parameters']['wavelength'], 
+                        dset['parameters']['detector_size'],
+                        dset['parameters']['detector_origin'], 
+                        dset['parameters']['pixel_size'],
+                        dset['parameters']['detector_type'],
+                        ]
+                _section = dict(zip(_keys, _values))
+                if dset['files']['output'] is not None:
+                    _section['output_files'] = ', '.join(dset['files']['output'])
+                info[dataset_name]['details']['parameters'] = _section
+            
+            # Print out strategy information
+            if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
+                _strategy = {}
+                _strategy_keys = ['attenuation', 'distance',    'start_angle',
+                    'delta_angle', 'total_angle', 'exposure_time',
+                    'exp_resolution', 'exp_completeness', 'exp_multiplicity',
+                    'exp_i_sigma', 'exp_r_factor',
+                    ]
+                run = dset['strategy']['runs'][0]
+                _strategy_vals = [dset['strategy']['attenuation'], 
+                  run['distance'], run['phi_start'], run['phi_width'], 
+                  run['phi_width'] * run['number_of_images'], run['exposure_time'],
+                  dset['strategy']['resolution'], dset['strategy']['completeness'],
+                  dset['strategy']['redundancy'], dset['strategy']['prediction_all']['average_i_over_sigma'],
+                  dset['strategy']['prediction_all']['R_factor'],
+                  ]
+                info[dataset_name]['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
+                _t = Table(dset['indexing']['oscillation_ranges'])
+                _section = {}
+                for k in ['resolution','angle']:
+                    _section[k] = _t[k]
+                info[dataset_name]['details']['overlap_analysis'] = _section          
+            
+            _section = {}
+            _t = Table(dset['correction']['symmetry']['lattices'])
+            _id = SortedDict(_t['id'])
+            _section['id'] = _id.keys()
+            _section['type'] = _id.values()
+            _cell_fmt = '%5.1f %5.1f %5.1f %5.1f %5.1f %5.1f'
+            _section['unit_cell'] = [_cell_fmt % c for c in _t['unit_cell']]
+            _section['quality'] = _t['quality']
+            _section['volume'] = [utils.cell_volume(c) for c in _t['unit_cell']]
+            info[dataset_name]['details']['compatible_lattices'] = _section
+            
+            _section = {}
+            _t = Table(dset['space_group']['candidates'])
+            _section['space_group'] = _t['number']
+            _section['name'] = [utils.SPACE_GROUP_NAMES[n] for n in  _section['space_group']]
+            _section['probability'] = _t['probability']            
+            info[dataset_name]['details']['spacegroup_selection'] = _section 
+            
+            # Print out integration results
+            _section = {}
+            _t = Table(dset['integration']['scale_factors'])
+            for k in ['frame','scale','overloads','reflections','mosaicity','unexpected','divergence']:
+                _section[k] = _t[k]
+                
+            if dset.get('scaling', None) is not None:
+                if dset['scaling'].get('frame_statistics') is not None:                     
+                    _t = Table(dset['scaling']['frame_statistics'])
+                    for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
+                        _section[k] = _t[k]
+                if dset['scaling'].get('diff_statistics') is not None:
+                    _t = Table(dset['scaling']['diff_statistics'])
+                    info[dataset_name]['details']['diff_statistics'] = {}
+                    for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
+                        info[dataset_name]['details']['diff_statistics'][k] = _t[k]
+            info[dataset_name]['details']['frame_statistics']
+            
+            # Print out correction results
+            _section = {}
+            if dset.get('scaling') is not None and dset['scaling'].get('statistics') is not None:
+                _t = Table(dset['scaling']['statistics'])
+            else:
+                _t = Table(dset['correction']['statistics'])
+            for k in ['shell', 'completeness','r_meas','r_mrgdf','i_sigma','sig_ano','cor_ano']:
+                _section[k] = _t[k]
+            info[dataset_name]['details']['shell_statistics']
+            
         return info
 
     def save_xml(self, info=None, filename='debug.xml'):
@@ -449,7 +589,6 @@ class AutoXDS:
         data = utils.diagnose_index(info)
         _retries = 0
         sigma = 3
-        sepmin, clustrad = 6, 3
         spot_size = 6
         _all_images = False
         _aliens_tried = False
@@ -954,7 +1093,7 @@ class AutoXDS:
                       
         self.save_xml(self.results, 'debug.xml')
         self.save_xml(self.get_log_dict(), 'process.xml')
-        self.save_json(self.get_log_dict(), 'process.json')
+        self.save_json(self.get_info_dict(), 'process.json')
         self.save_log('process.log')
 
         elapsed = time.time() - t1

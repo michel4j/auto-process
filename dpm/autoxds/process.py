@@ -395,10 +395,6 @@ class AutoXDS:
 
     
     def get_info_dict(self):
-        if self.options.get('anomalous', False):
-            adj = 'Anomalous'
-        else:
-            adj = 'Native'
         info = {}
         
         for dataset_name in self.dataset_names:
@@ -519,7 +515,7 @@ class AutoXDS:
                     info[dataset_name]['details']['diff_statistics'] = {}
                     for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
                         info[dataset_name]['details']['diff_statistics'][k] = _t[k]
-            info[dataset_name]['details']['frame_statistics']
+            info[dataset_name]['details']['frame_statistics'] = _section
             
             # Print out correction results
             _section = {}
@@ -527,9 +523,10 @@ class AutoXDS:
                 _t = Table(dset['scaling']['statistics'])
             else:
                 _t = Table(dset['correction']['statistics'])
-            for k in ['shell', 'completeness','r_meas','r_mrgdf','i_sigma','sig_ano','cor_ano']:
-                _section[k] = _t[k]
-            info[dataset_name]['details']['shell_statistics']
+            for k in ['completeness','r_meas','r_mrgdf','i_sigma','sig_ano','cor_ano']:
+                _section[k] = _t[k][:-1] # don't get 'total' row
+            _section['shell'] = [float(v) for v in _t['shell'][:-1]]
+            info[dataset_name]['details']['shell_statistics'] = _section
             
         return info
 
@@ -552,7 +549,7 @@ class AutoXDS:
             fh = open(filename, 'w')
             if info is None:
                 info = self.results
-            json.dump(info, fh)
+            json.dump(info, fh, separators=(',',':'))
             fh.close()
             
 

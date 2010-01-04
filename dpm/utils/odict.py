@@ -113,3 +113,12 @@ class SortedDict(dict):
     def clear(self):
         super(SortedDict, self).clear()
         self.keyOrder = []
+
+
+class DotDict(dict):
+    def __getattr__(self, attr):
+        return self.get(attr, None)
+    __setattr__= dict.__setitem__
+    __delattr__= dict.__delitem__
+
+

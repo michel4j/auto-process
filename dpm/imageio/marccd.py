@@ -60,5 +60,7 @@ def read_header(filename):
         #FIXME distinguish mx300 from mx300he
     elif abs(round(det_mm)-325) < 2:
         info['detector_type'] = 'mar325'
+    else:
+        info['detector_type'] = 'marUNKOWN'
     
     return info

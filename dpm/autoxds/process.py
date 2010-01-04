@@ -21,6 +21,8 @@ import utils, io
 
 _logger = get_module_logger('AutoXDS')
 
+AUTOXDS_SCREENING, AUTOXDS_PROCESSING = range(2)
+
 class AutoXDS:
 
     def __init__(self, options):
@@ -409,11 +411,13 @@ class AutoXDS:
                 _summary = dset['scaling']
             else:
                 _summary= dset['correction']
-            _sum_keys = ['name', 'score', 'wavelength','space_group', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
+            _sum_keys = ['data_id', 'name', 'score', 'space_group_id', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
                      'resolution','reflections', 'unique','multiplicity', 'completeness','mosaicity', 'i_sigma',
-                     'r_meas','r_mrgd', 'sigma_spot', 'sigma_angle','ice_rings', 'path']
-            _sum_values = [ dataset_name, dset['crystal_score'], 
-                dset['parameters']['wavelength'],
+                     'r_meas','r_mrgd', 'sigma_spot', 'sigma_angle','ice_rings', 'url']
+            _sum_values = [
+                dset['parameters']['data_id'],
+                dataset_name, 
+                dset['crystal_score'], 
                 dset['correction']['symmetry']['space_group']['sg_number'],
                 dset['correction']['symmetry']['space_group']['unit_cell'][0],
                 dset['correction']['symmetry']['space_group']['unit_cell'][1],
@@ -421,7 +425,7 @@ class AutoXDS:
                 dset['correction']['symmetry']['space_group']['unit_cell'][3],
                 dset['correction']['symmetry']['space_group']['unit_cell'][4],
                 dset['correction']['symmetry']['space_group']['unit_cell'][5],
-                _summary['resolution'],
+                _summary['resolution'][0],
                 _summary['summary']['observed'],
                 _summary['summary']['unique'],
                 float(_summary['summary']['observed'])/_summary['summary']['unique'],
@@ -433,30 +437,12 @@ class AutoXDS:
                 dset['correction']['summary']['stdev_spot'],
                 dset['correction']['summary']['stdev_spindle'],
                 _ice_rings,
+                dset['parameters']['working_directory'],
                 ]
-            info[dataset_name]['summary'] = dict(zip(_sum_keys, _sum_values))
-            info[dataset_name]['details'] = {}
-            # print out data collection parameters
-            if dset.get('parameters', None) is not None:
-                _keys = ['distance', 'start_angle', 'delta_angle', 'num_frames',
-                         'exposure_time', 'two_theta', 'wavelength', 'detector_size',
-                         'detector_origin', 'pixel_size', 'detector_type',]
-                _values = [dset['parameters']['distance'],
-                        dset['parameters']['starting_angle'],
-                        dset['parameters']['oscillation_range'],                     
-                        dset['parameters']['frame_count'],
-                        dset['parameters']['exposure_time'],
-                        dset['parameters']['two_theta'], 
-                        dset['parameters']['wavelength'], 
-                        dset['parameters']['detector_size'],
-                        dset['parameters']['detector_origin'], 
-                        dset['parameters']['pixel_size'],
-                        dset['parameters']['detector_type'],
-                        ]
-                _section = dict(zip(_keys, _values))
-                if dset['files']['output'] is not None:
-                    _section['output_files'] = ', '.join(dset['files']['output'])
-                info[dataset_name]['details']['parameters'] = _section
+            info[dataset_name]['results'] = dict(zip(_sum_keys, _sum_values))
+            info[dataset_name]['results']['details'] = {}
+            if dset['files']['output'] is not None:
+                info[dataset_name]['results']['details']['output_files'] = dset['files']['output']
             
             # Print out strategy information
             if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
@@ -479,7 +465,7 @@ class AutoXDS:
                 _section = {}
                 for k in ['resolution','angle']:
                     _section[k] = _t[k]
-                info[dataset_name]['details']['overlap_analysis'] = _section          
+                info[dataset_name]['results']['details']['overlap_analysis'] = _section          
             
             _section = {}
             _t = Table(dset['correction']['symmetry']['lattices'])
@@ -490,14 +476,14 @@ class AutoXDS:
             _section['unit_cell'] = [_cell_fmt % c for c in _t['unit_cell']]
             _section['quality'] = _t['quality']
             _section['volume'] = [utils.cell_volume(c) for c in _t['unit_cell']]
-            info[dataset_name]['details']['compatible_lattices'] = _section
+            info[dataset_name]['results']['details']['compatible_lattices'] = _section
             
             _section = {}
             _t = Table(dset['space_group']['candidates'])
             _section['space_group'] = _t['number']
             _section['name'] = [utils.SPACE_GROUP_NAMES[n] for n in  _section['space_group']]
             _section['probability'] = _t['probability']            
-            info[dataset_name]['details']['spacegroup_selection'] = _section 
+            info[dataset_name]['results']['details']['spacegroup_selection'] = _section 
             
             # Print out integration results
             _section = {}
@@ -512,10 +498,10 @@ class AutoXDS:
                         _section[k] = _t[k]
                 if dset['scaling'].get('diff_statistics') is not None:
                     _t = Table(dset['scaling']['diff_statistics'])
-                    info[dataset_name]['details']['diff_statistics'] = {}
+                    info[dataset_name]['results']['details']['diff_statistics'] = {}
                     for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
-                        info[dataset_name]['details']['diff_statistics'][k] = _t[k]
-            info[dataset_name]['details']['frame_statistics'] = _section
+                        info[dataset_name]['results']['details']['diff_statistics'][k] = _t[k]
+            info[dataset_name]['results']['details']['frame_statistics'] = _section
             
             # Print out correction results
             _section = {}
@@ -526,8 +512,12 @@ class AutoXDS:
             for k in ['completeness','r_meas','r_mrgdf','i_sigma','sig_ano','cor_ano']:
                 _section[k] = _t[k][:-1] # don't get 'total' row
             _section['shell'] = [float(v) for v in _t['shell'][:-1]]
-            info[dataset_name]['details']['shell_statistics'] = _section
+            info[dataset_name]['results']['details']['shell_statistics'] = _section
             
+            if self.options.get('command', None) == 'screen':
+                info[dataset_name]['results']['kind'] = AUTOXDS_SCREENING
+            else:
+                info[dataset_name]['results']['kind'] = AUTOXDS_PROCESSING
         return info
 
     def save_xml(self, info=None, filename='debug.xml'):
@@ -538,19 +528,38 @@ class AutoXDS:
         pickle.dump(info, fh)
         fh.close()
     
-    def save_json(self, info=None, filename='debug.json'):
+    def export_json(self, result_dict, filename='debug.json'):
         try:
+            from jsonrpc.proxy import ServiceProxy
+            server = ServiceProxy('http://localhost:8000/json/')
             import json
         except:
             _logger.info('JSON exporter not available ...')
             return
         else:
+            # save json information to file
             os.chdir(self.top_directory)
             fh = open(filename, 'w')
-            if info is None:
-                info = self.results
-            json.dump(info, fh, separators=(',',':'))
+            if result_dict is None:
+                result_dict = self.results
+            json.dump(result_dict, fh, indent=4)
             fh.close()
+            
+            for info in result_dict.values():
+                # save result entry to database
+                _out = server.lims.add_result('admin','motor2bil', info['results'])
+                if _out['error'] is None:
+                    _logger.info('Analysis Result Uploaded to LIMS ...')
+                    if info.get('strategy') is not None:
+                        info['strategy'].update(_out['result'])
+                        _out = server.lims.add_strategy('admin','motor2bil', info['strategy'])
+                        if _out['error'] is None:
+                            _logger.info('Recommended Strategy uploaded to LIMS ...')
+                        else:
+                            print _out['error']['message']
+                else:
+                    print _out['error']['message']
+            
             
 
     def find_spots(self, run_info):
@@ -1090,7 +1099,7 @@ class AutoXDS:
                       
         self.save_xml(self.results, 'debug.xml')
         self.save_xml(self.get_log_dict(), 'process.xml')
-        self.save_json(self.get_info_dict(), 'process.json')
+        self.export_json(self.get_info_dict(), 'process.json')
         self.save_log('process.log')
 
         elapsed = time.time() - t1

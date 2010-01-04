@@ -205,6 +205,31 @@ def get_dataset_params(img_file, screen=False):
     info['space_group'] = 0
     info['reference_image'] = reference_image
     
+    # prepare dataset json file
+    import json
+    from jsonrpc.proxy import ServiceProxy
+    server = ServiceProxy('http://localhost:8000/json/')
+    json_info = {
+        'name': _dataset_name,
+        'distance': info['distance'],
+        'start_angle': info['exposure_time'],
+        'delta_angle': info['oscillation_range'],
+        'first_frame': info['starting_frame'],
+        'num_frames': frame_count,
+        'exposure_time': info['exposure_time'],
+        'two_theta': info['two_theta'],
+        'wavelength': info['wavelength'],
+        'detector': info['detector_type'],
+        'detector_size': info['detector_size'][0],
+        'pixel_size': info['pixel_size'][0],
+        'beam_x': info['detector_origin'][0],
+        'beam_y': info['detector_origin'][1],
+        'url': os.path.dirname(info['file_template']),
+    }
+    reply = server.lims.add_data('admin','motor2bil', json_info)
+    
+    if reply['error'] is None:
+        info.update(reply['result'])
     return info
 
 def tidy_cell(unit_cell, character):

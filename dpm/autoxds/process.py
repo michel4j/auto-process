@@ -413,7 +413,7 @@ class AutoXDS:
                 _summary= dset['correction']
             _sum_keys = ['data_id', 'name', 'score', 'space_group_id', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
                      'resolution','reflections', 'unique','multiplicity', 'completeness','mosaicity', 'i_sigma',
-                     'r_meas','r_mrgd', 'sigma_spot', 'sigma_angle','ice_rings', 'url']
+                     'r_meas','r_mrgdf', 'sigma_spot', 'sigma_angle','ice_rings', 'url']
             _sum_values = [
                 dset['parameters']['data_id'],
                 dataset_name, 
@@ -433,7 +433,7 @@ class AutoXDS:
                 dset['correction']['summary']['mosaicity'],
                 _summary['summary']['i_sigma'],
                 _summary['summary']['r_meas'],
-                _summary['summary']['r_mrgd'],
+                _summary['summary']['r_mrgdf'],
                 dset['correction']['summary']['stdev_spot'],
                 dset['correction']['summary']['stdev_spindle'],
                 _ice_rings,

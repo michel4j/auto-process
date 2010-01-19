@@ -23,14 +23,14 @@ import textwrap
 
 
 # each rule is a list of 9 boolean values representing
-# a=a, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120
+# a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120
 _lattice_rules = {
     'a':[False, False, False, False, False, False, False, False, False, False],
     'm':[False, False, False, False, True, False, True, False, False, False],
     'o':[False, False, False, False, True, True, True, False, False, False],
     't':[True, False, False, False, True, True, True, False, False, False],
     'h':[True, False, False, False, True, True, False, False, False, True],
-    'c':[True, True, True, True, True, True, True, False, False, False]
+    'c':[False, False, False, True, True, True, True, False, False, False]
     }
 
 SPACE_GROUP_NAMES = {
@@ -206,33 +206,37 @@ def get_dataset_params(img_file, screen=False):
     info['reference_image'] = reference_image
     
     # prepare dataset json file
-    import json
-    from jsonrpc.proxy import ServiceProxy
-    server = ServiceProxy('http://localhost:8000/json/')
-    json_info = {
-        'name': _dataset_name,
-        'distance': info['distance'],
-        'start_angle': info['exposure_time'],
-        'delta_angle': info['oscillation_range'],
-        'first_frame': info['starting_frame'],
-        'num_frames': frame_count,
-        'exposure_time': info['exposure_time'],
-        'two_theta': info['two_theta'],
-        'wavelength': info['wavelength'],
-        'detector': info['detector_type'],
-        'detector_size': info['detector_size'][0],
-        'pixel_size': info['pixel_size'][0],
-        'beam_x': info['detector_origin'][0],
-        'beam_y': info['detector_origin'][1],
-        'url': os.path.dirname(info['file_template']),
-    }
-    reply = server.lims.add_data('admin','motor2bil', json_info)
-    
-    if reply['error'] is None:
-        info.update(reply['result'])
+    try:
+        import json
+        from jsonrpc.proxy import ServiceProxy
+        server = ServiceProxy('http://localhost:8000/json/')
+        json_info = {
+            'name': _dataset_name,
+            'distance': info['distance'],
+            'start_angle': info['exposure_time'],
+            'delta_angle': info['oscillation_range'],
+            'first_frame': info['starting_frame'],
+            'num_frames': frame_count,
+            'exposure_time': info['exposure_time'],
+            'two_theta': info['two_theta'],
+            'wavelength': info['wavelength'],
+            'detector': info['detector_type'],
+            'detector_size': info['detector_size'][0],
+            'pixel_size': info['pixel_size'][0],
+            'beam_x': info['detector_origin'][0],
+            'beam_y': info['detector_origin'][1],
+            'url': os.path.dirname(info['file_template']),
+        }
+        reply = server.lims.add_data('admin','motor2bil', json_info)
+        
+        if reply['error'] is None:
+            info.update(reply['result'])
+    except:
+        _logger.info('JSON exporter not available ...')
+        
     return info
 
-def tidy_cell(unit_cell, character):
+def tidy_cell_old(unit_cell, character):
     """
     Tidies the given unit cell parameters given as a list/tuple of 6 values
     according to the rules of the lattice character
@@ -265,6 +269,44 @@ def tidy_cell(unit_cell, character):
 
     return tuple(new_cell)
      
+def tidy_cell(unit_cell, character):
+    """
+    Tidies the given unit cell parameters given as a list/tuple of 6 values
+    according to the rules of the lattice character
+    
+    """
+    
+    new_cell = list(unit_cell)
+    rules = _lattice_rules[ character[0] ]
+    
+    def same_value_cleaner(v):
+        vi = sum(v)/len(v)
+        v = (vi,)*len(v)
+        return v
+
+    def equality_cleaner(v1, c1):
+        v1 = c1
+        return v1
+    
+    for i, rule in enumerate(rules):
+        if not rule: continue
+        # clean cell axis lengths
+        if i == 0:           
+            new_cell[0:2] = same_value_cleaner(unit_cell[0:2])
+        if i == 1:
+            new_cell[0], new_cell[2] = same_value_cleaner([unit_cell[0], unit_cell[2]])
+        if i == 2:
+            new_cell[1], new_cell[2] = same_value_cleaner([unit_cell[1], unit_cell[2]])
+        if i == 3:
+            new_cell[0:3] = same_value_cleaner(unit_cell[0:3])
+        
+        # clean angles
+        if i in [4,5,6]: 
+            new_cell[i-1] = equality_cleaner( unit_cell[i-1], 90.)
+        if i in [7,8,9]:
+            new_cell[i-4] = equality_cleaner( new_cell[i-4], 120.)
+
+    return tuple(new_cell)
 
 def cell_volume(unit_cell):
     """

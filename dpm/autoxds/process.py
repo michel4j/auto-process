@@ -415,7 +415,7 @@ class AutoXDS:
                      'resolution','reflections', 'unique','multiplicity', 'completeness','mosaicity', 'i_sigma',
                      'r_meas','r_mrgdf', 'sigma_spot', 'sigma_angle','ice_rings', 'url']
             _sum_values = [
-                dset['parameters']['data_id'],
+                dset['parameters'].get('data_id', None),
                 dataset_name, 
                 dset['crystal_score'], 
                 dset['correction']['symmetry']['space_group']['sg_number'],
@@ -528,11 +528,12 @@ class AutoXDS:
         pickle.dump(info, fh)
         fh.close()
     
-    def export_json(self, result_dict, filename='debug.json'):
+    def export_json(self, filename='debug.json'):
         try:
             from jsonrpc.proxy import ServiceProxy
             server = ServiceProxy('http://localhost:8000/json/')
             import json
+            result_dict = self.get_info_dict()
         except:
             _logger.info('JSON exporter not available ...')
             return
@@ -1099,7 +1100,7 @@ class AutoXDS:
                       
         self.save_xml(self.results, 'debug.xml')
         self.save_xml(self.get_log_dict(), 'process.xml')
-        self.export_json(self.get_info_dict(), 'process.json')
+        self.export_json('process.json')
         self.save_log('process.log')
 
         elapsed = time.time() - t1

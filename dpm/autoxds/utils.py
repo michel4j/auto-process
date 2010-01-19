@@ -21,6 +21,9 @@ from dpm.utils.prettytable import PrettyTable, MSWORD_FRIENDLY
 from dpm.utils.odict import SortedDict
 import textwrap
 
+from dpm.utils.log import get_module_logger
+_logger = get_module_logger('AutoXDS')
+
 
 # each rule is a list of 9 boolean values representing
 # a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120

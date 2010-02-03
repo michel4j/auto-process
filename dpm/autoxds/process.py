@@ -548,12 +548,12 @@ class AutoXDS:
             
             for info in result_dict.values():
                 # save result entry to database
-                _out = server.lims.add_result('admin','motor2bil', info['results'])
+                _out = server.lims.add_result('admin','admin', info['results'])
                 if _out['error'] is None:
                     _logger.info('Analysis Result Uploaded to LIMS ...')
                     if info.get('strategy') is not None:
                         info['strategy'].update(_out['result'])
-                        _out = server.lims.add_strategy('admin','motor2bil', info['strategy'])
+                        _out = server.lims.add_strategy('admin','admin', info['strategy'])
                         if _out['error'] is None:
                             _logger.info('Recommended Strategy uploaded to LIMS ...')
                         else:

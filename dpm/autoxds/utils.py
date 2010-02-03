@@ -210,13 +210,12 @@ def get_dataset_params(img_file, screen=False):
     
     # prepare dataset json file
     try:
-        import json
         from jsonrpc.proxy import ServiceProxy
         server = ServiceProxy('http://localhost:8000/json/')
         json_info = {
             'name': _dataset_name,
             'distance': info['distance'],
-            'start_angle': info['exposure_time'],
+            'start_angle': info['starting_angle'],
             'delta_angle': info['oscillation_range'],
             'first_frame': info['starting_frame'],
             'num_frames': frame_count,
@@ -230,7 +229,7 @@ def get_dataset_params(img_file, screen=False):
             'beam_y': info['detector_origin'][1],
             'url': os.path.dirname(info['file_template']),
         }
-        reply = server.lims.add_data('admin','motor2bil', json_info)
+        reply = server.lims.add_data('admin','admin', json_info)
         
         if reply['error'] is None:
             info.update(reply['result'])

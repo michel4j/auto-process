@@ -530,22 +530,13 @@ class AutoXDS:
     
     def export_json(self, filename='debug.json'):
         try:
+            import json
+        except:
+            import simplejson as json
+        result_dict = self.get_info_dict()
+        try:
             from jsonrpc.proxy import ServiceProxy
             server = ServiceProxy('http://localhost:8000/json/')
-            import json
-            result_dict = self.get_info_dict()
-        except:
-            _logger.info('JSON exporter not available ...')
-            return
-        else:
-            # save json information to file
-            os.chdir(self.top_directory)
-            fh = open(filename, 'w')
-            if result_dict is None:
-                result_dict = self.results
-            json.dump(result_dict, fh, indent=4)
-            fh.close()
-            
             for info in result_dict.values():
                 # save result entry to database
                 _out = server.lims.add_result('admin','admin', info['results'])
@@ -560,7 +551,17 @@ class AutoXDS:
                             print _out['error']['message']
                 else:
                     print _out['error']['message']
-            
+        except:
+            _logger.info('JSON exporter not available ...')
+            pass
+
+        # save json information to file
+        os.chdir(self.top_directory)
+        fh = open(filename, 'w')
+        if result_dict is None:
+            result_dict = self.results
+        json.dump(result_dict, fh, indent=4)
+        fh.close()            
             
 
     def find_spots(self, run_info):
@@ -1109,4 +1110,6 @@ class AutoXDS:
             total_frames += info['data_range'][1]-info['data_range'][0]
         frame_rate = total_frames/elapsed
         used_time = time.strftime('%H:%M:%S', time.gmtime(elapsed))
-        _logger.info("Done in: %s [ %0.1f frames/sec ]"  % (used_time, frame_rate))             
+        _logger.info("Done in: %s [ %0.1f frames/sec ]"  % (used_time, frame_rate))
+        
+        return         

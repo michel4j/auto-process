@@ -234,7 +234,8 @@ def get_dataset_params(img_file, screen=False):
         if reply['error'] is None:
             info.update(reply['result'])
     except:
-        _logger.info('JSON exporter not available ...')
+        #_logger.info('JSON exporter not available ...')
+        pass
         
     return info
 

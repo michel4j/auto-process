@@ -21,6 +21,12 @@ from dpm.utils.prettytable import PrettyTable, MSWORD_FRIENDLY
 from dpm.utils.odict import SortedDict
 import textwrap
 
+#for python 2.3
+try:
+    _ = set([1,2])
+except:
+    import sets.Set as set
+   
 from dpm.utils.log import get_module_logger
 _logger = get_module_logger('AutoXDS')
 
@@ -181,27 +187,47 @@ def get_dataset_params(img_file, screen=False):
     info['dataset_name'] = _dataset_name
     info['file_template'] = "%s/%s" % (directory, xds_template)        
     info['file_format'] = magic.from_file(reference_image)
-    #determine spot range
+    
+    # Generate a list of wedges. each wedge is a tuple. The first value is the
+    # first frame number and the second is the number of frames in the wedge
+    wedges = []
+    _wedge = [0,0]
+    for i, f in enumerate(file_list):
+        _fm = file_pattern.match(f)
+        _fn = int(_fm.groups()[2])
+        _frame = (f, _fn)
+        if i == 0:
+            _wedge = [_fn, 1]
+        else:
+            if (_wedge[0] + _wedge[1]) == _fn:
+                _wedge[1] += 1
+            else:
+                if (_wedge[1]) > 0:
+                    wedges.append(_wedge)
+                    _wedge = [_fn, 1]
+    if (_wedge[0]) > 0:
+        wedges.append(_wedge)
+
+    # determine spot ranges from wedges
+    # up to 4 degrees per wedge starting at 0 and 45 and 90
+
     spot_range = []
-    # up to 5 deg at the beginning
-    r_s = first_frame
-    r_e = first_frame
-    while r_e < (first_frame + frame_count) and (r_e - r_s)*info['oscillation_range'] <= 5.0:
-        r_e += 1
-    spot_range.append( (r_s, r_e-1) )
+    _spot_span = int(4.0//info['oscillation_range']) # frames in 4 deg
+    _first_wedge = wedges[0]
     
-    # up to 5 deg starting at 90 deg
-    r_s = first_frame + int(90.0 / info['oscillation_range'])
-    if r_s < (first_frame + frame_count):
-        r_e = r_s
-        while r_e < (first_frame + frame_count) and (r_e - r_s)*info['oscillation_range'] <= 5.0:
-            r_e += 1
-        spot_range.append( (r_s, r_e-1) )
+    for _ang in [0.0, 45.0, 90.0]:
+        _rs = _first_wedge[0] + int(_ang//info['oscillation_range'])
+        _re = _rs + _spot_span
+        _exp_set  = set(range(_rs, _re))
+        for wedge in wedges:
+            _obs_set = set(range(wedge[0], wedge[0] + wedge[1]))
+            _range = (_exp_set & _obs_set)
+            if len(_range) > 0:
+                spot_range.append((min(_range), max(_range)))
+    last_frame = wedges[-1][0] + wedges[-1][1] - 1
     info['spot_range'] = spot_range
-    info['data_range'] = (first_frame, first_frame + frame_count-1)
-    
-    #info['spot_range'] = [info['data_range']]
-    
+    info['data_range'] = (first_frame, last_frame)    
+
     # initialize default dummy values for other parameters
     info['reindex_matrix'] = None
     info['unit_cell'] = (0,0,0,0,0,0)
@@ -210,8 +236,6 @@ def get_dataset_params(img_file, screen=False):
     
     # prepare dataset json file
     try:
-        from jsonrpc.proxy import ServiceProxy
-        server = ServiceProxy('http://localhost:8000/json/')
         json_info = {
             'name': _dataset_name,
             'distance': info['distance'],
@@ -229,6 +253,8 @@ def get_dataset_params(img_file, screen=False):
             'beam_y': info['detector_origin'][1],
             'url': os.path.dirname(info['file_template']),
         }
+        from jsonrpc.proxy import ServiceProxy
+        server = ServiceProxy('http://localhost:8000/json/')
         reply = server.lims.add_data('admin','admin', json_info)
         
         if reply['error'] is None:
@@ -334,30 +360,43 @@ def select_resolution(table):
         'i_sigma' : float
     }
     
+    returns a tuple the first value of which is the selected resolution,
+    and the second value of which is the selectio method where:
+    0 : Detector edge
+    1 : I/sigma > 1
+    2 : R-mrgdF < 40
+    3 : DISTL     
     """
+
+    resolutions = []
     shells = table[:-1]
     resol_i = float(shells[0]['shell'])
     resol_r = float(shells[0]['shell'])
     pos = 0
+    unreliable = False
     while pos < len(shells):
         if shells[pos]['i_sigma'] >= 1.0:
             resol_i = float(shells[pos]['shell'])
         elif shells[pos]['i_sigma'] == -99.0:
-            resol_i = float(shells[pos]['shell'])
-        else:
+            unreliable = True
             break
         pos += 1
-    pos = 0   
+    if not unreliable:
+        resolutions.append((resol_i, 1))
+    
+    pos = 0
     while pos < len(shells):
         if abs(shells[pos]['r_mrgdf']) <= 40.0:
             resol_r = float(shells[pos]['shell'])
         elif shells[pos]['r_mrgdf'] == -99.0:
-            resol_r = float(shells[pos]['shell'])
-        else:
+            unreliable = True
             break
         pos += 1
-
-    return (float(resol_i), float(resol_r))
+    if not unreliable:
+        resolutions.append((resol_r, 2))
+    if len(resolutions) == 0:
+        resolutions.append((float(shells[-1]['shell']), 0))
+    return min(resolutions)
 
 def select_lattices(table):
     """

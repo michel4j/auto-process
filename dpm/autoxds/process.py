@@ -124,6 +124,13 @@ class AutoXDS:
                       'R-meas [f]', 'sigma(spot) (pix)', 'sigma(angle) (deg)','No. Ice rings',
                       ]
         _section['table'] = []
+        resol_method = {
+            0: 'Based on detector edge, or limitted by input parameters.',
+            1: 'Based on I/sigma(I) > 1 cut-off.',
+            2: 'Based on  R-mrgd-F < 40% cut-off.',
+            3: 'Calculated by DISTL (see Zang et al, J. Appl. Cryst. (2006). 39, 112-119'
+        }
+        
         for dataset_name in self.dataset_names:
             dset = self.results[dataset_name]
             if dset.get('image_analysis', None) is not None:
@@ -141,7 +148,7 @@ class AutoXDS:
                 '%0.1f %0.1f %0.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][:3],
                 '%0.1f %0.1f %0.1f' % dset['correction']['symmetry']['space_group']['unit_cell'][3:],
                 '%0.0f' % (utils.cell_volume(dset['correction']['symmetry']['space_group']['unit_cell']),),
-                '%0.2f (%0.2f)' % _summary['resolution'],
+                '%0.2f' % _summary['resolution'][0],
                 _summary['summary']['observed'],
                 _summary['summary']['unique'],
                 '%0.1f' % (float(_summary['summary']['observed'])/_summary['summary']['unique'],),
@@ -157,10 +164,10 @@ class AutoXDS:
             _section['table'].append(zip(_sum_keys, _sum_values))
         _section['notes'] = """[a] Data Quality Score for comparing similar data sets. > 0.8 Excellent, > 0.6 Good, > 0.5 Acceptable, > 0.4 Marginal, > 0.3 Barely usable
 [b] NOTE: Automatic Space group selection is unreliable for incomplete data. See detailed results below.
-[c] Resolution selected based on I/sigma(I) > 1 cut-off. Value in parenthesis based on R-mergd-F < 40% cut-off.
+[c] Resolution selection method: %s
 [d] Average I/sigma(I) for all data.
 [e] Redundancy independent R-factor. Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.
-[f] Quality of amplitudes. see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275."""
+[f] Quality of amplitudes. see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.""" % resol_method[_summary['resolution'][1]]
         info['summary'] = _section
         
         info['details'] = {}
@@ -350,7 +357,7 @@ class AutoXDS:
                     n_row[k] = row[t]
                 _section[_data_key].append(n_row.items())
             resol = dset['correction']['resolution']
-            _section['notes'] = "Preliminary resolution cut-off (I/SigI>1.0):  %5.2f" % (resol[0])        
+            _section['notes'] = "Preliminary resolution cut-off (%s):  %5.2f" % (resol_method[resol[1]], resol[0])    
             info['details'][dataset_name]['correction'] = _section
             
             # Print out scaling results
@@ -777,7 +784,10 @@ class AutoXDS:
         if command == 'mad':
             sections = []
             for name, rres in self.results.items():
-                resol = rres['correction']['resolution'][0]
+                if  rres['correction']['resolution'][1] == 0 and rres.get('image_analysis'):
+                    resol = rres['image_analysis']['summary']['resolution']
+                else:
+                    resol = rres['correction']['resolution'][0]
                 in_file = rres['files']['correct']
                 out_file = os.path.join(name, "XSCALE.HKL")
                 sections.append(
@@ -795,7 +805,10 @@ class AutoXDS:
                 if command == "screen":
                     resol = 0.0
                 else:
-                    resol = rres['correction']['resolution'][0]
+                    if  rres['correction']['resolution'][1] == 0 and rres.get('image_analysis'):
+                        resol = rres['image_analysis']['summary']['resolution']
+                    else:
+                        resol = rres['correction']['resolution'][0]
                 in_file = rres['files']['correct']
                 inputs.append( {'input_file': in_file, 'resolution': resol} )
             sections = [
@@ -821,7 +834,7 @@ class AutoXDS:
             # Select resolution
             resol = utils.select_resolution(info['statistics'])
             info['resolution'] = resol
-            self.results.values()[-1]['scaling'] =  info  
+            self.results.values()[-1]['scaling'] = info
         else:
             for name, info in raw_info.items():
                 # Select resolution
@@ -1002,6 +1015,15 @@ class AutoXDS:
                 _logger.error('Initialization failed! %s' % _out.get('reason'))
                 sys.exit(1)
             
+            # Image Analysis
+            _logger.info('Analysing Reference Image ...')
+            success = utils.execute_distl(run_info['reference_image'])
+            if success:
+                info = parse_distl('distl.log')
+                run_result['image_analysis'] = info
+            else:
+                _logger.error(':-( Image analysis failed!')                                                           
+
             # Auto Indexing
             _out = self.auto_index(run_info)
             if not _out['success']:
@@ -1009,9 +1031,9 @@ class AutoXDS:
                 sys.exit(1)
             run_result['indexing'] = _out.get('data')
             
-            #Integration
-            if self.options.get('command', None) == 'screen':
-                run_info['data_range'] = run_info['spot_range'][0]
+#            #Integration
+#            if self.options.get('command', None) == 'screen':
+#                run_info['data_range'] = run_info['spot_range'][0]
 
             _out = self.integrate(run_info)
             if not _out['success']:
@@ -1066,6 +1088,9 @@ class AutoXDS:
 
             # Select Cut-off resolution
             resol = utils.select_resolution( run_result['correction']['statistics'])
+            # if only detector edge resolution is available, try using distl value
+            if run_result.get('image_analysis') and resol[1] == 0:
+                resol = (run_result['image_analysis']['summary']['resolution'], 3)
             run_result['correction']['resolution'] = resol
                            
             run_result['files'] = self.get_fileinfo(run_info)
@@ -1086,12 +1111,6 @@ class AutoXDS:
                     _logger.error('Strategy failed! %s' % _out.get('reason'))
                 else:
                     self.results[name]['strategy'] = _out.get('data')
-                success = utils.execute_distl(run_info['reference_image'])
-                if success:
-                    info = parse_distl('distl.log')
-                    self.results[name]['image_analysis'] = info
-                else:
-                    _logger.error(':-( Image analysis failed!')                                                           
         
         # Score dataset
         self.score_datasets()

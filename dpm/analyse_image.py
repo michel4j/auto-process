@@ -1,8 +1,7 @@
-import re, os, sys, signal
+import re, os, sys
 import commands
 
-sys.path.append(os.environ['DPM_PATH'])
-from dpm.parser.distl import parse_distl
+from dpm.parser.distl import parse_distl_string
 import dpm.utils
 
 try: 
@@ -17,8 +16,8 @@ def _save_json_output(filename, data):
     f.write(data)
     f.close()
         
-def _get_json_output():
-    data = parse_distl('distl.log')
+def _get_json_output(text):
+    data = parse_distl_string(text)
     info = {
         'success': True,
         'message': 'Image Analysis Completed Successfully',
@@ -39,15 +38,16 @@ def _get_error_output(err):
     return json.dumps(info)
         
 
-def run_distl(img, directory):
-    os.chdir(os.path.abspath(directory))
-    sts, err = commands.getstatusoutput('labelit.distl %s > distl.log' % img)
+def run_distl(img, directory=None):
+    if directory is None:
+        directory = os.getcwd()
+    sts, output = commands.getstatusoutput('labelit.distl %s' % img)
     if sts == 0: # success:
-        results = _get_json_output()
-        _save_json_output(os.path.join(directory, 'distl.json'), results)
+        results = _get_json_output(output)
+        _save_json_output(os.path.join(directory, os.path.join(directory, 'distl.json')), results)
     else:
-        results = _get_error_output(err)    
-    print results
+        results = _get_error_output(output)    
+    return results
 
 if __name__ == '__main__':
     if len(sys.argv) == 3:
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         directory = os.path.abspath(sys.argv[2])
     elif len(sys.argv) == 2:
         img = os.path.abspath(sys.argv[1])
-        directory = '/tmp'
+        directory = None
     else:
         err = 'Invalid arguments'
         print _get_error_output(err)

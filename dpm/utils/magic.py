@@ -64,7 +64,6 @@ class Magic:
         Identify the contents of file `filename`
         raises IOError if the file does not exist
         """
-
         if not os.path.exists(filename):
             raise IOError("File does not exist: " + filename)
         

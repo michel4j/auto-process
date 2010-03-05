@@ -313,8 +313,9 @@ class AutoXDS:
                 else:
                     sg_name = '  %s' % (utils.SPACE_GROUP_NAMES[ sol['number'] ])
                 row = [ sg_name,   sol['number'],    sol['probability']]
-                _section['space_groups']['table'].append(zip(_sec_keys, row)) 
+                _section['space_groups']['table'].append(zip(_sec_keys, row))
             u_cell = utils.tidy_cell(dset['space_group']['unit_cell'], dset['space_group']['character'])
+            sg_name = utils.SPACE_GROUP_NAMES[ dset['space_group']['sg_number'] ]
             _section['space_groups']['notes'] = "[*] Selected:  %s,  #%s. " % ( 
                 sg_name, dset['space_group']['sg_number'] )
             _section['space_groups']['notes'] += " Unit Cell: %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f." % u_cell 

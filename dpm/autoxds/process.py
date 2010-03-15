@@ -540,7 +540,12 @@ class AutoXDS:
         try:
             import json
         except:
-            import simplejson as json
+            try:
+                import simplejson as json
+            except:
+                _logger.info('JSON exporter not available ...')
+                return
+        
         result_dict = self.get_info_dict()
         try:
             from jsonrpc.proxy import ServiceProxy
@@ -1121,8 +1126,8 @@ class AutoXDS:
                       
         self.save_xml(self.results, 'debug.xml')
         self.save_xml(self.get_log_dict(), 'process.xml')
-        self.export_json('process.json')
         self.save_log('process.log')
+        self.export_json('process.json')
 
         elapsed = time.time() - t1
         total_frames = 0

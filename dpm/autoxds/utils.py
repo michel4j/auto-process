@@ -462,14 +462,24 @@ def execute_xdsstat(filename):
 
        
 def execute_pointless():
-    sts, output = commands.getstatusoutput('pointless xdsin INTEGRATE.HKL xmlout pointless.xml > pointless.log')
-    return sts==0
+    f = open('pointless.com', 'w')
+    cmd = """pointless << eof
+xdsin INTEGRATE.HKL
+xmlout pointless.xml
+resol 4.0
+eof
+"""
+    f.write(cmd)
+    f.close()
+    sts, output = commands.getstatusoutput('sh pointless.com > pointless.log')
+    return sts==0     
 
 def execute_pointless_retry():
     f = open('pointless.com', 'w')
     cmd = """pointless << eof
 xdsin INTEGRATE.HKL
 xmlout pointless.xml
+resol 4.0
 choose solution 1
 eof
 """

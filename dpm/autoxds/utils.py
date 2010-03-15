@@ -25,7 +25,8 @@ import textwrap
 try:
     _ = set([1,2])
 except:
-    import sets.Set as set
+    import sets
+    set = sets.Set
    
 from dpm.utils.log import get_module_logger
 _logger = get_module_logger('AutoXDS')

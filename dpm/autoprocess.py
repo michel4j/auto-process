@@ -24,6 +24,8 @@ options:
 import sys
 import os
 import getopt
+import warnings
+warnings.simplefilter("ignore") # ignore deprecation warnings
 
 dpm_path = os.environ.get('DPM_PATH',None)
 if dpm_path is None:

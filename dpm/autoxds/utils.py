@@ -510,16 +510,8 @@ def execute_distl(filename):
     sts, output = commands.getstatusoutput('labelit.distl %s > distl.log' % filename)
     return sts==0
 
-def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
-#    score = [ 1.0,
-#        -0.7 * math.exp(-4.0/resolution),
-#        -0.2 * std_spindle ,
-#        -0.05 * std_spot ,
-#        -0.2 * mosaicity,
-#        -0.01 * abs(r_meas),
-#        -0.2 * 2.0 / i_sigma,
-#        -0.05 * ice_rings,
-#        ]
+def score_crystal_old(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
+
     score = [ 1.0,
         -0.45 * max(0.0, min(1.0, math.exp(-4.0 + resolution))),
         -0.2 * max(0.0, min(1.0, math.exp(-3.0 + std_spot))),
@@ -531,6 +523,31 @@ def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle,
         ]
     
     #names = ['Root', 'Resolution', 'Spindle', 'Spot', 'Mosaicity','R_meas', 'I/Sigma', 'Ice', 'Satellites']
+    #for name, contrib in zip(names,score):
+    #    print '\t\t%s : %0.3f' % (name, contrib)
+        
+    return sum(score)
+
+def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
+    def nearest_index(ar, v):
+        return (numpy.abs(ar-v)).argmin()
+        
+    SIG = 1.0 / (1.0 + numpy.exp(-numpy.linspace(-3,6,1000)))
+    R_X = numpy.linspace(1, 30, 1000) 
+    RES_X = numpy.linspace(1, 5, 1000)
+    MOS_X = numpy.linspace(0.1, 2, 1000)
+    
+    score = [ 1.0,
+        -0.45 * SIG[nearest_index(RES_X, resolution)],
+        -0.1 * max(0.0, min(1.0, math.exp(-2.0 + std_spot))),
+        -0.05 * max(0.0, min(1.0, math.exp(-1.0 + std_spindle))),
+        -0.2 * SIG[nearest_index(MOS_X, mosaicity)],
+        -0.1 * SIG[nearest_index(R_X, r_meas)],
+        -0.05 * max(0.0, min(1.0, math.exp(1.0 - abs(i_sigma)))),
+        max(-0.05,  -0.01 * ice_rings),
+        ]
+    
+    #names = ['Root', 'Resolution', 'Spot', 'Spindle', 'Mosaicity','R_meas', 'I/Sigma', 'Ice']
     #for name, contrib in zip(names,score):
     #    print '\t\t%s : %0.3f' % (name, contrib)
         

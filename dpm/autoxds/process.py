@@ -31,7 +31,6 @@ class AutoXDS:
         is_screening = (self.options.get('command', None) == 'screen')
         self.dataset_info = {}
         self.cpu_count = utils.get_cpu_count()
-        _logger.info('Using %d CPUs.' % self.cpu_count)
         self.dataset_names = []
         # prepare dataset info
         for i, img in enumerate(self.options['images']):
@@ -599,6 +598,11 @@ class AutoXDS:
             return _out   
         else:
             return {'success':False, 'reason': 'Could not create correction tables'}
+
+    def create_inputs(self, run_info):
+        os.chdir(run_info['working_directory'])
+        jobs = 'ALL ! XYCORR INIT COLSPOT IDXREF DEFPIX XPLAN INTEGRATE CORRECT'
+        io.write_xds_input(jobs, run_info)
         
     def auto_index(self, run_info):
         os.chdir(run_info['working_directory'])
@@ -759,6 +763,18 @@ class AutoXDS:
         io.write_xds_input(jobs, run_info)
         utils.execute_xds_par()
         info = xds.parse_correct()
+
+        # enable correction factors if anomalous data and repeat correction
+        if info.get('correction_factors') is not None and self.options.get('anomalous', False):
+            for f in info.get('correction_factors'):
+                if abs(f['chi_sq_fit']-1.0) > 0.3:
+                    run_info.update({'strict_absorption': True})
+                    io.write_xds_input(jobs, run_info)
+                    utils.execute_xds_par()
+                    info = xds.parse_correct()
+                    info['strict_absorption'] = True
+                    break
+                              
         if info.get('statistics') is not None:
             if len(info['statistics']) > 1 and info.get('summary') is not None:
                 info['summary'].update( info['statistics'][-1] )
@@ -768,6 +784,7 @@ class AutoXDS:
             return {'success':True, 'data': info}
         else:
             return {'success':False, 'reason': info['failure']}
+        
 
     def determine_spacegroup(self, run_info):
         os.chdir(run_info['working_directory'])
@@ -797,7 +814,8 @@ class AutoXDS:
                 in_file = rres['files']['correct']
                 out_file = os.path.join(name, "XSCALE.HKL")
                 sections.append(
-                    {'anomalous': self.options.get('anomalous', True),
+                    {'anomalous': self.options.get('anomalous', False),
+                     'strict_absorption': self.dataset_info[rres].get('strict_absorption', False),
                      'output_file': out_file,
                      'crystal': 'cryst1',
                      'inputs': [{'input_file': in_file, 'resolution': resol}],
@@ -1005,16 +1023,24 @@ class AutoXDS:
         elif self.options.get('anomalous', False):
             adj = 'ANOMALOUS'
         _ref_run = None
-        _logger.info("Directory: '%s'" % self.top_directory)
+
         for run_name in self.dataset_names:
             run_info = self.dataset_info[run_name]
             if not os.path.isdir(run_info['working_directory']):
                 os.mkdir(os.path.abspath(run_info['working_directory']))
-            _logger.info("%s %s DATASET: '%s'" % (description, adj, run_name))
             #_logger.info("==> Output: '%s'." % run_info['working_directory'])
             run_result = {}
             run_result['parameters'] = run_info
             
+            # Generate input files
+            if self.options.get('inputs_only') is not None:
+                _logger.info("Generating input files in: '%s'" % run_info['working_directory'])
+                self.create_inputs(run_info)
+                continue
+            
+            _logger.info("%s %s DATASET: '%s'" % (description, adj, run_name))
+            _logger.info('Using %d CPUs.' % self.cpu_count)
+            _logger.info("Directory: '%s'" % run_info['working_directory'])
             # Initializing
             _out = self.initialize(run_info)
             if not _out['success']:
@@ -1105,6 +1131,10 @@ class AutoXDS:
                 _ref_run = run_name
             self.results[run_name] = run_result             
         
+        # Do not proceed if only generating inputs
+        if self.options.get('inputs_only') is not None:
+            return 
+        
         # Scale datasets
         self.scale_datasets()
         self.calc_statistics()
@@ -1124,8 +1154,8 @@ class AutoXDS:
         if self.options.get('command', None) != 'screen':       
             self.convert_files()
                       
-        self.save_xml(self.results, 'debug.xml')
-        self.save_xml(self.get_log_dict(), 'process.xml')
+        #self.save_xml(self.results, 'debug.xml')
+        #self.save_xml(self.get_log_dict(), 'process.xml')
         self.save_log('process.log')
         self.export_json('process.json')
 

@@ -14,6 +14,7 @@ options:
               for example for MAD data, use --prefix=peak,infl,remo
     --dir=/path : Directory to store processed results. Subdirectories will be created inside.
             Default current directory.
+    --inputs, -i: generate XDS.INP only and quit
     --help, -h : display this message
     Default (no option): Process each set, scale together and merge into one reflection file.
     
@@ -43,7 +44,7 @@ def usage():
     
 def main():
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], "msahb", ["help", "dir=", "mad","screen","anom", "backup", "prefix="])
+        opts, args = getopt.gnu_getopt(sys.argv[1:], "msahbi", ["help", "dir=", "mad","screen","anom", "backup", "prefix=", "inputs"])
     except getopt.error, msg:
         print "ERROR: ", msg
         usage()
@@ -67,6 +68,8 @@ def main():
             options['directory'] = a
         if o in ('-b', '--backup'):
             options['backup'] = True
+        if o in ('-i', '--inputs'):
+            options['inputs_only'] = True
         if o in ('--prefix'):
             options['prefix'] = a.split(',')
             if len(options['prefix']) < len(args):

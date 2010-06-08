@@ -200,7 +200,7 @@ class ProgDisplay(threading.Thread):
         # Clear line
         sys.stdout.write(self.ESC + '[2K')
         self.reset_cursor()
-        sys.stdout.write('AutoXDS|' + c + txt)
+        sys.stdout.write(c + txt)
         sys.stdout.flush()
         
     def stop(self):

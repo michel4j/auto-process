@@ -533,9 +533,9 @@ def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle,
         return (numpy.abs(ar-v)).argmin()
         
     SIG = 1.0 / (1.0 + numpy.exp(-numpy.linspace(-3,6,1000)))
-    R_X = numpy.linspace(1, 30, 1000) 
-    RES_X = numpy.linspace(1, 5, 1000)
-    MOS_X = numpy.linspace(0.1, 2, 1000)
+    R_X = numpy.linspace(1, 20, 1000) 
+    RES_X = numpy.linspace(1, 4, 1000)
+    MOS_X = numpy.linspace(0.1, 1.5, 1000)
     
     score = [ 1.0,
         -0.45 * SIG[nearest_index(RES_X, resolution)],

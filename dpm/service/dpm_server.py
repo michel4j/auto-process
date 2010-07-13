@@ -16,8 +16,6 @@ from bcm.service.utils import log_call
 from bcm.utils import mdns
 
 import os, sys
-sys.path.append(os.environ['DPM_PATH'])
-
 import dpm.utils
 
 

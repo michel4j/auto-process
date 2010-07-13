@@ -1,3 +1,4 @@
+import sys
 from dpm.utils import magic
 import marccd, smv
 _magic_map = {

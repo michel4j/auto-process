@@ -6,22 +6,23 @@
 # description:  This is a daemon listens for data processing commands and executes them \
 #               with the priviledges of the user requesting the action.
 #
-servicename='dpmserver'
-pidfile='/var/run/dpmserver.pid'
-logfile='/var/log/dpmserver.log'
-appfile='/opt/cmcf_apps/dpm/dpm/internet/service.py'
-
 # Source function library.
 . /etc/rc.d/init.d/functions
 
 # Prepare environment
-for i in /opt/cmcf_apps/profile.d/*.sh; do
+for i in /cmcf_apps/profile.d/*.sh; do
 	if [ -r "$i" ]; then
 	    . $i
 	fi
 done
 unset i
 
+# service parameters
+servicename='dpmserver'
+pidfile='/var/run/dpmserver.pid'
+logfile='/var/log/dpmserver.log'
+appfile='$DPM_PATH/dpm/service/dpm_server.py'
+umask=022
 
 # Sanity checks.
 [ -x /usr/bin/twistd ] || exit 0

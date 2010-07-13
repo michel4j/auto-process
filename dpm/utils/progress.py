@@ -159,10 +159,13 @@ class ProgChecker(object):
             if self._initialized:
                 for fn, fobj in self.file_objs.items():
                     # adjust for shrinkage
-                    if os.path.getsize(fn) < fobj.tell():
-                        self.fileobj.seek(0, os.SEEK_END)
-                    elif os.path.getsize(fn) > fobj.tell():
-                        self.file_data[fn] += fobj.read()
+                    try:
+                        if os.path.getsize(fn) < fobj.tell():
+                            self.fileobj.seek(0, os.SEEK_END)
+                        elif os.path.getsize(fn) > fobj.tell():
+                            self.file_data[fn] += fobj.read()
+                    except:
+                        pass
                     #fstat = os.fstat(fobj.fileno())
                 self._process_chunks()
                 

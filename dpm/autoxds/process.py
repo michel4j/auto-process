@@ -815,7 +815,7 @@ class AutoXDS:
                 out_file = os.path.join(name, "XSCALE.HKL")
                 sections.append(
                     {'anomalous': self.options.get('anomalous', False),
-                     'strict_absorption': self.dataset_info[rres].get('strict_absorption', False),
+                     'strict_absorption': rres['correction'].get('strict_absorption', False),
                      'output_file': out_file,
                      'crystal': 'cryst1',
                      'inputs': [{'input_file': in_file, 'resolution': resol}],
@@ -837,6 +837,7 @@ class AutoXDS:
                 inputs.append( {'input_file': in_file, 'resolution': resol} )
             sections = [
                     {'anomalous': self.options.get('anomalous', False),
+                     'strict_absorption': rres['correction'].get('strict_absorption', False),
                      'output_file': "XSCALE.HKL",
                      'inputs': inputs,
                     }

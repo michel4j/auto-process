@@ -9,7 +9,7 @@ import sys, os
 
 log.FileLogObserver(sys.stdout).start()
 
-DIRECTORY = '/home/michel/tmp/testing'
+DIRECTORY = '/tmp/test1'
 
 class App(object):
     def __init__(self):
@@ -55,14 +55,21 @@ class App(object):
         
 
         # Test a few functions
-        self.dpm.callRemote('setUser', os.getuid(), os.getgid())
+        self.dpm.callRemote('setUser', 'michel')
         self.dpm.callRemote('analyseImage',
-                            'test-5_1_001.img', 
+                            '/home/michel/tmp/testing/insulin_2_E0_0008.img', 
                             DIRECTORY,
                             ).addCallback(self.dump_results)
                             
-        _info = {'anomalous':False, 'file_name': 'test-5_1_001.img'}
-        self.dpm.callRemote('screenDataset', _info, DIRECTORY).addCallback(self.dump_results)
+        _info = {'anomalous':False,
+                 'mad': True,
+                 'user': 'michel',
+                 'file_names': 
+                    ('/home/michel/tmp/testing/JK4_peak_001.img',
+                     '/home/michel/tmp/testing/JK4_edge_001.img',
+                     '/home/michel/tmp/testing/JK4_remo_001.img',),
+                }
+        self.dpm.callRemote('processDataset', _info, DIRECTORY).addCallback(self.dump_results)
 
     def on_connection_failed(self, reason):
         log.msg('Could not connect to DPM Server: %', reason)

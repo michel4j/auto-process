@@ -41,13 +41,19 @@ def _get_error_output(err):
 def run_distl(img, directory=None):
     if directory is None:
         directory = os.getcwd()
+    else:
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+    os.chdir(directory)
     sts, output = commands.getstatusoutput('labelit.distl %s' % img)
     if sts == 0: # success:
         results = _get_json_output(output)
         _save_json_output(os.path.join(directory, os.path.join(directory, 'distl.json')), results)
     else:
         results = _get_error_output(output)    
-    return results
+        _save_json_output(os.path.join(directory, os.path.join(directory, 'distl.json')), results)
+    print results
+    return
 
 if __name__ == '__main__':
     if len(sys.argv) == 3:

@@ -12,8 +12,7 @@ options:
             Default is first part of image name
             prefix order should correspond to the order of the data sets
               for example for MAD data, use --prefix=peak,infl,remo
-    --dir=/path : Directory to store processed results. Subdirectories will be created inside.
-            Default current directory.
+    --dir=/path : Directory to store processed results. Default is to create a  new one in the current directory.
     --inputs, -i: generate XDS.INP only and quit
     --help, -h : display this message
     Default (no option): Process each set, scale together and merge into one reflection file.
@@ -89,8 +88,12 @@ def main():
             
     # Check that working directory exists
     if not ( os.path.isdir( options['directory'] ) and os.access( options['directory'], os.W_OK) ):
-        print    "ERROR: Directory '%s' does not exist, or is not writable." % options['directory']
-        sys.exit(1)
+        try:
+            os.mkdir(os.path.abspath(options['directory']))
+            options['directory'] = os.path.abspath(options['directory'])
+        except:
+            print    "ERROR: Directory '%s' does not exist, or is not writable." % options['directory']
+            sys.exit(1)
         
     options['images'] = args
            

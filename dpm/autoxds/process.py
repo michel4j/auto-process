@@ -54,8 +54,11 @@ class AutoXDS:
         elif _prefix[-1] == '_':
             _prefix = _prefix[:-1]
         work_dir = '%s-%s' % (_prefix, _suffix)
-        self.top_directory = utils.prepare_work_dir(
-                self.options.get('directory', './'),  work_dir, backup=self.options.get('backup', False))
+        if self.options.get('directory', None) is not None:
+            self.top_directory = self.options.get('directory')
+        else:
+            self.top_directory = utils.prepare_work_dir(
+                './',  work_dir, backup=self.options.get('backup', False))
         
         # for multiple data sets, process each in a separate subdirectory
         if len(self.dataset_info.keys()) ==1:
@@ -572,7 +575,7 @@ class AutoXDS:
         fh = open(filename, 'w')
         if result_dict is None:
             result_dict = self.results
-        json.dump(result_dict, fh, indent=4)
+        json.dump(result_dict, fh)
         fh.close()            
             
 

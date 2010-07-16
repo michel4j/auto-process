@@ -21,7 +21,7 @@ unset i
 servicename='dpmserver'
 pidfile='/var/run/dpmserver.pid'
 logfile='/var/log/dpmserver.log'
-appfile='$DPM_PATH/dpm/service/dpm_server.py'
+appfile=$DPM_PATH/dpm/service/dpm_server.py
 umask=022
 
 # Sanity checks.

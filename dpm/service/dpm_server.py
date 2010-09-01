@@ -204,8 +204,8 @@ f = DPMService()
 sf = getShellFactory(f, admin='admin')
 
 # publish DPM service on network
-bcm_provider = mdns.Provider('Data Analsys Module', '_cmcf_dpm._tcp', 8881, {})
-bcm_ssh_provider = mdns.Provider('Data Analysis Module Console', '_cmcf_dpm_ssh._tcp', 2221, {})
+dpm_provider = mdns.Provider('Data Analsys Module', '_cmcf_dpm._tcp', 8881, {})
+dpm_ssh_provider = mdns.Provider('Data Analysis Module Console', '_cmcf_dpm_ssh._tcp', 2221, {})
 
 serviceCollection = service.IServiceCollection(application)
 internet.TCPServer(8881, pb.PBServerFactory(IPerspectiveDPM(f))).setServiceParent(serviceCollection)

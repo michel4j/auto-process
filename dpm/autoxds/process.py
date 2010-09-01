@@ -55,10 +55,17 @@ class AutoXDS:
             _prefix = _prefix[:-1]
         work_dir = '%s-%s' % (_prefix, _suffix)
         if self.options.get('directory', None) is not None:
-            self.top_directory = self.options.get('directory')
+            self.top_directory = os.path.abspath(self.options.get('directory'))
+            # Check that working directory exists
+            if not ( os.path.isdir(self.top_directory ) and os.access( self.top_directory, os.W_OK) ):
+                try:
+                    os.mkdir(self.top_directory)
+                except:
+                    print    "ERROR: Directory '%s' does not exist, or is not writable." % self.top_directory
+                    sys.exit(1)
         else:
-            self.top_directory = utils.prepare_work_dir(
-                './',  work_dir, backup=self.options.get('backup', False))
+            self.top_directory = utils.prepare_work_dir(os.getcwd(),
+                            work_dir, backup=self.options.get('backup', False))
         
         # for multiple data sets, process each in a separate subdirectory
         if len(self.dataset_info.keys()) ==1:
@@ -1094,6 +1101,19 @@ class AutoXDS:
             if _out['success']:
                 sg_info = _out.get('data')
                 _sel_sgn = sg_info['sg_number']
+
+                # Overwrite sg_info parameters with XDS friendly ones if present:
+                # fetches xds reindex matrix and cell constants based on lattice,
+                # character
+                # FIXME: Check what happens when multiple entries of same character exists
+                # currently picks one with best quality but is this necessarily the best one?
+                for _lat in run_result['correction']['lattices']:
+                    id, lat_type = _lat['id']
+                    if sg_info['character'] == lat_type:
+                        sg_info['reindex_matrix'] = _lat['reindex_matrix']
+                        sg_info['unit_cell'] = _lat['unit_cell']
+                        break
+                
                 run_result['space_group'] = sg_info                   
                 run_info['unit_cell'] = utils.tidy_cell(sg_info['unit_cell'], sg_info['character'])
                 run_info['space_group'] = _sel_sgn

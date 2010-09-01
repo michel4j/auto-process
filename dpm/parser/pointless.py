@@ -78,6 +78,7 @@ def parse_pointless(filename):
             }
 
     # extract the unit cell
+    #FIXME: Does not work
     lattice_el = doc.getElementsByTagName('LatticeSymmetry')[0]
     cell_el = lattice_el.getElementsByTagName('cell')[0]
     unit_cell = (

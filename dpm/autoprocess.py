@@ -86,14 +86,6 @@ def main():
             print "ERROR: File '%s' does not exist, or is not readable." % img
             sys.exit(1)
             
-    # Check that working directory exists
-    if not ( os.path.isdir( options['directory'] ) and os.access( options['directory'], os.W_OK) ):
-        try:
-            os.mkdir(os.path.abspath(options['directory']))
-            options['directory'] = os.path.abspath(options['directory'])
-        except:
-            print    "ERROR: Directory '%s' does not exist, or is not writable." % options['directory']
-            sys.exit(1)
         
     options['images'] = args
            

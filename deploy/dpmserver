@@ -39,7 +39,7 @@ start() {
 stop() {
     echo -n $"Stopping DPM Service: "
 
-    killproc $servicename -TERM
+    killproc -p $pidfile
     RETVAL=$?
     echo
     if [ $RETVAL -eq 0 ]; then

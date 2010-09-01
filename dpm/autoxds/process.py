@@ -1107,7 +1107,7 @@ class AutoXDS:
                 # character
                 # FIXME: Check what happens when multiple entries of same character exists
                 # currently picks one with best quality but is this necessarily the best one?
-                for _lat in run_result['correction']['lattices']:
+                for _lat in run_result['correction']['symmetry']['lattices']:
                     id, lat_type = _lat['id']
                     if sg_info['character'] == lat_type:
                         sg_info['reindex_matrix'] = _lat['reindex_matrix']

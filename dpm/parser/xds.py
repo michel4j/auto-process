@@ -78,7 +78,7 @@ def parse_xscale(filename='XSCALE.LP'):
     return info
 
 def parse_integrate(filename='INTEGRATE.LP'):
-     return utils.parse_file(filename, config='integrate.ini')
+    return utils.parse_file(filename, config='integrate.ini')
 
 def get_profile(raw_data):
     def _str2arr(s):

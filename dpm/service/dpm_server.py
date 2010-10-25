@@ -8,22 +8,36 @@ from twisted.python import components
 from twisted.conch import manhole, manhole_ssh
 from twisted.cred import portal, checkers
 from twisted.python import log
+from twisted.python.failure import Failure, DefaultException
 from zope.interface import Interface, implements
 
 from dpm.service.interfaces import *
 from bcm.service.utils import log_call
 from bcm.utils import mdns
 from bcm.utils.misc import get_short_uuid
-
+from dpm.service.common import InvalidUser, CommandFailed
 import os, sys
 import dpm.utils
 import pwd
-
 try:
     import json
 except:
     import simplejson as json
 
+log.FileLogObserver(sys.stdout).start()
+
+
+
+def get_user_properties(user_name):
+    try:
+        pwdb = pwd.getpwnam(user_name)
+        uid = pwdb.pw_uid
+        gid = pwdb.pw_gid
+    except:
+        raise InvalidUser('Unknown user `%s`' % user_name)
+    return uid, gid
+    
+    
 class PerspectiveDPMFromService(pb.Root):
     implements(IPerspectiveDPM)
     def __init__(self, service):
@@ -32,14 +46,14 @@ class PerspectiveDPMFromService(pb.Root):
     def remote_setUser(self, uname):
         return self.service.setUser(uname)
         
-    def remote_screenDataset(self, info, directory):
-        return self.service.screenDataset(info, directory)
+    def remote_screenDataset(self, info, directory, uname=None):
+        return self.service.screenDataset(info, directory, uname)
         
-    def remote_analyseImage(self, img, directory):
-        return self.service.analyseImage(img, directory)
+    def remote_analyseImage(self, img, directory, uname=None):
+        return self.service.analyseImage(img, directory, uname)
         
-    def remote_processDataset(self, info, directory):
-        return self.service.processDataset(info, directory)
+    def remote_processDataset(self, info, directory, uname=None):
+        return self.service.processDataset(info, directory, uname)
 
 components.registerAdapter(PerspectiveDPMFromService,
     IDPMService,
@@ -54,26 +68,33 @@ class DPMService(service.Service):
     
     @log_call
     def setUser(self, uname):
-        pwdb = pwd.getpwnam(uname)
-        self.settings['uid'] = pwdb.pw_uid
-        self.settings['gid'] = pwdb.pw_gid
-        return defer.succeed( [] )
+        try:
+            uid, gid = get_user_properties(uname)
+            self.settings['uid'] = uid
+            self.settings['gid'] = gid
+            return defer.succeed(uname)
+        except InvalidUser, e:
+            return defer.fail(Failure(e))
+        
         
     @log_call
-    def screenDataset(self, info, directory):
+    def screenDataset(self, info, directory, uname=None):
         if isinstance(info['file_names'], (list, tuple)):
             info['file_names'] = ' '.join(info['file_names']) 
         args = ['--screen', info['file_names'], '--dir=%s' % (directory)]
         if info.get('anomalous', False):
             args.append('--anom')
         
-        if info.get('user', None) is not None:
-            pwdb = pwd.getpwnam(info.get('user'))
-            uid = pwdb.pw_uid
-            gid = pwdb.pw_gid
+        if uname is not None:
+            try:
+                uid, gid = get_user_properties(uname)
+                self.settings['uid'] = uid
+                self.settings['gid'] = gid
+            except InvalidUser, e:
+                return defer.fail(Failure(e))
         else:
-            uid = self.settings['uid'],
-            gid = self.settings['gid'],
+            uid = self.settings['uid']
+            gid = self.settings['gid']
             
         return run_command_output(
             'autoprocess',
@@ -83,18 +104,43 @@ class DPMService(service.Service):
             gid,
             output='process.json')
     
-    @log_call   
-    def analyseImage(self, img, directory):
+    @log_call
+    def analyseImage(self, img, directory, uname=None):
+        if uname is not None:
+            try:
+                uid, gid = get_user_properties(uname)
+                self.settings['uid'] = uid
+                self.settings['gid'] = gid
+            except InvalidUser, e:
+                return defer.fail(Failure(e))
+        else:
+            uid = self.settings['uid']
+            gid = self.settings['gid']
+        _output_file = '%s-distl.json' % (os.path.splitext(os.path.basename(img))[0])
         return run_command_output(
             'analyse_image',
-            [img, directory],
+            [img, directory, _output_file],
             directory,
-            self.settings['uid'],
-            self.settings['gid'],
-            output='distl.json')
+            uid,
+            gid,
+            output=_output_file,
+            )
     
     @log_call
-    def processDataset(self, info, directory):
+    def processDataset(self, info, directory, uname=None):
+            
+        if uname is not None:
+            try:
+                uid, gid = get_user_properties(uname)
+                self.settings['uid'] = uid
+                self.settings['gid'] = gid
+            except InvalidUser, e:
+                return defer.fail(Failure(e))
+        else:
+            uid = self.settings['uid']
+            gid = self.settings['gid']
+        
+        # prepare arguments for autoprocess
         if isinstance(info['file_names'], (list, tuple)):
             info['file_names'] = ' '.join(info['file_names'])
         args = [info['file_names'], '--dir=%s' % (directory)]
@@ -102,13 +148,6 @@ class DPMService(service.Service):
             args.append('--anom')
         if info.get('mad', False):
             args.append('--mad')
-        if info.get('user', None) is not None:
-            pwdb = pwd.getpwnam(info.get('user'))
-            uid = pwdb.pw_uid
-            gid = pwdb.pw_gid
-        else:
-            uid = self.settings['uid'],
-            gid = self.settings['gid'],
             
         return run_command_output(
             'autoprocess',
@@ -123,10 +162,14 @@ def catchError(err):
         
 class CommandProtocol(protocol.ProcessProtocol):
     
-    def __init__(self, path, output_file=None, use_json=False):
+    def __init__(self, path, command, output_file=None, use_json=True):
         self.output = ''
         self.errors = ''
-        self.output_file = output_file
+        self.command = command
+        if output_file is not None:
+            self.output_file = os.path.join(path, output_file)
+        else:
+            self.output_file = None
         self.use_json = use_json
         self.path = path
     
@@ -146,15 +189,28 @@ class CommandProtocol(protocol.ProcessProtocol):
         rc = reason.value.exitCode
         if rc == 0:
             if self.output_file is not None:
-                self.output = file(self.output_file).read()
+                if self.errors == '':
+                    self.errors = None
+                data = file(self.output_file).read()
+            else:
+                data = self.output    
             if self.use_json:
-                self.output = json.loads(self.output)
-            self.deferred.callback(self.output)
+                data = json.loads(data)
+                if data.get('error', None) is None and data.get('result', None) is not None:
+                    self.deferred.callback(data['result'])
+                elif data.get('error', None) is not None:
+                    msg = data['error']['message']
+                    f = Failure(CommandFailed('Command `%s` failed with error: \n%s.' % (self.command, msg)))
+                    self.deferred.errback(f)
+            else:
+                self.deferred.callback(data)
         else:
-            self.deferred.callback(self.errors)
-
+            f = Failure(CommandFailed('Command `%s` died with code `%d`.' % (self.command, rc)))
+            self.deferred.errback(f)
+            
+            
 def run_command(command, args, path='/tmp', uid=0, gid=0):
-    prot = CommandProtocol(path)
+    prot = CommandProtocol(path, command)
     prot.deferred = defer.Deferred()
     args = [dpm.utils.which(command)] + args
     p = reactor.spawnProcess(
@@ -169,7 +225,7 @@ def run_command(command, args, path='/tmp', uid=0, gid=0):
 def run_command_output(command, args, path='/tmp', uid=0, gid=0, output=None):
     """Run a command and return the output from the specified file in given path"""
     output = os.path.join(path, output)
-    prot = CommandProtocol(path, output_file=output)
+    prot = CommandProtocol(path, command, output_file=output)
     prot.deferred = defer.Deferred()
     args = [dpm.utils.which(command)] + args
     p = reactor.spawnProcess(
@@ -204,9 +260,10 @@ f = DPMService()
 sf = getShellFactory(f, admin='admin')
 
 # publish DPM service on network
-dpm_provider = mdns.Provider('Data Analsys Module', '_cmcf_dpm._tcp', 8881, {})
-dpm_ssh_provider = mdns.Provider('Data Analysis Module Console', '_cmcf_dpm_ssh._tcp', 2221, {})
+dpm_provider = mdns.Provider('Data Processing Module', '_cmcf_dpm._tcp', 8881, {})
+dpm_ssh_provider = mdns.Provider('Data Processing Module Console', '_cmcf_dpm_ssh._tcp', 2221, {})
 
 serviceCollection = service.IServiceCollection(application)
 internet.TCPServer(8881, pb.PBServerFactory(IPerspectiveDPM(f))).setServiceParent(serviceCollection)
 internet.TCPServer(2221, sf).setServiceParent(serviceCollection)        
+

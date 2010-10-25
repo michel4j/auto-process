@@ -61,8 +61,10 @@ class AutoXDS:
                 try:
                     os.mkdir(self.top_directory)
                 except:
-                    print    "ERROR: Directory '%s' does not exist, or is not writable." % self.top_directory
-                    sys.exit(1)
+                    err_msg = "Directory '%s' does not exist, or is not writable." % self.top_directory
+                    _logger.error(err_msg)                   
+                    self.export_json('process.json')
+                    sys.exit()
         else:
             self.top_directory = utils.prepare_work_dir(os.getcwd(),
                             work_dir, backup=self.options.get('backup', False))
@@ -193,8 +195,6 @@ class AutoXDS:
                          'Pixel Size (um)', 'File Template','Data Directory', 'Output Directory']
                 _data_dir = os.path.dirname(dset['parameters']['file_template'])
                 _out_dir = dset['parameters']['working_directory']
-                _data_dir = utils.shorten_path(_data_dir, os.environ['HOME'])
-                _out_dir = utils.shorten_path(_out_dir, os.environ['HOME'])
                 _rows = ['Parameters', dset['parameters']['distance'],
                         dset['parameters']['exposure_time'],
                         dset['parameters']['frame_count'],
@@ -545,7 +545,7 @@ class AutoXDS:
         pickle.dump(info, fh)
         fh.close()
     
-    def export_json(self, filename='debug.json'):
+    def export_json(self, filename, err=None, traceback=None, code=1):
         try:
             import json
         except:
@@ -554,35 +554,47 @@ class AutoXDS:
             except:
                 _logger.info('JSON exporter not available ...')
                 return
-        
-        result_dict = self.get_info_dict()
         try:
-            from jsonrpc.proxy import ServiceProxy
-            server = ServiceProxy('http://localhost:8000/json/')
-            for info in result_dict.values():
-                # save result entry to database
-                _out = server.lims.add_result('admin','admin', info['results'])
-                if _out['error'] is None:
-                    _logger.info('Analysis Result Uploaded to LIMS ...')
-                    if info.get('strategy') is not None:
-                        info['strategy'].update(_out['result'])
-                        _out = server.lims.add_strategy('admin','admin', info['strategy'])
-                        if _out['error'] is None:
-                            _logger.info('Recommended Strategy uploaded to LIMS ...')
-                        else:
-                            print _out['error']['message']
-                else:
-                    print _out['error']['message']
+            result_dict = self.get_info_dict()
         except:
-            _logger.info('JSON exporter not available ...')
-            pass
+            result_dict = None
+        
+#        try:
+#            from jsonrpc.proxy import ServiceProxy
+#            server = ServiceProxy('http://localhost:8000/json/')
+#            for info in result_dict.values():
+#                # save result entry to database
+#                _out = server.lims.add_result('admin','admin', info['results'])
+#                if _out['error'] is None:
+#                    _logger.info('Analysis Result Uploaded to LIMS ...')
+#                    if info.get('strategy') is not None:
+#                        info['strategy'].update(_out['result'])
+#                        _out = server.lims.add_strategy('admin','admin', info['strategy'])
+#                        if _out['error'] is None:
+#                            _logger.info('Recommended Strategy uploaded to LIMS ...')
+#                        else:
+#                            print _out['error']['message']
+#                else:
+#                    print _out['error']['message']
+#        except:
+#            _logger.info('JSON exporter not available ...')
+#            pass
 
+        
         # save json information to file
+        if err is not None:
+            error = {'message': err, "traceback": traceback, "code": code }
+        else:
+            error = None
+            
+        info = {
+            'result': result_dict,
+            'error': error,
+        }
+        
         os.chdir(self.top_directory)
         fh = open(filename, 'w')
-        if result_dict is None:
-            result_dict = self.results
-        json.dump(result_dict, fh)
+        json.dump(info, fh)
         fh.close()            
             
 
@@ -1055,8 +1067,10 @@ class AutoXDS:
             # Initializing
             _out = self.initialize(run_info)
             if not _out['success']:
-                _logger.error('Initialization failed! %s' % _out.get('reason'))
-                sys.exit(1)
+                err_msg = 'Initialization failed! %s' % _out.get('reason')
+                _logger.error(err_msg)
+                self.export_json('process.json', err=err_msg)
+                sys.exit()
             
             # Image Analysis
             _logger.info('Analysing Reference Image ...')
@@ -1070,8 +1084,10 @@ class AutoXDS:
             # Auto Indexing
             _out = self.auto_index(run_info)
             if not _out['success']:
-                _logger.error('Auto-indexing failed! %s' % _out.get('reason'))
-                sys.exit(1)
+                err_msg = 'Auto-indexing failed! %s' % _out.get('reason')
+                _logger.error(err_msg)
+                self.export_json('process.json', err=err_msg)
+                sys.exit()
             run_result['indexing'] = _out.get('data')
             
 #            #Integration
@@ -1080,8 +1096,10 @@ class AutoXDS:
 
             _out = self.integrate(run_info)
             if not _out['success']:
-                _logger.error('Integration failed! %s' % _out.get('reason'))
-                sys.exit(1)
+                err_msg = 'Integration failed! %s' % _out.get('reason')
+                _logger.error(err_msg)
+                self.export_json('process.json', err=err_msg)
+                sys.exit()
             run_result['integration'] = _out.get('data')
 
             #initial correction
@@ -1089,8 +1107,10 @@ class AutoXDS:
                 run_info['reference_data'] = os.path.join('..', self.results[_ref_run]['files']['correct'])
             _out = self.correct(run_info)
             if not _out['success']:
-                _logger.error('Correction failed! %s' % _out.get('reason'))
-                sys.exit(1)
+                err_msg = 'Correction failed! %s' % _out.get('reason')
+                _logger.error(err_msg)
+                self.export_json('process.json', err=err_msg)
+                sys.exit()
             run_result['correction'] = _out.get('data')
             _sel_pgn = _out['data']['symmetry']['space_group']['sg_number']
             _logger.info('Suggested PointGroup: %s (#%d)' % (utils.SPACE_GROUP_NAMES[_sel_pgn], _sel_pgn))

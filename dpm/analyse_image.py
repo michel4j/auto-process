@@ -1,5 +1,7 @@
 import re, os, sys
 import commands
+import warnings
+warnings.simplefilter("ignore") # ignore deprecation warnings
 
 from dpm.parser.distl import parse_distl_string
 import dpm.utils
@@ -19,26 +21,22 @@ def _save_json_output(filename, data):
 def _get_json_output(text):
     data = parse_distl_string(text)
     info = {
-        'success': True,
-        'message': 'Image Analysis Completed Successfully',
-        'output': data,
-        'warnings': None,
-        'errors': None,
+        'result': data.get('summary', None),
+        'error': None,
     }
     return json.dumps(info)
 
-def _get_error_output(err):
+#FIXME specify more generic error codes to use accross BCM/DPM, similar to those used by device base
+ 
+def _get_error_output(err, code=1, traceback=None):
     info = {
-        'success': False,
-        'message': 'Image Analysis Failed',
-        'output': None,
-        'warnings': None,
-        'errors': err,
+        'result': None,
+        'error': {'code': code, 'message': err, 'traceback':traceback}
     }
     return json.dumps(info)
         
 
-def run_distl(img, directory=None):
+def run_distl(img, directory=None, output_file=None):
     if directory is None:
         directory = os.getcwd()
     else:
@@ -48,22 +46,38 @@ def run_distl(img, directory=None):
     sts, output = commands.getstatusoutput('labelit.distl %s' % img)
     if sts == 0: # success:
         results = _get_json_output(output)
-        _save_json_output(os.path.join(directory, os.path.join(directory, 'distl.json')), results)
+        if output_file is not None:
+            _save_json_output(output_file, results)
+        sys.stdout.write(results+'\n')
     else:
-        results = _get_error_output(output)    
-        _save_json_output(os.path.join(directory, os.path.join(directory, 'distl.json')), results)
-    print results
+        exm = re.compile('Exception: (.+)$')
+        m = exm.search(output)
+        if m:
+            results = _get_error_output(m.group(0), traceback=output, code=2)       
+        else:
+            results = _get_error_output("labelit.distl exited prematurely.", traceback=output, code=2)       
+        if output_file is not None:
+            _save_json_output(output_file, results)
+        sys.stderr.write(results+'\n')
     return
 
 if __name__ == '__main__':
-    if len(sys.argv) == 3:
+    if len(sys.argv) > 1:
         img = os.path.abspath(sys.argv[1])
-        directory = os.path.abspath(sys.argv[2])
-    elif len(sys.argv) == 2:
-        img = os.path.abspath(sys.argv[1])
-        directory = None
     else:
-        err = 'Invalid arguments'
-        print _get_error_output(err)
-        sys.exit(0)       
-    run_distl(img, directory)
+        results =  _get_error_output('Invalid Parameters.')        
+        sys.stderr.write(results+'\n')
+        sys.exit(1)   
+        
+    if len(sys.argv) > 2:
+        directory = os.path.abspath(sys.argv[2])
+    else:
+        directory = None
+        
+    if len(sys.argv) > 3:
+        output_file = os.path.join(directory, sys.argv[3])
+    else:
+        output_file = None
+        
+    run_distl(img, directory, output_file)
+        

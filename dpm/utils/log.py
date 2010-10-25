@@ -60,4 +60,4 @@ def log_to_file(filename, level=logging.DEBUG):
     formatter = logging.Formatter('%(name)s|%(asctime)s| %(message)s', '%d/%m/%y %H:%M:%S')
     logfile.setFormatter(formatter)
     logging.getLogger('').addHandler(logfile)
-   
+

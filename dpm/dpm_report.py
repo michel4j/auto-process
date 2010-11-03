@@ -342,17 +342,17 @@ def plot_frame_stats(results, directory):
 
 
 def report_style(css):
-    css.write('body { font-size: 83%;}')
-    css.write('#result-page { border: 1px solid #ccc; margin-top: 1em; text-align:left; padding:1.5em 1.5em 1em; max-height: 3000px;}')
+    css.write('body { font-size: 83%; margin: 2px;}')
+    css.write('#result-page { border: 1px solid #ccc; margin-top: 1em; text-align:left; padding:1.5em 1.5em 1em;}')
     css.write('#result-table { font-size: 88%; border-collapse:collapse; text-align:left; width: 100%;}')
     css.write('#result-table th { color:#003399; font-size: 1.2em; font-weight:normal; padding:8px 8px;}')
     css.write('#result-table td { border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
-    css.write('#strategy-table { font-size: 88%; border-collapse:collapse; text-align:left; width: 60%;}')
+    css.write('#strategy-table { font-size: 88%; border-collapse:collapse; text-align:left; width: 45%;}')
     css.write('#strategy-table td { border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
     css.write('.result-labels { -moz-background-clip:border; -moz-background-inline-policy:continuous; -moz-background-origin:padding; background:#EFF6FF none repeat scroll 0 0; border-left:10px solid transparent; border-right:10px solid transparent;}')
     css.write('#result-table tr:hover td { -moz-background-clip:border; -moz-background-inline-policy:continuous; -moz-background-origin:padding; background:#EFF6FF none repeat scroll 0 0; color:#333399;}')
     css.write('#strategy-table tr:hover td { -moz-background-clip:border; -moz-background-inline-policy:continuous; -moz-background-origin:padding; background:#EFF6FF none repeat scroll 0 0; color:#333399;}')
-    css.write('#result-summary { border-collapse:collapse; border:1px solid #c3d9ff; float: left; width: 60%; margin-right:2%; text-align:left;}')
+    css.write('#result-summary { border-collapse:collapse; border:1px solid #c3d9ff; float: left; width: 45%; margin-right:2%; text-align:left;}')
     css.write('.size30 { width: 30%;}') 
     css.write('.size40 { width: 40%;}') 
     css.write('.size60 { width: 60%;}') 
@@ -368,11 +368,12 @@ def report_style(css):
     css.write('#result-page h3 { font-size: 140%; border-bottom: 1px dotted #ccc;}')
     css.write('.rtable { border-collapse:collapse; text-align:left;}')
     css.write('.rtable th { color:#003399; font-weight:normal; padding:8px 8px; text-align: right;}')
-    css.write('.rtable td { text-align: right; font-size: 1.2em; font-family: monospace; border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
+    css.write('.rtable td { text-align: right; font-size: 1em; font-family: monospace; border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
     css.write('.half { width: 49%;}')
     css.write('.full { width: 100% !important;}')
     css.write('.floatleft { float: left;}')
     css.write('.floatright { float: right;}')
+    css.write('img.image  { display: block; margin-left: auto; margin-right: auto;}')
 
     return css
 
@@ -383,7 +384,7 @@ class Results():
         json_data=open(directory + '/process.json').read()
         if not os.path.exists(directory + '/report'):
             os.mkdir(directory + '/report')
-        html=open(directory + '/report/report.html', 'w')
+        html=open(directory + '/report/index.html', 'w')
         css =open(directory + '/report/report.css', 'w')    
 
     data = json.loads(json_data)
@@ -398,16 +399,16 @@ class Results():
 
     result_table_head = (COLGROUP(COL('', Class='result-labels'))+
                          THEAD(TR(TH("Dataset", scope="col")+(TH('"'+results['name']+'"')))))
-    result_table_body = (TBODY(TR(TD('Score'+(SUP('[1]', Class="footnote")))+TD(results['score']))+
+    result_table_body = (TBODY(TR(TD('Score'+(SUP('[1]', Class="footnote")))+TD("%0.2f" % results['score']))+
                                TR(TD('Wavelength (A)')+TD('<wavelength>'))+    
                                TR(TD('Space Group'+(SUP('[2]', Class="footnote")))+TD(results['details']['spacegroup_selection']['name']))+  
-                               TR(TD('Unit Cell (A)')+TD(results['cell_a']+results['cell_b']+results['cell_c']+results['cell_alpha']+results['cell_beta']+results['cell_gamma']))+  
-                               TR(TD('Resolution'+(SUP('[3]', Class="footnote")))+TD(results['resolution']))+  
+                               TR(TD('Unit Cell (A)')+TD("%0.2g %0.2g %0.2g <br> %0.2g %0.2g %0.2g" % (results['cell_a'], results['cell_b'], results['cell_c'], results['cell_alpha'], results['cell_beta'], results['cell_gamma'])))+  
+                               TR(TD('Resolution'+(SUP('[3]', Class="footnote")))+TD("%0.2f" % results['resolution']))+  
                                TR(TD('All Reflections')+TD(results['reflections']))+
                                TR(TD('Unique Reflections')+TD(results['unique']))+
-                               TR(TD('Multiplicity')+TD(results['multiplicity']))+
-                               TR(TD('Completeness')+TD(results['completeness']))+
-                               TR(TD('Mosaicity')+TD(results['mosaicity']))+
+                               TR(TD('Multiplicity')+TD("%0.1f" % results['multiplicity']))+
+                               TR(TD('Completeness (%)')+TD(results['completeness']))+
+                               TR(TD('Mosaicity')+TD("%0.2f" % results['mosaicity']))+
                                TR(TD('I/Sigma (I)')+TD(results['i_sigma']))+
                                TR(TD('R-meas'+(SUP('[4]', Class="footnote")))+TD(results['r_meas']))+
                                TR(TD('R-mrgd-F'+(SUP('[5]', Class="footnote")))+TD(results['r_mrgdf']))+
@@ -431,10 +432,18 @@ class Results():
     for x in range(len(lattices['id'])):
         row = TR()
         row <= (TD(lattices['id'][x])+
-                TD(lattices['type'][x])+
-                TD(lattices['unit_cell'][x])+
-                TD(lattices['quality'][x])+
-                TD(lattices['volume'][x]))
+                TD(lattices['type'][x]))
+        unit_cell_td = ''
+        unit_cells = lattices['unit_cell'][x].split()
+        for y in range(len(unit_cells)):
+            if y == 3:
+                unit_cell_td = unit_cell_td + '<br>'
+                unit_cell_td = unit_cell_td + str(unit_cells[y]) + ' '
+            else:
+                unit_cell_td = unit_cell_td + str(unit_cells[y]) + ' '
+        row <= TD(unit_cell_td)
+        row <= (TD(lattices['quality'][x])+
+                TD("%i" % lattices['volume'][x]))
         lattice_table_body <= row
     lattice_table = TABLE(lattice_table_head+lattice_table_body, Class="rtable full")
 
@@ -442,13 +451,12 @@ class Results():
                                 DT('[2] - ')+DD('This space group was automatically assigned using POINTLESS (see P.R.Evans, Acta Cryst. D62, 72-82, 2005). This procedure is unreliable for incomplete datasets such as those used for screening. Please Inspect the detailed results below.')+
                                 DT('[3] - ')+DD('Resolution selected based on a cut-off of I/sigma(I) > 1.0. Statistics presented reflect this resolution.')+
                                 DT('[4] - ')+DD('Redundancy independent R-factor. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)')+
-                                DT('[5] - ')+DD('Quality of amplitudes. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)'), Class="note-list"), Class="tablenotes floatright size30"))   
+                                DT('[5] - ')+DD('Quality of amplitudes. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)'), Class="note-list"), Class="tablenotes floatright size40"))   
    
-    notes_spacegroup = (H3('Automatic Space-Group Selection')+
-                        DIV(H3('Notes')+
-                            P('The following table contains result from POINTLESS (see Evans, Acta Cryst. D62, 72-82, 2005).')+
+    notes_spacegroup = (DIV(H3('Notes')+
+                            P('The above table contains result from POINTLESS (see Evans, Acta Cryst. D62, 72-82, 2005).')+
                             P('Indistinguishable space groups will have similar probabilities. If two or more of the top candidates have the same probability, the one with the fewest symmetry assumptions is chosen. This usually corresponds to the point group,  trying out higher symmetry space groups within the top tier does not require re-indexing the data as they are already in the same setting.')+
-                            P("For more detailed results, please inspect the output file 'pointless.log'."), Class="tablenotes floatleft half"))
+                            P("For more detailed results, please inspect the output file 'pointless.log'."), Class="tablenotes"))
  
     pointless_table_head = THEAD(TR(TH('Selected', scope="col")+
                                    TH('Candidates', scope="col")+
@@ -469,7 +477,7 @@ class Results():
                     TD(pointless['space_group'][x])+
                     TD(pointless['probability'][x]))
         pointless_table_body <= row
-    pointless_table = TABLE(pointless_table_head+pointless_table_body, Class="floatright rtable size45") 
+    pointless_table = H3('Automatic Space-Group Selection')+TABLE(pointless_table_head+pointless_table_body, Class="rtable full") 
 
     shell_title = H3('Integration and Scaling Statistics (by shell)')
     shell_table_head = THEAD(TR(TH('Shell', scope="col")+
@@ -489,56 +497,57 @@ class Results():
                 TD(shell_data['i_sigma'][x])+
                 TD(shell_data['sig_ano'][x]))
         shell_table_body <= row
-    shell_table = shell_title + TABLE(shell_table_head + shell_table_body, Class="rtable floatleft size40")
+    shell_table = TABLE(shell_table_head + shell_table_body, Class="rtable full")
 
     shell_notes = (DIV(H3('Notes')+DL(DT('[1] - ')+DD('Mean of intensity/Sigma(I) of unique reflections (after merging symmetry-related observations). Where Sigma(I) is the standard deviation of reflection intensity I estimated from sample statistics.')+
-                                      DT('[2] - ')+DD('mean anomalous difference in units of its estimated standard deviation (|F(+)-F(-)|/Sigma). F(+), F(-) are structure factor estimates obtained from the merged intensity observations in each parity class.'), Class="note-list"), Class="tablenotes floatright size45"))   
+                                      DT('[2] - ')+DD('mean anomalous difference in units of its estimated standard deviation (|F(+)-F(-)|/Sigma). F(+), F(-) are structure factor estimates obtained from the merged intensity observations in each parity class.'), Class="note-list"), Class="tablenotes"))   
    
     frame_notes = (DIV(H3('Notes')+DL(DT('Divergence - ')+DD('Estimated Standard Deviation of Beam divergence')+
                                       DT('R'+SUB('d')+' - ')+DD('R-factors as a function of frame difference. See Diederichs K. (2006) Acta Cryst D62, 96-101.'), Class="note-list"), Class="tablenotes"))   
 
     strategy_notes = (DIV(H3('Notes')+DL(DT('[a] - ')+DD('Recommended exposure time does not take into account overloads at low resolution!')+
                                          DT('[b] - ')+DD('Values in parenthesis represent the high resolution shell.')+
-                                         DT('[c] - ')+DD('Resolution limit is set by the initial image resolution.'), Class="note-list"), Class="tablenotes floatright size30"))   
+                                         DT('[c] - ')+DD('Resolution limit is set by the initial image resolution.'), Class="note-list"), Class="tablenotes floatright size40"))   
 
     plot_shell = plot_shell_stats(results, directory)
-    shell_img = IMG(src='file://'+plot_shell, Class="floatright")
+    shell_img = IMG(src='plot_shell.png', Class="image")
 
     if results['kind'] == 0:
         kind = "Crystal Screening Report"
-        strategy_title = H3('Data Collection Strategy (Recommended Strategy for Native Data Collection)')
-        strategy_data = data[data.keys()[0]]['strategy']
-        strategy_table_body = TBODY(TR(TD('Attenuation (%)')+TD(strategy_data['attenuation']))+
-                                    TR(TD('Distance (mm)')+TD(strategy_data['distance']))+
-                                    TR(TD('Start Angle')+TD(strategy_data['start_angle']))+
-                                    TR(TD('Delta (deg)')+TD(strategy_data['delta_angle']))+
-                                    TR(TD('No. Frames')+TD(strategy_data['total_angle']/strategy_data['delta_angle']))+
-                                    TR(TD('Total Angle (deg)')+TD(strategy_data['total_angle']))+
-                                    TR(TD('Exposure Time (s) [a]')+TD(strategy_data['exposure_time']))+
-                                    TR(TD(B('Expected Quality:')+TD(''))+
-                                    TR(TD('Resolution [c]')+TD(strategy_data['exp_resolution']))+
-                                    TR(TD('Completeness (%)')+TD(strategy_data['exp_completeness']))+
-                                    TR(TD('Multiplicity')+TD(strategy_data['exp_multiplicity']))+
-                                    TR(TD('I/sigma (I) [b]')+TD(strategy_data['exp_i_sigma']))+
-                                    TR(TD('R-factor (%) [b]')+TD(strategy_data['exp_r_factor'])))) 
-        strategy = strategy_title + TABLE(strategy_table_body, id="strategy-table", Class="floatleft") + strategy_notes
+        strategy_title = H3('Data Collection Strategy')+P('Recommended Strategy for Native Data Collection')
+        if 'strategy' in data[data.keys()[0]]:
+            strategy_data = data[data.keys()[0]]['strategy']
+            strategy_table_body = TBODY(TR(TD('Attenuation (%)')+TD(strategy_data['attenuation']))+
+                                        TR(TD('Distance (mm)')+TD(strategy_data['distance']))+
+                                        TR(TD('Start Angle')+TD(strategy_data['start_angle']))+
+                                        TR(TD('Delta (deg)')+TD(strategy_data['delta_angle']))+
+                                        TR(TD('No. Frames')+TD(strategy_data['total_angle']/strategy_data['delta_angle']))+
+                                        TR(TD('Total Angle (deg)')+TD(strategy_data['total_angle']))+
+                                        TR(TD('Exposure Time (s) [a]')+TD(strategy_data['exposure_time']))+
+                                        TR(TD(B('Expected Quality:')+TD(''))+
+                                        TR(TD('Resolution [c]')+TD(strategy_data['exp_resolution']))+
+                                        TR(TD('Completeness (%)')+TD(strategy_data['exp_completeness']))+
+                                        TR(TD('Multiplicity')+TD(strategy_data['exp_multiplicity']))+
+                                        TR(TD('I/sigma (I) [b]')+TD(strategy_data['exp_i_sigma']))+
+                                        TR(TD('R-factor (%) [b]')+TD(strategy_data['exp_r_factor'])))) 
+            strategy = strategy_title + TABLE(strategy_table_body, id="strategy-table", Class="floatleft") + strategy_notes
     elif results['kind'] == 1:
         kind = "Data Processing Report"
         plot_frame = plot_frame_stats(results, directory)
         plot_diff = plot_diff_stats(results, directory)
         dp_report = (H3('Integration and Scaling Statistics (by frame/frame difference)')+
-                     IMG(src='file://'+plot_diff, Class="floatleft")+
-                     IMG(src='file://'+plot_frame, Class="floatright")+clear+
+                     IMG(src='plot_frame.png', Class="image")+
+                     IMG(src='plot_diff.png', Class="image")+clear+
                      frame_notes)
 
     report_title = (DIV(H2(kind), id="result-title", Class="size60"))
     style = report_style(css)
     
-    report_head = HEAD(LINK(rel="stylesheet", href=directory + '/report/report.css', type="text/css"))
+    report_head = HEAD(LINK(rel="stylesheet", href='report.css', type="text/css"))
     base_report = (report_title + clear + summary + notes + spacer + 
-                   lattice_title + lattice_table + notes_spacegroup + 
-                   pointless_table + spacer + 
-                   shell_table + shell_notes + shell_img + spacer)
+                   lattice_title + lattice_table + spacer +  
+                   pointless_table + notes_spacegroup + spacer + 
+                   shell_title + shell_img + shell_table + shell_notes + spacer)
 
     if results['kind'] == 0:
         report = report_head + DIV(base_report+strategy+spacer, id="result-page")

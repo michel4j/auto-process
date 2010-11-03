@@ -1,4 +1,12 @@
-import re, string, sys, os, json 
+import re
+import string
+import sys
+import os
+try: 
+    import json
+except:
+    import simplejson as json
+    
 import cStringIO
 
 class TAG:

@@ -510,6 +510,14 @@ def execute_distl(filename):
     sts, output = commands.getstatusoutput('labelit.distl %s > distl.log' % filename)
     return sts==0
 
+def generate_report(path):
+    if os.path.exists(path) and os.access(path, os.W_OK):
+        command = "dpm_report %s" % path
+        sts, output = commands.getstatusoutput(command)
+        return sts==0
+    else:
+        return False
+    
 def score_crystal_old(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
 
     score = [ 1.0,

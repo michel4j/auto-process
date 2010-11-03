@@ -427,7 +427,7 @@ class AutoXDS:
                 _summary = dset['scaling']
             else:
                 _summary= dset['correction']
-            _sum_keys = ['data_id', 'name', 'score', 'space_group_id', 'space_group' 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
+            _sum_keys = ['data_id', 'name', 'score', 'space_group_id', 'space_group', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
                      'resolution','reflections', 'unique','multiplicity', 'completeness','mosaicity', 'i_sigma',
                      'r_meas','r_mrgdf', 'sigma_spot', 'sigma_angle','ice_rings', 'url', 'wavelength']
             _sum_values = [

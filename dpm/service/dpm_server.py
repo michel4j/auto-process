@@ -15,7 +15,7 @@ from dpm.service.interfaces import *
 from bcm.service.utils import log_call
 from bcm.utils import mdns
 from bcm.utils.misc import get_short_uuid
-from dpm.service.common import InvalidUser, CommandFailed
+from dpm.service.common import *
 import os, sys
 import dpm.utils
 import pwd
@@ -206,6 +206,8 @@ class CommandProtocol(protocol.ProcessProtocol):
                 self.deferred.callback(data)
         else:
             f = Failure(CommandFailed('Command `%s` died with code `%d`.' % (self.command, rc)))
+            log.msg(self.output)
+            log.msg(self.errors)
             self.deferred.errback(f)
             
             

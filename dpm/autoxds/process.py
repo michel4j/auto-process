@@ -462,8 +462,7 @@ class AutoXDS:
                 info[dataset_name]['results']['details']['output_files'] = dset['files']['output']
             
             # Print out strategy information
-            if dset.get('strategy', None) and dset['strategy'].get('runs', None) is not None:
-                _strategy = {}
+            if dset.get('strategy', None) is not None and dset['strategy'].get('runs', None) is not None:
                 _strategy_keys = ['attenuation', 'distance',    'start_angle',
                     'delta_angle', 'total_angle', 'exposure_time',
                     'exp_resolution', 'exp_completeness', 'exp_multiplicity',
@@ -479,6 +478,7 @@ class AutoXDS:
                   ]
                 info[dataset_name]['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
                 _t = Table(dset['indexing']['oscillation_ranges'])
+               
                 _section = {}
                 for k in ['resolution','angle']:
                     _section[k] = _t[k]

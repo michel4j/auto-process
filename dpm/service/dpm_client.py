@@ -6,11 +6,9 @@ from twisted.internet import reactor
 from twisted.python import log
 from bcm.utils import mdns
 import sys, os
-from dpm.service.common import *
+from dpm.service.common import InvalidUser, CommandError
 
 log.FileLogObserver(sys.stdout).start()
-
-DIRECTORY = '/tmp/test1'
 
 class App(object):
     def __init__(self):

@@ -63,7 +63,6 @@ class AutoXDS:
                 except:
                     err_msg = "Directory '%s' does not exist, or is not writable." % self.top_directory
                     _logger.error(err_msg)                   
-                    self.export_json('process.json')
                     sys.exit()
         else:
             self.top_directory = utils.prepare_work_dir(os.getcwd(),
@@ -428,14 +427,15 @@ class AutoXDS:
                 _summary = dset['scaling']
             else:
                 _summary= dset['correction']
-            _sum_keys = ['data_id', 'name', 'score', 'space_group_id', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
+            _sum_keys = ['data_id', 'name', 'score', 'space_group_id', 'space_group' 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
                      'resolution','reflections', 'unique','multiplicity', 'completeness','mosaicity', 'i_sigma',
-                     'r_meas','r_mrgdf', 'sigma_spot', 'sigma_angle','ice_rings', 'url']
+                     'r_meas','r_mrgdf', 'sigma_spot', 'sigma_angle','ice_rings', 'url', 'wavelength']
             _sum_values = [
                 dset['parameters'].get('data_id', None),
                 dataset_name, 
                 dset['crystal_score'], 
                 dset['correction']['symmetry']['space_group']['sg_number'],
+                utils.SPACE_GROUP_NAMES[dset['correction']['symmetry']['space_group']['sg_number']],
                 dset['correction']['symmetry']['space_group']['unit_cell'][0],
                 dset['correction']['symmetry']['space_group']['unit_cell'][1],
                 dset['correction']['symmetry']['space_group']['unit_cell'][2],
@@ -455,6 +455,7 @@ class AutoXDS:
                 dset['correction']['summary']['stdev_spindle'],
                 _ice_rings,
                 dset['parameters']['working_directory'],
+                dset['parameters']['wavelength'],
                 ]
             info[dataset_name]['results'] = dict(zip(_sum_keys, _sum_values))
             info[dataset_name]['results']['details'] = {}
@@ -1069,7 +1070,6 @@ class AutoXDS:
             if not _out['success']:
                 err_msg = 'Initialization failed! %s' % _out.get('reason')
                 _logger.error(err_msg)
-                self.export_json('process.json', err=err_msg)
                 sys.exit()
             
             # Image Analysis
@@ -1086,7 +1086,6 @@ class AutoXDS:
             if not _out['success']:
                 err_msg = 'Auto-indexing failed! %s' % _out.get('reason')
                 _logger.error(err_msg)
-                self.export_json('process.json', err=err_msg)
                 sys.exit()
             run_result['indexing'] = _out.get('data')
             
@@ -1098,7 +1097,6 @@ class AutoXDS:
             if not _out['success']:
                 err_msg = 'Integration failed! %s' % _out.get('reason')
                 _logger.error(err_msg)
-                self.export_json('process.json', err=err_msg)
                 sys.exit()
             run_result['integration'] = _out.get('data')
 
@@ -1109,7 +1107,6 @@ class AutoXDS:
             if not _out['success']:
                 err_msg = 'Correction failed! %s' % _out.get('reason')
                 _logger.error(err_msg)
-                self.export_json('process.json', err=err_msg)
                 sys.exit()
             run_result['correction'] = _out.get('data')
             _sel_pgn = _out['data']['symmetry']['space_group']['sg_number']

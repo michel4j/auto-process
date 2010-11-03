@@ -377,7 +377,7 @@ def report_style(css):
 
     return css
 
-class Results():
+class Results(object):
     directory = sys.argv[1]
     if os.path.exists(directory):
         print directory

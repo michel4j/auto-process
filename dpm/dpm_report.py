@@ -379,7 +379,7 @@ def report_style(css):
     css.write('#result-page h3 { font-size: 140%; border-bottom: 1px dotted #ccc;}')
     css.write('.rtable { border-collapse:collapse; text-align:left; border: solid 1px #ccc;}')
     css.write('.rtable th { color:#003399; font-weight:normal; padding:8px 8px; text-align: right;}')
-    css.write('.rtable td { text-align: right; font-family: Monaco, Consolas, monospace; border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
+    css.write('.rtable td { text-align: right; font-family: Consolas, monospace; border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
     css.write('.half { width: 49%;}')
     css.write('.full { width: 100% !important;}')
     css.write('.floatleft { float: left;}')

@@ -514,8 +514,10 @@ def generate_report(path):
     if os.path.exists(path) and os.access(path, os.W_OK):
         command = "dpm_report %s" % path
         sts, output = commands.getstatusoutput(command)
+        _logger.debug(output)
         return sts==0
     else:
+        _logger.error(output)
         return False
     
 def score_crystal_old(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):

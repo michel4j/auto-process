@@ -412,14 +412,14 @@ class Results(object):
                          THEAD(TR(TH("Dataset", scope="col")+(TH('"'+results['name']+'"')))))
     result_table_body = (TBODY(TR(TD('Score'+(SUP('[1]', Class="footnote")))+TD("%0.2f" % results['score']))+
                                TR(TD('Wavelength (A)')+TD('<wavelength>'))+    
-                               TR(TD('Space Group'+(SUP('[2]', Class="footnote")))+TD(results['details']['spacegroup_selection']['name']))+  
-                               TR(TD('Unit Cell (A)')+TD("%0.2g %0.2g %0.2g <br> %0.2g %0.2g %0.2g" % (results['cell_a'], results['cell_b'], results['cell_c'], results['cell_alpha'], results['cell_beta'], results['cell_gamma'])))+  
+                               TR(TD('Space Group'+(SUP('[2]', Class="footnote")))+TD(results['space_group']))+  
+                               TR(TD('Unit Cell (A)')+TD("%0.1g %0.1g %0.1g <br> %0.1g %0.1g %0.1g" % (results['cell_a'], results['cell_b'], results['cell_c'], results['cell_alpha'], results['cell_beta'], results['cell_gamma'])))+  
                                TR(TD('Resolution'+(SUP('[3]', Class="footnote")))+TD("%0.2f" % results['resolution']))+  
                                TR(TD('All Reflections')+TD(results['reflections']))+
                                TR(TD('Unique Reflections')+TD(results['unique']))+
                                TR(TD('Multiplicity')+TD("%0.1f" % results['multiplicity']))+
                                TR(TD('Completeness (%)')+TD(results['completeness']))+
-                               TR(TD('Mosaicity')+TD("%0.2f" % results['mosaicity']))+
+                               TR(TD('Mosaicity')+TD("%0.1f" % results['mosaicity']))+
                                TR(TD('I/Sigma (I)')+TD(results['i_sigma']))+
                                TR(TD('R-meas'+(SUP('[4]', Class="footnote")))+TD(results['r_meas']))+
                                TR(TD('R-mrgd-F'+(SUP('[5]', Class="footnote")))+TD(results['r_mrgdf']))+

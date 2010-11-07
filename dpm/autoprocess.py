@@ -83,9 +83,7 @@ def main():
     # Check that images from arguments actually exist on disk
     for img in args:
         if not ( os.path.isfile(img) and os.access(img, os.R_OK) ):
-            print "ERROR: File '%s' does not exist, or is not readable." % img
-            #sys.exit(1)
-            
+            print "ERROR: File '%s' does not exist, or is not readable." % img            
         
     options['images'] = args
            

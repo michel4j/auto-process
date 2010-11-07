@@ -392,7 +392,6 @@ def report_style(css):
 class Results(object):
     directory = sys.argv[1]
     if os.path.exists(directory):
-        print directory
         json_data=open(directory + '/process.json').read()
         if not os.path.exists(directory + '/report'):
             os.mkdir(directory + '/report')

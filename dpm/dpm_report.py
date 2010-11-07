@@ -354,8 +354,8 @@ def plot_frame_stats(results, directory):
 
 
 def report_style(css):
-    css.write('body { font-size: 83%; margin: 2px;}')
-    css.write('#result-page { border: 1px solid #ccc; margin-top: 1em; text-align:left; padding:1.5em 1.5em 1em;}')
+    css.write('body { font-size: 83%; margin: 2px; border: 1px solid #ccc;}')
+    css.write('#result-page { margin-top: 1em; text-align:left; padding:1.5em 1.5em 1em;}')
     css.write('#result-table { font-size: 88%; border-collapse:collapse; text-align:left; width: 100%;}')
     css.write('#result-table th { color:#003399; font-size: 1.2em; font-weight:normal; padding:8px 8px;}')
     css.write('#result-table td { border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
@@ -550,7 +550,7 @@ class Results(object):
                      IMG(src='plot_diff.png', Class="image")+clear+
                      frame_notes)
 
-    report_title = (DIV(H2(kind), id="result-title", Class="size60"))
+    report_title = (DIV(H2(kind), id="result-title"))
     style = report_style(css)
     
     report_head = HEAD(LINK(rel="stylesheet", href='report.css', type="text/css"))

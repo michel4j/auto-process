@@ -173,8 +173,8 @@ def get_dataset_params(img_file, screen=False):
     fm = file_pattern.search(file_list[0])
 
     reference_image = os.path.join(directory, file_list[0])
-    if not ( os.path.isfile(reference_image and os.access(reference_image, os.R_OK) ):
-        print "ERROR: File '%s' does not exist, or is not readable." % img
+    if not ( os.path.isfile(reference_image) and os.access(reference_image, os.R_OK) ):
+        print "ERROR: File '%s' does not exist, or is not readable." % reference_image
         sys.exit(1)
     
     parts = fm.groups()

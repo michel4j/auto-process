@@ -180,7 +180,7 @@ def get_dataset_params(img_file, screen=False):
     frame_count = len(file_list)
     if frame_count < 4:
         print 'AutoXDS ERROR: You need at least 4 frames in the set! Only %d found' % frame_count
-        sys.exit(1)
+        #sys.exit(1)
         
     info = read_header(reference_image)
     info['starting_frame'] = first_frame

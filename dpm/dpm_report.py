@@ -164,7 +164,7 @@ def plot_shell_stats(results, directory):
     #    raise Http404
     # extract shell statistics to plot
     data = results['details']['shell_statistics']
-    fig = Figure(figsize=(8,7), dpi=72)
+    fig = Figure(figsize=(7.5,6.5), dpi=72)
     ax1 = fig.add_subplot(211)
     ax1.plot(data['shell'], data['completeness'], 'r-+')
     ax1.set_ylabel('completeness (%)', color='r')
@@ -227,7 +227,7 @@ def plot_diff_stats(results, directory):
     #    raise Http404
     # extract shell statistics to plot
     data = results['details']['diff_statistics']
-    fig = Figure(figsize=(8,7), dpi=72)
+    fig = Figure(figsize=(7.5,6.5), dpi=72)
     ax1 = fig.add_subplot(311)
     ax1.plot(data['frame_diff'], data['rd'], 'r-')
     ax1.set_ylabel('R-d', color='r')

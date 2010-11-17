@@ -536,6 +536,7 @@ class AutoXDS:
                 info[dataset_name]['results']['kind'] = AUTOXDS_SCREENING
             else:
                 info[dataset_name]['results']['kind'] = AUTOXDS_PROCESSING
+                
         return info
 
     def save_xml(self, info=None, filename='debug.xml'):

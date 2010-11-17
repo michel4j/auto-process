@@ -59,6 +59,7 @@ class App(object):
         self.dpm.callRemote('analyseImage',
                             '/users/cmcfadmin/Sep29-2010/c12test/data/c12test_001.img', 
                             '/users/cmcfadmin/Sep29-2010/c12test/scrn',
+                            'cmcfadmin',
                             ).addCallback(self.dump_results).addErrback(self.dump_error)
         
         # Try one that will fail

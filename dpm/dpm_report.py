@@ -402,10 +402,11 @@ class Results(object):
 
     data = json.loads(json_data)
     try:
-        results = data[data.keys()[0]]['results']
+        results = data['result']['result']
     except KeyError:
-        base = data[data.keys()[0]]
-        results = base[base.keys()[0]]['results']
+        #base = data[data.keys()[0]]
+        #results = base[base.keys()[0]]['result']
+        sys.exit(1)
 
     clear = (DIV('', Class="clear"))    
     spacer = (DIV('', Class="clear spacer"))

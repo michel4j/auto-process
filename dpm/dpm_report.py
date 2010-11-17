@@ -402,7 +402,8 @@ class Results(object):
 
     data = json.loads(json_data)
     try:
-        results = data['result']['result']
+        results = data['result'][0]['result']
+        strategy = data['result'][0].get('strategy', None)
     except KeyError:
         #base = data[data.keys()[0]]
         #results = base[base.keys()[0]]['result']
@@ -415,7 +416,7 @@ class Results(object):
                          THEAD(TR(TH("Dataset", scope="col")+(TH('"'+results['name']+'"')))))
     result_table_body = (TBODY(TR(TD('Score'+(SUP('[1]', Class="footnote")))+TD("%0.2f" % results['score']))+
                                TR(TD('Wavelength (A)')+TD(results['wavelength']))+    
-                               TR(TD('Space Group'+(SUP('[2]', Class="footnote")))+TD(results['space_group']))+  
+                               TR(TD('Space Group'+(SUP('[2]', Class="footnote")))+TD(results['space_group_name']))+  
                                TR(TD('Unit Cell (A)')+TD("%0.1f %0.1f %0.1f <br> %0.1f %0.1f %0.1f" % (results['cell_a'], results['cell_b'], results['cell_c'], results['cell_alpha'], results['cell_beta'], results['cell_gamma'])))+  
                                TR(TD('Resolution'+(SUP('[3]', Class="footnote")))+TD("%0.2f" % results['resolution']))+  
                                TR(TD('All Reflections')+TD(results['reflections']))+
@@ -528,8 +529,8 @@ class Results(object):
     if results['kind'] == 0:
         kind = "Crystal Screening Report"
         strategy_title = H3('Data Collection Strategy')+P('Recommended Strategy for Native Data Collection')
-        if 'strategy' in base:
-            strategy_data = base['strategy']
+        if strategy is not None:
+            strategy_data = strategy
             strategy_table_body = TBODY(TR(TD('Attenuation (%)')+TD(strategy_data['attenuation']))+
                                         TR(TD('Distance (mm)')+TD(strategy_data['distance']))+
                                         TR(TD('Start Angle')+TD(strategy_data['start_angle']))+

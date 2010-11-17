@@ -414,10 +414,10 @@ class AutoXDS:
 
     
     def get_info_dict(self):
-        info = {}
+        info = []
         
         for dataset_name in self.dataset_names:
-            info[dataset_name] = {}
+            _dataset_info = {}
             dset = self.results[dataset_name]
             if dset.get('image_analysis', None) is not None:
                 _ice_rings = dset['image_analysis']['summary']['ice_rings']
@@ -457,10 +457,10 @@ class AutoXDS:
                 dset['parameters']['working_directory'],
                 dset['parameters']['wavelength'],
                 ]
-            info[dataset_name]['results'] = dict(zip(_sum_keys, _sum_values))
-            info[dataset_name]['results']['details'] = {}
+            _dataset_info['result'] = dict(zip(_sum_keys, _sum_values))
+            _dataset_info['result']['details'] = {}
             if dset['files']['output'] is not None:
-                info[dataset_name]['results']['details']['output_files'] = dset['files']['output']
+                _dataset_info['result']['details']['output_files'] = dset['files']['output']
             
             # Print out strategy information
             if dset.get('strategy', None) is not None and dset['strategy'].get('runs', None) is not None:
@@ -477,13 +477,13 @@ class AutoXDS:
                   dset['strategy']['redundancy'], dset['strategy']['prediction_all']['average_i_over_sigma'],
                   dset['strategy']['prediction_all']['R_factor'],
                   ]
-                info[dataset_name]['results']['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
+                _dataset_info['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
                 _t = Table(dset['indexing']['oscillation_ranges'])
                
                 _section = {}
                 for k in ['resolution','angle']:
                     _section[k] = _t[k]
-                info[dataset_name]['results']['details']['overlap_analysis'] = _section          
+                _dataset_info['result']['details']['overlap_analysis'] = _section          
             
             _section = {}
             _t = Table(dset['correction']['symmetry']['lattices'])
@@ -494,14 +494,14 @@ class AutoXDS:
             _section['unit_cell'] = [_cell_fmt % c for c in _t['unit_cell']]
             _section['quality'] = _t['quality']
             _section['volume'] = [utils.cell_volume(c) for c in _t['unit_cell']]
-            info[dataset_name]['results']['details']['compatible_lattices'] = _section
+            _dataset_info['result']['details']['compatible_lattices'] = _section
             
             _section = {}
             _t = Table(dset['space_group']['candidates'])
             _section['space_group'] = _t['number']
             _section['name'] = [utils.SPACE_GROUP_NAMES[n] for n in  _section['space_group']]
             _section['probability'] = _t['probability']            
-            info[dataset_name]['results']['details']['spacegroup_selection'] = _section 
+            _dataset_info['result']['details']['spacegroup_selection'] = _section 
             
             # Print out integration results
             _section = {}
@@ -516,10 +516,10 @@ class AutoXDS:
                         _section[k] = _t[k]
                 if dset['scaling'].get('diff_statistics') is not None:
                     _t = Table(dset['scaling']['diff_statistics'])
-                    info[dataset_name]['results']['details']['diff_statistics'] = {}
+                    _dataset_info['result']['details']['diff_statistics'] = {}
                     for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
-                        info[dataset_name]['results']['details']['diff_statistics'][k] = _t[k]
-            info[dataset_name]['results']['details']['frame_statistics'] = _section
+                        _dataset_info['result']['details']['diff_statistics'][k] = _t[k]
+            _dataset_info['result']['details']['frame_statistics'] = _section
             
             # Print out correction results
             _section = {}
@@ -530,12 +530,13 @@ class AutoXDS:
             for k in ['completeness','r_meas','r_mrgdf','i_sigma','sig_ano','cor_ano']:
                 _section[k] = _t[k][:-1] # don't get 'total' row
             _section['shell'] = [float(v) for v in _t['shell'][:-1]]
-            info[dataset_name]['results']['details']['shell_statistics'] = _section
+            _dataset_info['result']['details']['shell_statistics'] = _section
             
             if self.options.get('command', None) == 'screen':
-                info[dataset_name]['results']['kind'] = AUTOXDS_SCREENING
+                _dataset_info['result']['kind'] = AUTOXDS_SCREENING
             else:
-                info[dataset_name]['results']['kind'] = AUTOXDS_PROCESSING
+                _dataset_info['result']['kind'] = AUTOXDS_PROCESSING
+            info.appdn(_dataset_info)
         return info
 
     def save_xml(self, info=None, filename='debug.xml'):

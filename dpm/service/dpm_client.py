@@ -6,7 +6,7 @@ from twisted.internet import reactor
 from twisted.python import log
 from bcm.utils import mdns
 import sys, os
-from dpm.service.common import InvalidUser, CommandError
+from dpm.service.common import InvalidUser, CommandFailed
 
 log.FileLogObserver(sys.stdout).start()
 
@@ -73,7 +73,7 @@ class App(object):
                  'file_names': 
                     ('/users/cmcfadmin/Sep29-2010/c12test/data/c12test_001.img',),
                 }
-        self.dpm.callRemote('processDataset',
+        self.dpm.callRemote('screenDataset',
                             _info, 
                             '/users/cmcfadmin/Sep29-2010/c12test/proc',
                             'cmcfadmin'

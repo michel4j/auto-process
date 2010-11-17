@@ -457,10 +457,10 @@ class AutoXDS:
                 dset['parameters']['working_directory'],
                 dset['parameters']['wavelength'],
                 ]
-            info[dataset_name]['result'] = dict(zip(_sum_keys, _sum_values))
-            info[dataset_name]['result']['details'] = {}
+            info[dataset_name]['results'] = dict(zip(_sum_keys, _sum_values))
+            info[dataset_name]['results']['details'] = {}
             if dset['files']['output'] is not None:
-                info[dataset_name]['result']['details']['output_files'] = dset['files']['output']
+                info[dataset_name]['results']['details']['output_files'] = dset['files']['output']
             
             # Print out strategy information
             if dset.get('strategy', None) is not None and dset['strategy'].get('runs', None) is not None:
@@ -470,23 +470,20 @@ class AutoXDS:
                     'exp_i_sigma', 'exp_r_factor', 'energy',
                     ]
                 run = dset['strategy']['runs'][0]
-                _strategy_vals = [
-                    dataset_name,
-                    dset['strategy']['attenuation'], 
-                    run['distance'], run['phi_start'], run['phi_width'], 
-                    run['phi_width'] * run['number_of_images'], run['exposure_time'],
-                    dset['strategy']['resolution'], dset['strategy']['completeness'],
-                    dset['strategy']['redundancy'], dset['strategy']['prediction_all']['average_i_over_sigma'],
-                    dset['strategy']['prediction_all']['R_factor'],
-                    dset['parameters']['energy'],
-                    ]
-                info[dataset_name]['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
+                _strategy_vals = [dset['strategy']['attenuation'], 
+                  run['distance'], run['phi_start'], run['phi_width'], 
+                  run['phi_width'] * run['number_of_images'], run['exposure_time'],
+                  dset['strategy']['resolution'], dset['strategy']['completeness'],
+                  dset['strategy']['redundancy'], dset['strategy']['prediction_all']['average_i_over_sigma'],
+                  dset['strategy']['prediction_all']['R_factor'],
+                  ]
+                info[dataset_name]['results']['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
                 _t = Table(dset['indexing']['oscillation_ranges'])
                
                 _section = {}
                 for k in ['resolution','angle']:
                     _section[k] = _t[k]
-                info[dataset_name]['result']['details']['overlap_analysis'] = _section          
+                info[dataset_name]['results']['details']['overlap_analysis'] = _section          
             
             _section = {}
             _t = Table(dset['correction']['symmetry']['lattices'])
@@ -497,14 +494,14 @@ class AutoXDS:
             _section['unit_cell'] = [_cell_fmt % c for c in _t['unit_cell']]
             _section['quality'] = _t['quality']
             _section['volume'] = [utils.cell_volume(c) for c in _t['unit_cell']]
-            info[dataset_name]['result']['details']['compatible_lattices'] = _section
+            info[dataset_name]['results']['details']['compatible_lattices'] = _section
             
             _section = {}
             _t = Table(dset['space_group']['candidates'])
             _section['space_group'] = _t['number']
             _section['name'] = [utils.SPACE_GROUP_NAMES[n] for n in  _section['space_group']]
             _section['probability'] = _t['probability']            
-            info[dataset_name]['result']['details']['spacegroup_selection'] = _section 
+            info[dataset_name]['results']['details']['spacegroup_selection'] = _section 
             
             # Print out integration results
             _section = {}
@@ -533,13 +530,12 @@ class AutoXDS:
             for k in ['completeness','r_meas','r_mrgdf','i_sigma','sig_ano','cor_ano']:
                 _section[k] = _t[k][:-1] # don't get 'total' row
             _section['shell'] = [float(v) for v in _t['shell'][:-1]]
-            info[dataset_name]['result']['details']['shell_statistics'] = _section
+            info[dataset_name]['results']['details']['shell_statistics'] = _section
             
             if self.options.get('command', None) == 'screen':
-                info[dataset_name]['result']['kind'] = AUTOXDS_SCREENING
+                info[dataset_name]['results']['kind'] = AUTOXDS_SCREENING
             else:
-                info[dataset_name]['result']['kind'] = AUTOXDS_PROCESSING
-                
+                info[dataset_name]['results']['kind'] = AUTOXDS_PROCESSING
         return info
 
     def save_xml(self, info=None, filename='debug.xml'):

@@ -287,9 +287,12 @@ def plot_frame_stats(results, directory):
     from matplotlib import rcParams
     
     # Adjust Legend parameters
+    # Adjust Legend parameters
     rcParams['legend.loc'] = 'best'
     rcParams['legend.fontsize'] = 10
     rcParams['legend.isaxes'] = False
+    rcParams['figure.facecolor'] = 'white'
+    rcParams['figure.edgecolor'] = 'white'
     
     #try:
     #    project = request.user.get_profile()
@@ -298,7 +301,7 @@ def plot_frame_stats(results, directory):
     #    raise Http404
     # extract shell statistics to plot
     data = results['details']['frame_statistics']
-    fig = Figure(figsize=(5.6,5), dpi=72)
+    fig = Figure(figsize=(7.5,6.5), dpi=72)
     ax1 = fig.add_subplot(311)
     ax1.plot(data['frame'], data['scale'], 'r-')
     ax1.set_ylabel('Scale Factor', color='r')
@@ -524,8 +527,8 @@ class Results(object):
     if results['kind'] == 0:
         kind = "Crystal Screening Report"
         strategy_title = H3('Data Collection Strategy')+P('Recommended Strategy for Native Data Collection')
-        if 'strategy' in results:
-            strategy_data = results['strategy']
+        if 'strategy' in base:
+            strategy_data = base['strategy']
             strategy_table_body = TBODY(TR(TD('Attenuation (%)')+TD(strategy_data['attenuation']))+
                                         TR(TD('Distance (mm)')+TD(strategy_data['distance']))+
                                         TR(TD('Start Angle')+TD(strategy_data['start_angle']))+

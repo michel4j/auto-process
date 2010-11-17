@@ -477,7 +477,7 @@ class AutoXDS:
                   dset['strategy']['redundancy'], dset['strategy']['prediction_all']['average_i_over_sigma'],
                   dset['strategy']['prediction_all']['R_factor'],
                   ]
-                info[dataset_name]['results']['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
+                info[dataset_name]['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
                 _t = Table(dset['indexing']['oscillation_ranges'])
                
                 _section = {}

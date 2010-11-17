@@ -578,7 +578,7 @@ class AutoXDS:
         fh.close()
         
         #generate html report
-        _logger.info('Generating report in %s ...' % (os.path.join(self.top_directory, 'result')))  
+        _logger.info('Generating report in %s ...' % (os.path.join(self.top_directory, 'report')))  
         sts = utils.generate_report(self.top_directory)
         if not sts:
             _logger.error('Could not generate report!')  

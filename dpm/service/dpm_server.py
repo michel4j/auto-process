@@ -96,7 +96,7 @@ class DPMService(service.Service):
             uid = self.settings['uid']
             gid = self.settings['gid']
         
-        results = run_command_output(
+        return run_command_output(
             'autoprocess',
             args,
             directory,

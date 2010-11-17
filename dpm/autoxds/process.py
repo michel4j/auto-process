@@ -470,7 +470,9 @@ class AutoXDS:
                     'exp_i_sigma', 'exp_r_factor', 'energy',
                     ]
                 run = dset['strategy']['runs'][0]
-                _strategy_vals = [dset['strategy']['attenuation'], 
+                _strategy_vals = [
+                  dataset_name,
+                  dset['strategy']['attenuation'], 
                   run['distance'], run['phi_start'], run['phi_width'], 
                   run['phi_width'] * run['number_of_images'], run['exposure_time'],
                   dset['strategy']['resolution'], dset['strategy']['completeness'],
@@ -556,33 +558,8 @@ class AutoXDS:
             except:
                 _logger.info('JSON exporter not available ...')
                 return
-        #try:
         result_dict = self.get_info_dict()
             
-        #except:
-        #result_dict = None
-        
-#        try:
-#            from jsonrpc.proxy import ServiceProxy
-#            server = ServiceProxy('http://localhost:8000/json/')
-#            for info in result_dict.values():
-#                # save result entry to database
-#                _out = server.lims.add_result('admin','admin', info['results'])
-#                if _out['error'] is None:
-#                    _logger.info('Analysis Result Uploaded to LIMS ...')
-#                    if info.get('strategy') is not None:
-#                        info['strategy'].update(_out['result'])
-#                        _out = server.lims.add_strategy('admin','admin', info['strategy'])
-#                        if _out['error'] is None:
-#                            _logger.info('Recommended Strategy uploaded to LIMS ...')
-#                        else:
-#                            print _out['error']['message']
-#                else:
-#                    print _out['error']['message']
-#        except:
-#            _logger.info('JSON exporter not available ...')
-#            pass
-
         
         # save json information to file
         if err is not None:

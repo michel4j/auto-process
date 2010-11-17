@@ -543,7 +543,7 @@ class Results(object):
                                         TR(TD('Completeness (%)')+TD(strategy_data['exp_completeness']))+
                                         TR(TD('Multiplicity')+TD(strategy_data['exp_multiplicity']))+
                                         TR(TD('I/sigma (I) [b]')+TD(strategy_data['exp_i_sigma']))+
-                                        TR(TD('R-factor (%) [b]')+TD(strategy_data['exp_r_factor'])))) 
+                                        TR(TD('R-factor (%) [b]')+TD(strategy_data.get('exp_r_factor',''))))) 
             strategy = strategy_title + TABLE(strategy_table_body, id="strategy-table", Class="floatleft") + strategy_notes
     elif results['kind'] == 1:
         kind = "Data Processing Report"

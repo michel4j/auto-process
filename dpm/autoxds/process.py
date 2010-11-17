@@ -556,10 +556,11 @@ class AutoXDS:
             except:
                 _logger.info('JSON exporter not available ...')
                 return
-        try:
-            result_dict = self.get_info_dict()
-        except:
-            result_dict = None
+        #try:
+        result_dict = self.get_info_dict()
+            
+        #except:
+        #result_dict = None
         
 #        try:
 #            from jsonrpc.proxy import ServiceProxy

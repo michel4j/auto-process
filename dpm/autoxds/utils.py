@@ -230,7 +230,8 @@ def get_dataset_params(img_file, screen=False):
                 spot_range.append((min(_range), max(_range)))
     last_frame = wedges[-1][0] + wedges[-1][1] - 1
     info['spot_range'] = spot_range
-    info['data_range'] = (first_frame, last_frame)    
+    info['data_range'] = (first_frame, last_frame)
+    info['wedges'] = wedges
 
     # initialize default dummy values for other parameters
     info['reindex_matrix'] = None

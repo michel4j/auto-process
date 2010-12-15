@@ -198,12 +198,12 @@ class AutoXDS:
                 _rows = ['Parameters', dset['parameters']['distance'],
                         dset['parameters']['exposure_time'],
                         dset['parameters']['frame_count'],
-                        dset['parameters']['starting_angle'],
-                        dset['parameters']['oscillation_range'], 
+                        dset['parameters']['start_angle'],
+                        dset['parameters']['delta_angle'], 
                         dset['parameters']['two_theta'], 
-                        '%0.0f x %0.0f' %  dset['parameters']['detector_origin'],
+                        '%0.0f x %0.0f' %  dset['parameters']['beam_center'],
                         '%d x %d' %  dset['parameters']['detector_size'], 
-                        '%0.5f x %0.5f' %  dset['parameters']['pixel_size'],
+                        '%0.5f x %0.5f' %  (dset['parameters']['pixel_size'],dset['parameters']['pixel_size']) ,
                          os.path.basename(dset['parameters']['file_template']),
                          _data_dir,
                          _out_dir]
@@ -287,7 +287,7 @@ class AutoXDS:
                 _section['table'] = []
                 for row in dset['indexing']['oscillation_ranges']:
                     n_row = SortedDict()                
-                    for k,t in [('High Resolution Limit','resolution'),('Max. Angle Delta [a]', 'angle')]:
+                    for k,t in [('High Resolution Limit','resolution'),('Max. Angle Delta [a]', 'delta_angle')]:
                         n_row[k] = row[t]
                     _section['table'].append(n_row.items())
                 _section['notes'] ='[a] NOTE: Assumes a mosaicity of zero!'
@@ -483,7 +483,7 @@ class AutoXDS:
                 _t = Table(dset['indexing']['oscillation_ranges'])
                
                 _section = {}
-                for k in ['resolution','angle']:
+                for k in ['resolution','delta_angle']:
                     _section[k] = _t[k]
                 _dataset_info['result']['details']['overlap_analysis'] = _section          
             
@@ -572,10 +572,17 @@ class AutoXDS:
             'error': error,
         }
         
+        # save process.json
         os.chdir(self.top_directory)
         fh = open(filename, 'w')
         json.dump(info, fh)
         fh.close()
+        
+        # save debug.json
+        fh = open('debug.json', 'w')
+        json.dump(self.results, fh)
+        fh.close()
+        
         
         #generate html report
         _logger.info('Generating report in %s ...' % (os.path.join(self.top_directory, 'report')))  
@@ -684,8 +691,8 @@ class AutoXDS:
                     info = xds.parse_idxref()
                     data = utils.diagnose_index(info)
                 elif data['quality_code'] in [19]:
-                    run_info['detector_origin'] = data['new_origin']
-                    _logger.info('Adjusting beam origin to (%0.0f %0.0f)...'% run_info['detector_origin'])
+                    run_info['beam_center'] = data['new_origin']
+                    _logger.info('Adjusting beam origin to (%0.0f %0.0f)...'% run_info['beam_center'])
                     io.write_xds_input(jobs, run_info)
                     utils.execute_xds_par()
                     info = xds.parse_idxref()

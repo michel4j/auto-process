@@ -12,7 +12,7 @@ from math import exp
 import fnmatch
 import shutil
 import commands
-from dpm.imageio import read_header
+from bcm.libs.imageio import read_header
 from dpm.parser.utils import Table
 from dpm.utils import magic
 from dpm.utils import fitting
@@ -154,42 +154,44 @@ def get_dataset_params(img_file, screen=False):
     """
     directory, filename = os.path.split(os.path.abspath(img_file))
 
-    file_pattern = re.compile('^(.*)([_.])(\d+)(\..+)?$')
+    file_pattern = re.compile('^(?P<base>[\w]+\.?)(?<!\d)(?P<num>\d{3,4})(?P<ext>\.?[\w.]+)?$')
     fm = file_pattern.search(filename)
-    parts = fm.groups()
-    _dataset_name = parts[0]
-    if len(parts) == 4:
-        prefix = parts[0] + parts[1]
-        if parts[3]:
-            file_extension = parts[3]
+    if fm:
+        if fm.group('ext') is not None:
+            extension = fm.group('ext')
         else:
-            file_extension = ""
-    filler = '?' * len(parts[2])
-
-    xds_template = "%s%s%s" % (prefix, filler, file_extension)
-
+            extension = ''
+        filler = '?' * len(fm.group('num'))
+        xds_template = "%s%s%s" % (fm.group('base'), filler, extension)
+    else:
+        print "ERROR: File `name` %s is not consistent with a frame from a dataset." % filename
+        sys.exit(1)
+        
     file_list = list( _all_files(directory, xds_template) )
     fm = file_pattern.search(file_list[0])
-
+    first_frame = int (fm.group('num'))
+    _dataset_name = fm.group('base')
+    if _dataset_name[-1] == '_':
+        _dataset_name = _dataset_name[:-1]
+    
     reference_image = os.path.join(directory, file_list[0])
     if not ( os.path.isfile(reference_image) and os.access(reference_image, os.R_OK) ):
         print "ERROR: File '%s' does not exist, or is not readable." % reference_image
         sys.exit(1)
     
-    parts = fm.groups()
-    first_frame = int (parts[2])
+
     if first_frame == 0: first_frame = 1
     frame_count = len(file_list)
-    if frame_count < 4:
-        print 'AutoXDS ERROR: You need at least 4 frames in the set! Only %d found' % frame_count
-        #sys.exit(1)
+    #if frame_count < 4:
+    #    print 'AutoXDS ERROR: You need at least 4 frames in the set! Only %d found' % frame_count
+    #    #sys.exit(1)
         
     info = read_header(reference_image)
     info['energy'] = wavelength_to_energy(info['wavelength'])
-    info['starting_frame'] = first_frame
+    info['first_frame'] = first_frame
     info['frame_count'] = frame_count
     info['dataset_name'] = _dataset_name
-    info['file_template'] = "%s/%s" % (directory, xds_template)        
+    info['file_template'] = os.path.join(directory, xds_template)        
     info['file_format'] = magic.from_file(reference_image)
     
     # Generate a list of wedges. each wedge is a tuple. The first value is the
@@ -198,7 +200,7 @@ def get_dataset_params(img_file, screen=False):
     _wedge = [0,0]
     for i, f in enumerate(file_list):
         _fm = file_pattern.match(f)
-        _fn = int(_fm.groups()[2])
+        _fn = int(_fm.group('num'))
         _frame = (f, _fn)
         if i == 0:
             _wedge = [_fn, 1]
@@ -216,11 +218,11 @@ def get_dataset_params(img_file, screen=False):
     # up to 4 degrees per wedge starting at 0 and 45 and 90
 
     spot_range = []
-    _spot_span = int(4.0//info['oscillation_range']) # frames in 4 deg
+    _spot_span = int(4.0//info['delta_angle']) # frames in 4 deg
     _first_wedge = wedges[0]
     
     for _ang in [0.0, 45.0, 90.0]:
-        _rs = _first_wedge[0] + int(_ang//info['oscillation_range'])
+        _rs = _first_wedge[0] + int(_ang//info['delta_angle'])
         _re = _rs + _spot_span
         _exp_set  = set(range(_rs, _re))
         for wedge in wedges:
@@ -238,6 +240,7 @@ def get_dataset_params(img_file, screen=False):
     info['unit_cell'] = (0,0,0,0,0,0)
     info['space_group'] = 0
     info['reference_image'] = reference_image
+    info['name'] = _dataset_name
     
     # prepare dataset json file
 #    try:
@@ -269,6 +272,7 @@ def get_dataset_params(img_file, screen=False):
 #        pass
         
     return info
+
 
 def tidy_cell_old(unit_cell, character):
     """
@@ -779,7 +783,7 @@ def get_xplan_strategy(info):
     res = info['scaling']['resolution'][0]
     osc = Table(info['indexing']['oscillation_ranges'])
     x = numpy.array(osc['resolution'])
-    y = numpy.array(osc['angle'])
+    y = numpy.array(osc['delta_angle'])
     p1 = fitting.linear_fit(x, y)
     plan['resolution'] = res
     plan['delta_angle'] = fitting.line_func(res, p1)

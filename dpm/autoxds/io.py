@@ -15,9 +15,9 @@ def write_xds_input(jobs, params):
         'cpu_count' int
         'wavelength': float
         'distance': float
-        'starting_angle': float
-        'starting_frame': int
-        'oscillation_range': float
+        'start_angle': float
+        'first_frame': int
+        'delta_angle': float
         'space_group': int
         'unit_cell' : tuple of 6 floats
         'reindex_matrix': tuple of 12 ints OR None
@@ -26,8 +26,9 @@ def write_xds_input(jobs, params):
         'data_range' : tuple of 2 ints
         'spot_range' : list of (tuple of 2 ints)'s
         'detector_size': tuple of 2 ints
-        'pixel_size' : tuple of 2 floats
-        'detector_origin': tuple of 2 floats
+        'pixel_size' : float
+        'two_theta': float
+        'beam_center': tuple of 2 floats
         'min_spot_size': int or None
         'min_spot_seperation': int or None
         'cluster_radius': int or None
@@ -79,9 +80,9 @@ def write_xds_input(jobs, params):
     file_text += "!-------------------Dataset parameters------- \n"
     file_text += "X-RAY_WAVELENGTH=%7.5f \n" % (params['wavelength'])
     file_text += "DETECTOR_DISTANCE=%5.1f \n" % (params['distance'])
-    file_text += "STARTING_ANGLE=%5.1f \n" % (params['starting_angle'])
-    file_text += "STARTING_FRAME=%5d \n" % (params['starting_frame'])
-    file_text += "OSCILLATION_RANGE=%3.2f \n" % (params['oscillation_range'])
+    file_text += "STARTING_ANGLE=%5.1f \n" % (params['start_angle'])
+    file_text += "STARTING_FRAME=%5d \n" % (params['first_frame'])
+    file_text += "OSCILLATION_RANGE=%3.2f \n" % (params['delta_angle'])
     file_text += "SPACE_GROUP_NUMBER=%d \n" % (params['space_group'])
     file_text += "UNIT_CELL_CONSTANTS=%6.2f %6.2f %6.2f %4.2f %4.2f %4.2f \n" % params['unit_cell']
     
@@ -100,8 +101,8 @@ def write_xds_input(jobs, params):
                 
     file_text += "!-------------------Beamline parameters-----  \n"
     file_text += "NX=%d    NY=%d  \n" % (params['detector_size'][0], params['detector_size'][1])
-    file_text += "QX=%7.5f QY=%7.5f  \n" % (params['pixel_size'][0], params['pixel_size'][1])
-    file_text += "ORGX=%d  ORGY=%d \n" %(params['detector_origin'][0], params['detector_origin'][1])
+    file_text += "QX=%7.5f QY=%7.5f  \n" % (params['pixel_size'], params['pixel_size'])
+    file_text += "ORGX=%d  ORGY=%d \n" % (params['beam_center'][0],params['beam_center'][1])
     file_text += """
     DETECTOR=%s
     MINIMUM_VALID_PIXEL_VALUE= 0

@@ -961,7 +961,7 @@ class AutoXDS:
                 utils.execute_f2mtz()
                 
                 # run truncate on mtz files and parse output
-                truncate_output = '%.log' % f2mtz_options['output_file']
+                truncate_output = '%s.log' % f2mtz_options['output_file']
                 res = utils.execute_ctruncate(f2mtz_options['output_file'], True)
                 if res:
                     truncate_info[name] = parse_ctruncate(truncate_output)

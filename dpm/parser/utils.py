@@ -272,7 +272,10 @@ def parse_data(data, config):
 class Table(object):
     def __init__(self, t):
         self._table = t
-
+    
+    def keys(self):
+        return self._table[0].keys()
+    
     def __getitem__(self, s):
         vals = [r[s] for r in self._table]
         return vals

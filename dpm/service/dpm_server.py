@@ -42,9 +42,6 @@ class PerspectiveDPMFromService(pb.Root):
     implements(IPerspectiveDPM)
     def __init__(self, service):
         self.service = service
-
-    def remote_setUser(self, uname):
-        return self.service.setUser(uname)
         
     def remote_screenDataset(self, info, directory, uname=None):
         return self.service.screenDataset(info, directory, uname)
@@ -63,19 +60,7 @@ class DPMService(service.Service):
     implements(IDPMService)
     
     def __init__(self):
-        self.settings = {}
-        self.setUser('root')
-    
-    @log_call
-    def setUser(self, uname):
-        try:
-            uid, gid = get_user_properties(uname)
-            self.settings['uid'] = uid
-            self.settings['gid'] = gid
-            return defer.succeed(uname)
-        except InvalidUser, e:
-            return defer.fail(Failure(e))
-        
+        self.settings = {}        
         
     @log_call
     def screenDataset(self, info, directory, uname=None):

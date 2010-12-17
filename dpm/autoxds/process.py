@@ -12,6 +12,7 @@ from dpm.parser.pointless import parse_pointless
 from dpm.parser.distl import parse_distl
 from dpm.parser import xds
 from dpm.parser.best import parse_best
+from dpm.parser.ccp4 import parse_ctruncate
 from dpm.utils.log import get_module_logger
 from dpm.utils.progress import ProgDisplay, ProgChecker
 from dpm.parser.utils import Table
@@ -900,6 +901,7 @@ class AutoXDS:
         os.chdir(self.top_directory)
         # GENERATE MTZ and CNS output files    
         _logger.info('Generating MTZ, SHELX and CNS files ...')
+        truncate_info = {}
         for name, rres in self.results.items():
             out_files = []
             if rres['files'].get('xscale') is None: 
@@ -957,10 +959,18 @@ class AutoXDS:
                 }
                 io.write_f2mtz_input(f2mtz_options)
                 utils.execute_f2mtz()
-            
+                
+                # run truncate on mtz files and parse output
+                truncate_output = '%.log' % f2mtz_options['output_file']
+                res = utils.execute_ctruncate(f2mtz_options['output_file'], True)
+                if res:
+                    truncate_info[name] = parse_ctruncate(truncate_output)
+                
             _logger.info('Output Files: %s' % ( ', '.join(out_files)))
+            
             rres['files']['output'] = out_files               
-
+            rres['data_quality'] = truncate_info.get('name')
+            
     def calc_strategy(self, run_info, resolution=1.0):
         os.chdir(run_info['working_directory'])
         utils.update_xparm()

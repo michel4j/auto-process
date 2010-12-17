@@ -518,11 +518,18 @@ def execute_distl(filename):
     sts, output = commands.getstatusoutput('labelit.distl %s > distl.log' % filename)
     return sts==0
 
+def execute_ctruncate(filename, anomalous=False):
+    if anomalous:
+        command = "ctruncate -hklin %s -amplitudes -colin '/*/*/[FP,SIGFP]' -colano '/*/*/[F(+),SIGF(+),F(-),SIGF(-)]' > %s.log" % (filename, filename)
+    else:
+        command = "ctruncate -hklin %s -amplitudes -colin '/*/*/[FP,SIGFP]' > %s.log" % (filename, filename)
+    sts, output = commands.getstatusoutput(command)
+    return sts==0
+
 def generate_report(path):
     if os.path.exists(path) and os.access(path, os.W_OK):
         command = "dpm_report %s" % path
         sts, output = commands.getstatusoutput(command)
-        _logger.debug(output)
         return sts==0
     else:
         _logger.error(output)

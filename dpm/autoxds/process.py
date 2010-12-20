@@ -414,7 +414,7 @@ class AutoXDS:
         return info
 
     
-    def get_info_dict(self):
+    def get_json_dict(self):
         info = []
         
         for dataset_name in self.dataset_names:
@@ -512,7 +512,7 @@ class AutoXDS:
             for k in ['frame','scale','overloads','reflections','mosaicity','unexpected','divergence']:
                 _section[k] = _t[k]
                 
-            if dset.get('scaling', None) is not None:
+            if dset.get('scaling') is not None:
                 if dset['scaling'].get('frame_statistics') is not None:                     
                     _t = Table(dset['scaling']['frame_statistics'])
                     for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
@@ -534,6 +534,43 @@ class AutoXDS:
                 _section[k] = _t[k][:-1] # don't get 'total' row
             _section['shell'] = [float(v) for v in _t['shell'][:-1]]
             _dataset_info['result']['details']['shell_statistics'] = _section
+            
+            # Print out standard errors
+            if dset['correction'].get('standard_errors') is not None:
+                _section = {}
+                _t = Table(dset['correction']['standard_errors'])
+                _section['shell'] = [sum(v)/2.0 for v in _t['resol_range']]
+                for k in ['chi_sq', 'r_obs', 'r_exp','n_obs', 'n_accept', 'n_reject']:
+                    _section[k] = _t[k]
+                _dataset_info['result']['details']['standard_errors'] = _section
+            
+            # Print out wilson_plot, cum int dist, twinning test
+            if dset.get('data_quality') is not None:
+                if dset['data_quality'].get('wilson_plot') is not None:
+                    _section = {}
+                    _t = Table(dset['data_quality']['wilson_plot'])
+                    for k in ['inv_res_sq', 'log_i_sigma']:
+                        _section[k] = _t[k]
+                    _dataset_info['result']['details']['wilson_plot'] = _section
+                if dset['data_quality'].get('cum_int_dist') is not None:
+                    _section = {}
+                    _t = Table(dset['data_quality']['cum_int_dist'])
+                    for k in ['z', 'exp_acentric', 'exp_centric', 'obs_acentric', 'obs_centric', 'twin_acentric']:
+                        _section[k] = _t[k]
+                    _dataset_info['result']['details']['cum_int_dist'] = _section
+                if dset['data_quality'].get('twinning') is not None:
+                    _section = {}
+                    _t = Table(dset['data_quality']['twinning'])
+                    for k in ['abs_l', 'observed', 'twinned', 'untwinned']:
+                        _section[k] = _t[k]
+                    _dataset_info['result']['details']['twinning_l_test'] = _section
+                if dset['data_quality'].get('wilson_line') is not None:
+                    _dataset_info['result']['details']['wilson_line'] = dset['data_quality']['wilson_line']
+                if dset['data_quality'].get('wilson_scale') is not None:
+                    _dataset_info['result']['details']['wilson_scale'] = dset['data_quality']['wilson_scale']
+                if dset['data_quality'].get('twinning_l_statistic') is not None:
+                    _dataset_info['result']['details']['twinning_l_statistic'] = dset['data_quality']['twinning_l_statistic']
+            
             
             if self.options.get('command', None) == 'screen':
                 _dataset_info['result']['kind'] = AUTOXDS_SCREENING
@@ -559,7 +596,7 @@ class AutoXDS:
             except:
                 _logger.info('JSON exporter not available ...')
                 return
-        result_dict = self.get_info_dict()
+        result_dict = self.get_json_dict()
             
         
         # save json information to file
@@ -969,7 +1006,7 @@ class AutoXDS:
             _logger.info('Output Files: %s' % ( ', '.join(out_files)))
             
             rres['files']['output'] = out_files               
-            rres['data_quality'] = truncate_info.get('name')
+            rres['data_quality'] = truncate_info.get(name)
             
     def calc_strategy(self, run_info, resolution=1.0):
         os.chdir(run_info['working_directory'])

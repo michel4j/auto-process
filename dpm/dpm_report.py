@@ -2,13 +2,29 @@ import re
 import string
 import sys
 import os
+import numpy
 try: 
     import json
 except:
     import simplejson as json
     
 import cStringIO
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.ticker import Formatter, FormatStrFormatter, MultipleLocator, MaxNLocator
+from matplotlib.figure import Figure
+from matplotlib import rcParams
 
+# Adjust Legend parameters
+rcParams['legend.loc'] = 'best'
+rcParams['legend.fontsize'] = 10
+rcParams['legend.isaxes'] = False
+rcParams['figure.facecolor'] = 'white'
+rcParams['figure.edgecolor'] = 'white'
+
+PLOT_WIDTH = 7.5
+PLOT_HEIGHT = 6.5
+PLOT_DPI = 90
+IMG_WIDTH = int(round(PLOT_WIDTH * PLOT_DPI))
 class TAG:
     """Generic class for tags"""
     def __init__(self, inner_HTML="", **attrs):
@@ -145,18 +161,7 @@ if __name__ == '__main__':
     #print HTML(head + body)
 
 def plot_shell_stats(results, directory):
-    from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-    from matplotlib.ticker import FormatStrFormatter, MultipleLocator, MaxNLocator
-    from matplotlib.figure import Figure
-    from matplotlib import rcParams
-    
-    # Adjust Legend parameters
-    rcParams['legend.loc'] = 'best'
-    rcParams['legend.fontsize'] = 10
-    rcParams['legend.isaxes'] = False
-    rcParams['figure.facecolor'] = 'white'
-    rcParams['figure.edgecolor'] = 'white'
-    
+
     #try:
     #    project = request.user.get_profile()
     #    result = project.result_set.get(pk=id)
@@ -164,7 +169,7 @@ def plot_shell_stats(results, directory):
     #    raise Http404
     # extract shell statistics to plot
     data = results['details']['shell_statistics']
-    fig = Figure(figsize=(7.5,6.5), dpi=72)
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(211)
     ax1.plot(data['shell'], data['completeness'], 'r-+')
     ax1.set_ylabel('completeness (%)', color='r')
@@ -208,17 +213,6 @@ def plot_shell_stats(results, directory):
     return filename
     
 def plot_diff_stats(results, directory):
-    from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-    from matplotlib.ticker import FormatStrFormatter, MultipleLocator, MaxNLocator
-    from matplotlib.figure import Figure
-    from matplotlib import rcParams
-    
-    # Adjust Legend parameters
-    rcParams['legend.loc'] = 'best'
-    rcParams['legend.fontsize'] = 10
-    rcParams['legend.isaxes'] = False
-    rcParams['figure.facecolor'] = 'white'
-    rcParams['figure.edgecolor'] = 'white'
     
     #try:
     #    project = request.user.get_profile()
@@ -227,7 +221,7 @@ def plot_diff_stats(results, directory):
     #    raise Http404
     # extract shell statistics to plot
     data = results['details']['diff_statistics']
-    fig = Figure(figsize=(7.5,6.5), dpi=72)
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(311)
     ax1.plot(data['frame_diff'], data['rd'], 'r-')
     ax1.set_ylabel('R-d', color='r')
@@ -280,19 +274,79 @@ def plot_diff_stats(results, directory):
     canvas.print_png(filename)
     return filename
 
-def plot_frame_stats(results, directory):
-    from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-    from matplotlib.ticker import FormatStrFormatter, MultipleLocator, MaxNLocator
-    from matplotlib.figure import Figure
-    from matplotlib import rcParams
+def plot_wilson_stats(results, directory):
     
-    # Adjust Legend parameters
-    # Adjust Legend parameters
-    rcParams['legend.loc'] = 'best'
-    rcParams['legend.fontsize'] = 10
-    rcParams['legend.isaxes'] = False
-    rcParams['figure.facecolor'] = 'white'
-    rcParams['figure.edgecolor'] = 'white'
+    class WilsonResFormatter(Formatter):
+        def __call__(self, x, pos=None):
+            if x <= 0.0:
+                return u""
+            else:
+                return u"%0.2f" % (x**-0.5)
+
+    data = results['details']['wilson_plot']
+
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.6), dpi=PLOT_DPI)
+    ax1 = fig.add_subplot(111)
+    plot_data = zip(data['inv_res_sq'], data['log_i_sigma'])
+    plot_data.sort()
+    plot_data = numpy.array(plot_data)
+    ax1.plot(plot_data[:,0], plot_data[:,1], 'r-+')
+    ax1.set_xlabel('Resolution')
+    ax1.set_ylabel(r'$ln({<I>}/{\Sigma(f)^2})$')
+    ax1.grid(True)
+    ax1.xaxis.set_major_formatter(WilsonResFormatter())
+    
+    # set font parameters for the ouput table
+    wilson_line = results['details']['wilson_line']
+    wilson_scale = results['details']['wilson_scale']
+    fontpar = {}
+    fontpar["family"]="monospace"
+    #fontpar["size"]=8
+    info =  "Estimated B factor: %0.3f\n" % wilson_line[0]
+    info += "sigma a: %8.3f\n" % wilson_line[1]
+    info += "sigma b: %8.3f\n" % wilson_line[2]
+    info += "Intensity scale factor: %0.3f\n" % wilson_scale    
+    fig.text(0.55,0.65, info, fontdict=fontpar, color='k')
+
+    canvas = FigureCanvas(fig)
+    #response = HttpResponse(content_type='image/png')
+    #canvas.print_png(response)
+    filename = directory + '/report/plot_wilson.png'
+    canvas.print_png(filename)
+    return filename
+
+def plot_twinning_stats(results, directory):
+    
+    data = results['details']['twinning_l_test']
+
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.6), dpi=PLOT_DPI)
+    ax1 = fig.add_subplot(111)
+    ax1.plot(data['abs_l'], data['observed'], 'b-+', label='observed')
+    ax1.plot(data['abs_l'], data['untwinned'], 'r-+', label='untwinned')
+    ax1.plot(data['abs_l'], data['twinned'], 'm-+', label='twinned')
+    ax1.set_xlabel('$|L|$')
+    ax1.set_ylabel('Cumulative distribution')
+    ax1.grid(True)
+    
+    # set font parameters for the ouput table
+    l_statistic = results['details']['twinning_l_statistic']
+    fontpar = {}
+    fontpar["family"]="monospace"
+    #fontpar["size"]=8
+    info =  "Observed:     %0.3f\n" % l_statistic[0]
+    info += "Untwinned:    %0.3f\n" % l_statistic[1]
+    info += "Perfect twin: %0.3f\n" % l_statistic[2]
+    fig.text(0.6,0.2, info, fontdict=fontpar, color='k')
+    ax1.legend()
+    canvas = FigureCanvas(fig)
+    #response = HttpResponse(content_type='image/png')
+    #canvas.print_png(response)
+    filename = directory + '/report/plot_twinning.png'
+    canvas.print_png(filename)
+    return filename
+
+
+def plot_frame_stats(results, directory):
     
     #try:
     #    project = request.user.get_profile()
@@ -301,7 +355,7 @@ def plot_frame_stats(results, directory):
     #    raise Http404
     # extract shell statistics to plot
     data = results['details']['frame_statistics']
-    fig = Figure(figsize=(7.5,6.5), dpi=72)
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(311)
     ax1.plot(data['frame'], data['scale'], 'r-')
     ax1.set_ylabel('Scale Factor', color='r')
@@ -357,8 +411,8 @@ def plot_frame_stats(results, directory):
 
 
 def report_style(css):
-    css.write('body { font-size: 83%; margin: 2px; border: 1px solid #ccc;}')
-    css.write('#result-page { margin-top: 1em; text-align:left; padding:1.5em 1.5em 1em;}')
+    css.write('body { font-size: 83%;}')
+    css.write('#result-page { margin: 1em auto; text-align:left; padding:20px; width: %dpx}' % (IMG_WIDTH,))
     css.write('#result-table { font-size: 88%; border-collapse:collapse; text-align:left; width: 100%;}')
     css.write('#result-table th { color:#003399; font-size: 1.2em; font-weight:normal; padding:8px 8px;}')
     css.write('#result-table td { border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
@@ -376,13 +430,13 @@ def report_style(css):
     css.write('dl.note-list dt { float: left; clear: left; text-align: right; font-weight: bold; color: #666;}')
     css.write('dl.note-list dd { margin: 0 0 0 2em; padding: 0 0 0.5em 0;}')
     css.write('h1, h2, h3, h4 { font-weight:normal; margin-top:1.4em;}')
-    css.write('#result-title h2{ font-size:190%; line-height:1.2em; margin-bottom:0.8em; margin-top: 1em; border-bottom: 1px dashed #666666; color: #666666;}')
+    css.write('#result-title h2{ font-size:190%; line-height:1.2em; margin-bottom:0.8em; margin-top: 1em; color: #666666;}')
     css.write('div.spacer { padding: 0.3em 0;}')
     css.write('.clear {clear: both !important;}')
     css.write('#result-page h3 { font-size: 140%; border-bottom: 1px dotted #ccc;}')
-    css.write('.rtable { border-collapse:collapse; text-align:left; border: solid 1px #ccc;}')
-    css.write('.rtable th { color:#003399; font-weight:normal; padding:8px 8px; text-align: right;}')
-    css.write('.rtable td { text-align: right; font-family: Consolas, monospace; border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
+    css.write('.rtable { border-collapse:collapse; text-align:left; border: solid 1px #ccc; margin: 8px 0px;}')
+    css.write('.rtable th { color: rgb(102, 153, 204); font-weight: bold; padding:4px 4px; text-align: right; font-size: 80%;}')
+    css.write('.rtable td { text-align: right; font-family: Consolas, monospace; border-top:1px solid #eee; color:#666699; padding:5px 8px; font-size: 12px;}')
     css.write('.half { width: 49%;}')
     css.write('.full { width: 100% !important;}')
     css.write('.floatleft { float: left;}')
@@ -549,10 +603,24 @@ class Results(object):
         kind = "Data Processing Report"
         plot_frame = plot_frame_stats(results, directory)
         plot_diff = plot_diff_stats(results, directory)
+        plot_wilson = plot_wilson_stats(results, directory)
+        plot_twinning = plot_twinning_stats(results, directory)
+        twinning_notes = DIV(H3('Notes')+
+                          P("""All data regardless of I/sigma(I) has been included in the L test
+Anisotropy correction has been applied before calculating L. See Padilla and Yeates Acta Cryst. D59 1124 (2003)"""), 
+                          Class="tablenotes")
+
         dp_report = (H3('Integration and Scaling Statistics (by frame/frame difference)')+
                      IMG(src='plot_frame.png', Class="image")+
                      IMG(src='plot_diff.png', Class="image")+clear+
-                     frame_notes)
+                     frame_notes+
+                     H3('Wilson Plot')+
+                     IMG(src='plot_wilson.png', Class="image")+
+                     H3('L Test for twinning')+
+                     IMG(src='plot_twinning.png', Class="image")+
+                     twinning_notes
+                     )
+        
 
     report_title = (DIV(H2(kind), id="result-title"))
     style = report_style(css)

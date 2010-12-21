@@ -14,6 +14,7 @@ from matplotlib.ticker import Formatter, FormatStrFormatter, Locator
 from matplotlib.figure import Figure
 from matplotlib import rcParams
 
+
 # Adjust Legend parameters
 rcParams['legend.loc'] = 'best'
 rcParams['legend.fontsize'] = 10
@@ -25,6 +26,156 @@ PLOT_WIDTH = 7.5
 PLOT_HEIGHT = 6.5
 PLOT_DPI = 90
 IMG_WIDTH = int(round(PLOT_WIDTH * PLOT_DPI))
+
+
+HTML_TEMPLATE = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<link href='http://fonts.googleapis.com/css?family=Cantarell:regular,italic,bold,bolditalic' rel='stylesheet' type='text/css'>
+<style type="text/css">
+body {
+ font-size: 85%;
+ font-family: Cantarell, sans-serif;
+}
+#result-page {
+ margin: 1em auto;
+ text-align:left;
+ padding:20px;
+}
+#result-table {
+ font-size: 88%;
+ border-collapse:collapse;
+ text-align:left;
+ width: 100%;
+}
+#result-table th {
+ color:#003399;
+ font-size: 1.2em;
+ font-weight:normal;
+ padding:8px 8px;
+}
+#result-table td {
+ border-top:1px solid #eee;
+ padding:5px 8px;
+}
+#strategy-table {
+ font-size: 88%;
+ border-collapse:collapse;
+ text-align:left;
+ width: 45%;
+}
+#strategy-table td {
+ border-top:1px solid #eee;
+ padding:5px 8px;
+}
+.result-labels {
+font-weight: bold;
+}
+#result-summary {
+ border-collapse:collapse;
+ border:1px solid #ccc;
+ float: left;
+ width: 45%;
+ margin-right:2%;
+ text-align:left;
+}
+.size30 {
+ width: 30%;
+}
+.size40 {
+ width: 40%;
+}
+.size60 {
+ width: 60%;
+}
+.size45 {
+ width: 45%;
+}
+.tablenotes {
+ font-size: 90%;
+ background:#EFF6FF none repeat scroll 0 0;
+ padding:0.3em 2em 1em;
+ margin-bottom: 10px;
+}
+dl.note-list dt {
+ float: left;
+ clear: left;
+ text-align: right;
+ font-weight: bold;
+ color: #000;
+}
+dl.note-list dd {
+ margin: 0 0 0 3em;
+ padding: 0 0 0.5em 0;
+}
+h1, h2, h3, h4 {
+ font-weight:normal;
+ margin-top:1.4em;
+}
+#result-title h2{
+ font-size:190%;
+ line-height:1.2em;
+ margin-bottom:0.8em;
+ margin-top: 1em;
+ color: #666666;
+}
+div.spacer {
+ padding: 0.3em 0;
+}
+.clear {
+clear: both !important;
+}
+#result-page h3 {
+ font-size: 140%;
+ border-bottom: 1px dotted #ccc;
+}
+.rtable {
+ border-collapse:collapse;
+ text-align:left;
+ border: solid 1px #ccc;
+ margin: 8px 0px;
+}
+.rtable th {
+ color: rgb(102, 153, 204);
+ font-weight: bold;
+ padding:4px 4px;
+ text-align: right;
+ font-size: 80%;
+}
+.rtable td {
+ text-align: right;
+ font-family: Consolas, monospace;
+ border-top:1px solid #eee;
+ color:#666699;
+ padding:5px 8px;
+ font-size: 12px;
+}
+.half {
+ width: 49%;
+}
+.full {
+ width: 100% !important;
+}
+.floatleft {
+ float: left;
+
+}
+.floatright {
+ float: right;
+}
+img.image  {
+ display: block;
+ margin-left:
+ auto;
+ margin-right: auto;
+}
+</style>
+</head>
+<body>
+"""
+
+
+
 class TAG:
     """Generic class for tags"""
     def __init__(self, inner_HTML="", **attrs):
@@ -159,16 +310,15 @@ class ResFormatter(Formatter):
         if x <= 0.0:
             return u""
         else:
-            return u"%0.1f" % (x**-0.5)
+            return u"%0.2f" % (x**-0.5)
 
 
 class ResLocator(Locator):
     def __call__(self, *args, **kwargs):
-        locs = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 8.0, 15.0]
-        locs = numpy.array(locs)**-2
+        locs = numpy.linspace(0.0156, 1, 30 )
         return locs
 
-def plot_shell_stats(results, directory):
+def plot_shell_stats(results, filename):
 
     data = results['details']['shell_statistics']
     shell = numpy.array(data['shell'])**-2
@@ -219,11 +369,10 @@ def plot_shell_stats(results, directory):
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
     #canvas.print_png(response)
-    filename = directory + '/report/plot_shell.png'
     canvas.print_png(filename)
-    return filename
+    return os.path.basename(filename)
 
-def plot_error_stats(results, directory):
+def plot_error_stats(results, filename):
     data = results['details']['standard_errors']
     shell = numpy.array(data['shell'])**-2
     
@@ -241,7 +390,7 @@ def plot_error_stats(results, directory):
         tl.set_color('r')
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    #ax1.set_ylim((0, 105))
+    ax1.set_ylim((0, 3))
     #ax11.set_ylim((0, 105))
 
     ax2 = fig.add_subplot(212, sharex=ax1)
@@ -265,19 +414,12 @@ def plot_error_stats(results, directory):
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
     #canvas.print_png(response)
-    filename = directory + '/report/plot_stderr.png'
     canvas.print_png(filename)
-    return filename
+    return os.path.basename(filename)
 
 
-def plot_diff_stats(results, directory):
+def plot_diff_stats(results, filename):
     
-    #try:
-    #    project = request.user.get_profile()
-    #    result = project.result_set.get(pk=id)
-    #except:
-    #    raise Http404
-    # extract shell statistics to plot
     data = results['details']['diff_statistics']
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(311)
@@ -328,11 +470,10 @@ def plot_diff_stats(results, directory):
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
     #canvas.print_png(response)
-    filename = directory + '/report/plot_diff.png'
     canvas.print_png(filename)
-    return filename
+    return os.path.basename(filename)
 
-def plot_wilson_stats(results, directory):
+def plot_wilson_stats(results, filename):
     
     data = results['details']['wilson_plot']
 
@@ -363,11 +504,10 @@ def plot_wilson_stats(results, directory):
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
     #canvas.print_png(response)
-    filename = directory + '/report/plot_wilson.png'
     canvas.print_png(filename)
-    return filename
+    return os.path.basename(filename)
 
-def plot_twinning_stats(results, directory):
+def plot_twinning_stats(results, filename):
     
     data = results['details']['twinning_l_test']
 
@@ -393,12 +533,11 @@ def plot_twinning_stats(results, directory):
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
     #canvas.print_png(response)
-    filename = directory + '/report/plot_twinning.png'
     canvas.print_png(filename)
-    return filename
+    return os.path.basename(filename)
 
 
-def plot_frame_stats(results, directory):
+def plot_frame_stats(results, filename):
     
     #try:
     #    project = request.user.get_profile()
@@ -457,58 +596,20 @@ def plot_frame_stats(results, directory):
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
     #canvas.print_png(response)
-    filename = directory + '/report/plot_frame.png'
     canvas.print_png(filename)
-    return filename
+    return os.path.basename(filename)
 
+def create_report(name, data, directory):
+    if name != '':
+        prefix = '%s-' % name
+    else:
+        prefix = ''
+    report_file = os.path.join(directory,'%sindex.html' % prefix)
+    html=open(report_file, 'w')
 
-def report_style(css):
-    css.write('body { font-size: 83%;}')
-    css.write('#result-page { margin: 1em auto; text-align:left; padding:20px; width: %dpx}' % (IMG_WIDTH,))
-    css.write('#result-table { font-size: 88%; border-collapse:collapse; text-align:left; width: 100%;}')
-    css.write('#result-table th { color:#003399; font-size: 1.2em; font-weight:normal; padding:8px 8px;}')
-    css.write('#result-table td { border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
-    css.write('#strategy-table { font-size: 88%; border-collapse:collapse; text-align:left; width: 45%;}')
-    css.write('#strategy-table td { border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
-    css.write('.result-labels { -moz-background-clip:border; -moz-background-inline-policy:continuous; -moz-background-origin:padding; background:#EFF6FF none repeat scroll 0 0; border-left:10px solid transparent; border-right:10px solid transparent;}')
-    css.write('#strategy-table tr:hover td { -moz-background-clip:border; -moz-background-inline-policy:continuous; -moz-background-origin:padding; background:#EFF6FF none repeat scroll 0 0; color:#333399;}')
-    css.write('#result-summary { border-collapse:collapse; border:1px solid #c3d9ff; float: left; width: 45%; margin-right:2%; text-align:left;}')
-    css.write('.size30 { width: 30%;}') 
-    css.write('.size40 { width: 40%;}') 
-    css.write('.size60 { width: 60%;}') 
-    css.write('.size45 { width: 45%;}')         
-    css.write('.tablenotes { font-size: 90%; background:#EFF6FF none repeat scroll 0 0; padding:0.3em 2em 1em; margin-bottom: 10px;}')
-    css.write('dl.note-list dt { float: left; clear: left; text-align: right; font-weight: bold; color: #666;}')
-    css.write('dl.note-list dd { margin: 0 0 0 2em; padding: 0 0 0.5em 0;}')
-    css.write('h1, h2, h3, h4 { font-weight:normal; margin-top:1.4em;}')
-    css.write('#result-title h2{ font-size:190%; line-height:1.2em; margin-bottom:0.8em; margin-top: 1em; color: #666666;}')
-    css.write('div.spacer { padding: 0.3em 0;}')
-    css.write('.clear {clear: both !important;}')
-    css.write('#result-page h3 { font-size: 140%; border-bottom: 1px dotted #ccc;}')
-    css.write('.rtable { border-collapse:collapse; text-align:left; border: solid 1px #ccc; margin: 8px 0px;}')
-    css.write('.rtable th { color: rgb(102, 153, 204); font-weight: bold; padding:4px 4px; text-align: right; font-size: 80%;}')
-    css.write('.rtable td { text-align: right; font-family: Consolas, monospace; border-top:1px solid #eee; color:#666699; padding:5px 8px; font-size: 12px;}')
-    css.write('.half { width: 49%;}')
-    css.write('.full { width: 100% !important;}')
-    css.write('.floatleft { float: left;}')
-    css.write('.floatright { float: right;}')
-    css.write('img.image  { display: block; margin-left: auto; margin-right: auto;}')
-
-    return css
-
-def create_report():
-    directory = sys.argv[1]
-    if os.path.exists(directory):
-        json_data=open(directory + '/process.json').read()
-        if not os.path.exists(directory + '/report'):
-            os.mkdir(directory + '/report')
-        html=open(directory + '/report/index.html', 'w')
-        css =open(directory + '/report/report.css', 'w')    
-
-    data = json.loads(json_data)
     try:
-        results = data['result'][0]['result']
-        strategy = data['result'][0].get('strategy', None)
+        results = data['result']
+        strategy = data.get('strategy', None)
     except KeyError:
         #base = data[data.keys()[0]]
         #results = base[base.keys()[0]]['result']
@@ -599,7 +700,7 @@ def create_report():
         pointless_table_body <= row
     pointless_table = H3('Automatic Space-Group Selection')+TABLE(pointless_table_head+pointless_table_body, Class="rtable full") 
 
-    shell_title = H3('Integration and Scaling Statistics (by shell)')
+    shell_title = H3('Statistics of final reflections by shell')
     shell_table_head = THEAD(TR(TH('Shell', scope="col")+
                               TH('Completeness', scope="col")+
                               TH('R'+SUB('meas'), scope="col")+
@@ -629,8 +730,11 @@ def create_report():
                                          DT('[b] - ')+DD('Values in parenthesis represent the high resolution shell.')+
                                          DT('[c] - ')+DD('Resolution limit is set by the initial image resolution.'), Class="note-list"), Class="tablenotes floatright size40"))   
 
-    plot_shell = plot_shell_stats(results, directory)
-    shell_img = IMG(src='plot_shell.png', Class="image")
+    plot_shell = plot_shell_stats(results, os.path.join(directory, '%sshell.png' % prefix))
+    shell_img = IMG(src=plot_shell, Class="image")
+    
+    shell_report = (shell_title + shell_img + shell_table + shell_notes + spacer)
+    
     if results['kind'] == 0:
         kind = "Crystal Screening Report"
         strategy_title = H3('Data Collection Strategy')+P('Recommended Strategy for Native Data Collection')
@@ -650,13 +754,14 @@ def create_report():
                                         TR(TD('I/sigma (I) [b]')+TD(strategy_data['exp_i_sigma']))+
                                         TR(TD('R-factor (%) [b]')+TD(strategy_data.get('exp_r_factor',''))))) 
             strategy = strategy_title + TABLE(strategy_table_body, id="strategy-table", Class="floatleft") + strategy_notes
+            dp_report = (strategy + clear + shell_report + clear)
     elif results['kind'] == 1:
         kind = "Data Processing Report"
-        plot_frame = plot_frame_stats(results, directory)
-        plot_diff = plot_diff_stats(results, directory)
-        plot_wilson = plot_wilson_stats(results, directory)
-        plot_twinning = plot_twinning_stats(results, directory)
-        plot_stderr = plot_error_stats(results, directory)
+        plot_frame = plot_frame_stats(results, os.path.join(directory, '%sframe.png' % prefix))
+        plot_diff = plot_diff_stats(results, os.path.join(directory, '%sdiff.png' % prefix))
+        plot_wilson = plot_wilson_stats(results, os.path.join(directory, '%swilson.png' % prefix))
+        plot_twinning = plot_twinning_stats(results, os.path.join(directory, '%stwinning.png' % prefix))
+        plot_stderr = plot_error_stats(results, os.path.join(directory, '%sstderr.png' % prefix))
         
         wilson_notes = DIV(H3('Notes')+
                           P("The above clipper-style wilson plot was calculated by CTRUNCATE which is part of the CCP4 Package.")+
@@ -671,42 +776,56 @@ def create_report():
                           Class="tablenotes")
 
         stderr_notes = DIV(H3('Notes')+DL(
-                           DT('[a] - ')+DD('Recommended exposure time does not take into account overloads at low resolution!')+
-                           DT('[b] - ')+DD('Values in parenthesis represent the high resolution shell.')+
-                           DT('[c] - ')+DD('Resolution limit is set by the initial image resolution.'), Class="note-list"), 
+                           DT('I/Sigma    - ')+DD('Mean intensity/Sigma of a reflection in shell')+
+                           DT('&#0967;&sup2;  - ')+DD('Goodness of fit between sample variances of symmetry-related intensities and their errors (&#0967;&sup2; = 1 for perfect agreement).')+
+                           DT('R-observed - ')+DD('&#0931;|I(h,i)-I(h)| / &#0931;[I(h,i)]')+
+                           DT('R-expected - ')+DD('Expected R-FACTOR derived from Sigma(I)'), Class="note-list"), 
                            Class="tablenotes")   
 
-        dp_report = (H3('Standard error of reflection intensities by resolution')+
-                     IMG(src='plot_stderr.png', Class="image")+clear+
-                     stderr_notes+                    
+        dp_report = (H3('Standard errors of reflection intensities by resolution')+
+                     IMG(src=plot_stderr, Class="image")+clear+
+                     stderr_notes+
+                     shell_report+
                      H3('Statistics of final reflections (by frame and frame difference)')+
-                     IMG(src='plot_frame.png', Class="image")+clear+
-                     IMG(src='plot_diff.png', Class="image")+clear+
+                     IMG(src=plot_frame, Class="image")+clear+
+                     IMG(src=plot_diff, Class="image")+clear+
                      frame_notes+
                      H3('Wilson Plot')+
-                     IMG(src='plot_wilson.png', Class="image")+clear+
+                     IMG(src=plot_wilson, Class="image")+clear+
                      wilson_notes+
                      H3('L Test for twinning')+
-                     IMG(src='plot_twinning.png', Class="image")+clear+
+                     IMG(src=plot_twinning, Class="image")+clear+
                      twinning_notes
                      )
         
 
     report_title = (DIV(H2(kind), id="result-title"))
-    style = report_style(css)
-    
-    report_head = HEAD(LINK(rel="stylesheet", href='report.css', type="text/css"))
     base_report = (report_title + clear + summary + notes + spacer + 
                    lattice_title + lattice_table + spacer +  
                    pointless_table + notes_spacegroup + spacer + 
-                   shell_title + shell_img + shell_table + shell_notes + spacer)
+                   dp_report)
 
-    if results['kind'] == 0:
-        report = report_head + DIV(base_report+strategy+spacer, id="result-page")
-    elif results['kind'] == 1:
-        report = report_head + DIV(base_report+dp_report, id="result-page")
+    report = DIV(base_report, id="result-page", style="width: %dpx;" % IMG_WIDTH)
           
-    html.write(str(report))
+    html.write(HTML_TEMPLATE + str(report) + "</body></html>")
+    return os.path.basename(report_file)
 
 if __name__ == '__main__':
-    create_report()
+    directory = sys.argv[1]
+    if os.path.exists(os.path.join(directory, 'process.json')):
+        data = json.load(file(os.path.join(directory, 'process.json')))
+
+        report_directory = os.path.join(directory, 'report')
+        if not os.path.exists(report_directory):
+            os.mkdir(report_directory)
+        
+        if data.get('result') is not None:
+            if len(data.get('result')) == 1:
+                create_report('', data['result'][0], report_directory)
+            else:
+                report_files = []
+                for dat in data.get('result'):
+                    name = dat['result']['name']
+                    out = create_report(name, dat, report_directory)
+                    report_files.append(out)
+                

@@ -10,7 +10,7 @@ except:
     
 import cStringIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.ticker import Formatter, FormatStrFormatter, MultipleLocator, MaxNLocator
+from matplotlib.ticker import Formatter, FormatStrFormatter, Locator
 from matplotlib.figure import Figure
 from matplotlib import rcParams
 
@@ -153,30 +153,33 @@ ONE_LINE = ['HTML','HEAD','BODY',
     'FORM',
     ]
 
-if __name__ == '__main__':
-    head = HEAD(TITLE('Test document'))
-    body = BODY()
-    body <= H1('This is a test document')
-    body <= 'First line' + BR() + 'Second line'
-    #print HTML(head + body)
+
+class ResFormatter(Formatter):
+    def __call__(self, x, pos=None):
+        if x <= 0.0:
+            return u""
+        else:
+            return u"%0.1f" % (x**-0.5)
+
+
+class ResLocator(Locator):
+    def __call__(self, *args, **kwargs):
+        locs = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 8.0, 15.0]
+        locs = numpy.array(locs)**-2
+        return locs
 
 def plot_shell_stats(results, directory):
 
-    #try:
-    #    project = request.user.get_profile()
-    #    result = project.result_set.get(pk=id)
-    #except:
-    #    raise Http404
-    # extract shell statistics to plot
     data = results['details']['shell_statistics']
+    shell = numpy.array(data['shell'])**-2
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(211)
-    ax1.plot(data['shell'], data['completeness'], 'r-+')
+    ax1.plot(shell, data['completeness'], 'r-+')
     ax1.set_ylabel('completeness (%)', color='r')
     ax11 = ax1.twinx()
-    ax11.plot(data['shell'], data['r_meas'], 'g-', label='R-meas')
-    ax11.plot(data['shell'], data['r_mrgdf'], 'g:+', label='R-mrgd-F')
-    ax11.legend(loc='best')
+    ax11.plot(shell, data['r_meas'], 'g-', label='R-meas')
+    ax11.plot(shell, data['r_mrgdf'], 'g:+', label='R-mrgd-F')
+    ax11.legend(loc='center left')
     ax1.grid(True)
     ax11.set_ylabel('R-factors (%)', color='g')
     for tl in ax11.get_yticklabels():
@@ -189,11 +192,11 @@ def plot_shell_stats(results, directory):
     ax11.set_ylim((0, 105))
 
     ax2 = fig.add_subplot(212, sharex=ax1)
-    ax2.plot(data['shell'], data['i_sigma'], 'm-x')
+    ax2.plot(shell, data['i_sigma'], 'm-x')
     ax2.set_xlabel('Resolution Shell')
     ax2.set_ylabel('I/SigmaI', color='m')
     ax21 = ax2.twinx()
-    ax21.plot(data['shell'], data['sig_ano'], 'b-+')
+    ax21.plot(shell, data['sig_ano'], 'b-+')
     ax2.grid(True)
     ax21.set_ylabel('SigAno', color='b')
     for tl in ax21.get_yticklabels():
@@ -205,13 +208,68 @@ def plot_shell_stats(results, directory):
     ax2.set_ylim((-5, max(data['i_sigma'])+5))
     ax21.set_ylim((0, max(data['sig_ano'])+1))
 
+    ax1.xaxis.set_major_formatter(ResFormatter())
+    ax1.xaxis.set_minor_formatter(ResFormatter())
+    ax1.xaxis.set_major_locator(ResLocator())
+    ax2.xaxis.set_major_formatter(ResFormatter())
+    ax2.xaxis.set_minor_formatter(ResFormatter())
+    ax2.xaxis.set_major_locator(ResLocator())
+
+
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
     #canvas.print_png(response)
     filename = directory + '/report/plot_shell.png'
     canvas.print_png(filename)
     return filename
+
+def plot_error_stats(results, directory):
+    data = results['details']['standard_errors']
+    shell = numpy.array(data['shell'])**-2
     
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
+    ax1 = fig.add_subplot(211)
+    ax1.plot(shell, data['chi_sq'], 'r-+')
+    ax1.set_ylabel(r'$\chi^{2}$', color='r')
+    ax11 = ax1.twinx()
+    ax11.plot(shell, data['i_sigma'], 'b-x')
+    ax11.set_ylabel('I/Sigma', color='b')
+    ax1.grid(True)
+    for tl in ax11.get_yticklabels():
+        tl.set_color('b')
+    for tl in ax1.get_yticklabels():
+        tl.set_color('r')
+    ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    #ax1.set_ylim((0, 105))
+    #ax11.set_ylim((0, 105))
+
+    ax2 = fig.add_subplot(212, sharex=ax1)
+    ax2.plot(shell, data['r_obs'], 'g-', label='R-observed')
+    ax2.plot(shell, data['r_exp'], 'g:+', label='R-expected')
+    ax2.set_xlabel('Resolution Shell')
+    ax2.set_ylabel('R-factors (%)', color='g')
+    ax2.legend(loc='best')
+    ax2.grid(True)
+    ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
+    ax2.set_ylim((0,105))
+
+    ax1.xaxis.set_major_formatter(ResFormatter())
+    ax1.xaxis.set_minor_formatter(ResFormatter())
+    ax1.xaxis.set_major_locator(ResLocator())
+
+    ax2.xaxis.set_major_formatter(ResFormatter())
+    ax2.xaxis.set_minor_formatter(ResFormatter())
+    ax2.xaxis.set_major_locator(ResLocator())
+
+    canvas = FigureCanvas(fig)
+    #response = HttpResponse(content_type='image/png')
+    #canvas.print_png(response)
+    filename = directory + '/report/plot_stderr.png'
+    canvas.print_png(filename)
+    return filename
+
+
 def plot_diff_stats(results, directory):
     
     #try:
@@ -276,13 +334,6 @@ def plot_diff_stats(results, directory):
 
 def plot_wilson_stats(results, directory):
     
-    class WilsonResFormatter(Formatter):
-        def __call__(self, x, pos=None):
-            if x <= 0.0:
-                return u""
-            else:
-                return u"%0.2f" % (x**-0.5)
-
     data = results['details']['wilson_plot']
 
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.6), dpi=PLOT_DPI)
@@ -294,7 +345,8 @@ def plot_wilson_stats(results, directory):
     ax1.set_xlabel('Resolution')
     ax1.set_ylabel(r'$ln({<I>}/{\Sigma(f)^2})$')
     ax1.grid(True)
-    ax1.xaxis.set_major_formatter(WilsonResFormatter())
+    ax1.xaxis.set_major_formatter(ResFormatter())
+    ax1.xaxis.set_major_locator(ResLocator())
     
     # set font parameters for the ouput table
     wilson_line = results['details']['wilson_line']
@@ -325,7 +377,7 @@ def plot_twinning_stats(results, directory):
     ax1.plot(data['abs_l'], data['untwinned'], 'r-+', label='untwinned')
     ax1.plot(data['abs_l'], data['twinned'], 'm-+', label='twinned')
     ax1.set_xlabel('$|L|$')
-    ax1.set_ylabel('Cumulative distribution')
+    ax1.set_ylabel('$P(L>=1)$')
     ax1.grid(True)
     
     # set font parameters for the ouput table
@@ -419,7 +471,6 @@ def report_style(css):
     css.write('#strategy-table { font-size: 88%; border-collapse:collapse; text-align:left; width: 45%;}')
     css.write('#strategy-table td { border-top:1px solid #eee; color:#666699; padding:5px 8px;}')
     css.write('.result-labels { -moz-background-clip:border; -moz-background-inline-policy:continuous; -moz-background-origin:padding; background:#EFF6FF none repeat scroll 0 0; border-left:10px solid transparent; border-right:10px solid transparent;}')
-    css.write('#result-table tr:hover td { -moz-background-clip:border; -moz-background-inline-policy:continuous; -moz-background-origin:padding; background:#EFF6FF none repeat scroll 0 0; color:#333399;}')
     css.write('#strategy-table tr:hover td { -moz-background-clip:border; -moz-background-inline-policy:continuous; -moz-background-origin:padding; background:#EFF6FF none repeat scroll 0 0; color:#333399;}')
     css.write('#result-summary { border-collapse:collapse; border:1px solid #c3d9ff; float: left; width: 45%; margin-right:2%; text-align:left;}')
     css.write('.size30 { width: 30%;}') 
@@ -445,7 +496,7 @@ def report_style(css):
 
     return css
 
-class Results(object):
+def create_report():
     directory = sys.argv[1]
     if os.path.exists(directory):
         json_data=open(directory + '/process.json').read()
@@ -550,7 +601,7 @@ class Results(object):
 
     shell_title = H3('Integration and Scaling Statistics (by shell)')
     shell_table_head = THEAD(TR(TH('Shell', scope="col")+
-                              TH('Complete', scope="col")+
+                              TH('Completeness', scope="col")+
                               TH('R'+SUB('meas'), scope="col")+
                               TH('R'+SUB('mrgd-F'), scope="col")+
                               TH('I/sigma (I)'+SUP('[1]', Class="footnote"), scope="col")+
@@ -605,19 +656,38 @@ class Results(object):
         plot_diff = plot_diff_stats(results, directory)
         plot_wilson = plot_wilson_stats(results, directory)
         plot_twinning = plot_twinning_stats(results, directory)
+        plot_stderr = plot_error_stats(results, directory)
+        
+        wilson_notes = DIV(H3('Notes')+
+                          P("The above clipper-style wilson plot was calculated by CTRUNCATE which is part of the CCP4 Package.")+
+                          P("See S. French and K. Wilson, Acta Cryst. A34, 517-525 (1978).")+
+                          P(""), 
+                          Class="tablenotes")
+        
         twinning_notes = DIV(H3('Notes')+
-                          P("""All data regardless of I/sigma(I) has been included in the L test
-Anisotropy correction has been applied before calculating L. See Padilla and Yeates Acta Cryst. D59 1124 (2003)"""), 
+                          P("The above clipper-style wilson plot was calculated by CTRUNCATE which is part of the CCP4 Package.")+
+                          P("All data regardless of I/sigma(I) has been included in the L test. Anisotropy correction has been applied before calculating L.")+
+                          P("See J. E. Padilla and T. O. Yeates, Acta Cryst. D59, 1124-1130 (2003)"),
                           Class="tablenotes")
 
-        dp_report = (H3('Integration and Scaling Statistics (by frame/frame difference)')+
-                     IMG(src='plot_frame.png', Class="image")+
+        stderr_notes = DIV(H3('Notes')+DL(
+                           DT('[a] - ')+DD('Recommended exposure time does not take into account overloads at low resolution!')+
+                           DT('[b] - ')+DD('Values in parenthesis represent the high resolution shell.')+
+                           DT('[c] - ')+DD('Resolution limit is set by the initial image resolution.'), Class="note-list"), 
+                           Class="tablenotes")   
+
+        dp_report = (H3('Standard error of reflection intensities by resolution')+
+                     IMG(src='plot_stderr.png', Class="image")+clear+
+                     stderr_notes+                    
+                     H3('Statistics of final reflections (by frame and frame difference)')+
+                     IMG(src='plot_frame.png', Class="image")+clear+
                      IMG(src='plot_diff.png', Class="image")+clear+
                      frame_notes+
                      H3('Wilson Plot')+
-                     IMG(src='plot_wilson.png', Class="image")+
+                     IMG(src='plot_wilson.png', Class="image")+clear+
+                     wilson_notes+
                      H3('L Test for twinning')+
-                     IMG(src='plot_twinning.png', Class="image")+
+                     IMG(src='plot_twinning.png', Class="image")+clear+
                      twinning_notes
                      )
         
@@ -637,3 +707,6 @@ Anisotropy correction has been applied before calculating L. See Padilla and Yea
         report = report_head + DIV(base_report+dp_report, id="result-page")
           
     html.write(str(report))
+
+if __name__ == '__main__':
+    create_report()

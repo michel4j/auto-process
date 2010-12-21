@@ -539,9 +539,9 @@ class AutoXDS:
             if dset['correction'].get('standard_errors') is not None:
                 _section = {}
                 _t = Table(dset['correction']['standard_errors'])
-                _section['shell'] = [sum(v)/2.0 for v in _t['resol_range']]
-                for k in ['chi_sq', 'r_obs', 'r_exp','n_obs', 'n_accept', 'n_reject']:
-                    _section[k] = _t[k]
+                _section['shell'] = [sum(v)/2.0 for v in _t['resol_range'][:-1]] # don't get 'total' row
+                for k in ['chi_sq', 'i_sigma', 'r_obs', 'r_exp','n_obs', 'n_accept', 'n_reject']:
+                    _section[k] = _t[k][:-1]
                 _dataset_info['result']['details']['standard_errors'] = _section
             
             # Print out wilson_plot, cum int dist, twinning test

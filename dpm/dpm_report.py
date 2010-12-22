@@ -22,9 +22,9 @@ rcParams['legend.isaxes'] = False
 rcParams['figure.facecolor'] = 'white'
 rcParams['figure.edgecolor'] = 'white'
 
-PLOT_WIDTH = 7.5
+PLOT_WIDTH = 7.2
 PLOT_HEIGHT = 6.5
-PLOT_DPI = 90
+PLOT_DPI = 100
 IMG_WIDTH = int(round(PLOT_WIDTH * PLOT_DPI))
 
 
@@ -34,13 +34,13 @@ HTML_TEMPLATE = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
 <link href='http://fonts.googleapis.com/css?family=Cantarell:regular,italic,bold,bolditalic' rel='stylesheet' type='text/css'>
 <style type="text/css">
 body {
- font-size: 85%;
+ font-size: 90%;
  font-family: Cantarell, sans-serif;
 }
 #result-page {
- margin: 1em auto;
+ margin: 0 auto;
  text-align:left;
- padding:20px;
+ padding:0px;
 }
 #result-table {
  font-size: 88%;
@@ -94,9 +94,14 @@ font-weight: bold;
 .tablenotes {
  font-size: 90%;
  background:#EFF6FF none repeat scroll 0 0;
- padding:0.3em 2em 1em;
+ padding: 1.5em;
  margin-bottom: 10px;
 }
+.tablenotes h3 {
+ padding: 0px;
+ margin: 0px;
+}
+
 dl.note-list dt {
  float: left;
  clear: left;
@@ -324,7 +329,7 @@ def plot_shell_stats(results, filename):
     shell = numpy.array(data['shell'])**-2
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(211)
-    ax1.plot(shell, data['completeness'], 'r-+')
+    ax1.plot(shell, data['completeness'], 'r-')
     ax1.set_ylabel('completeness (%)', color='r')
     ax11 = ax1.twinx()
     ax11.plot(shell, data['r_meas'], 'g-', label='R-meas')
@@ -342,11 +347,11 @@ def plot_shell_stats(results, filename):
     ax11.set_ylim((0, 105))
 
     ax2 = fig.add_subplot(212, sharex=ax1)
-    ax2.plot(shell, data['i_sigma'], 'm-x')
+    ax2.plot(shell, data['i_sigma'], 'm-')
     ax2.set_xlabel('Resolution Shell')
     ax2.set_ylabel('I/SigmaI', color='m')
     ax21 = ax2.twinx()
-    ax21.plot(shell, data['sig_ano'], 'b-+')
+    ax21.plot(shell, data['sig_ano'], 'b-')
     ax2.grid(True)
     ax21.set_ylabel('SigAno', color='b')
     for tl in ax21.get_yticklabels():
@@ -378,10 +383,10 @@ def plot_error_stats(results, filename):
     
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(211)
-    ax1.plot(shell, data['chi_sq'], 'r-+')
+    ax1.plot(shell, data['chi_sq'], 'r-')
     ax1.set_ylabel(r'$\chi^{2}$', color='r')
     ax11 = ax1.twinx()
-    ax11.plot(shell, data['i_sigma'], 'b-x')
+    ax11.plot(shell, data['i_sigma'], 'b-')
     ax11.set_ylabel('I/Sigma', color='b')
     ax1.grid(True)
     for tl in ax11.get_yticklabels():
@@ -395,9 +400,9 @@ def plot_error_stats(results, filename):
 
     ax2 = fig.add_subplot(212, sharex=ax1)
     ax2.plot(shell, data['r_obs'], 'g-', label='R-observed')
-    ax2.plot(shell, data['r_exp'], 'g:+', label='R-expected')
+    ax2.plot(shell, data['r_exp'], 'r:', label='R-expected')
     ax2.set_xlabel('Resolution Shell')
-    ax2.set_ylabel('R-factors (%)', color='g')
+    ax2.set_ylabel('R-factors (%)')
     ax2.legend(loc='best')
     ax2.grid(True)
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
@@ -421,55 +426,19 @@ def plot_error_stats(results, filename):
 def plot_diff_stats(results, filename):
     
     data = results['details']['diff_statistics']
-    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
-    ax1 = fig.add_subplot(311)
-    ax1.plot(data['frame_diff'], data['rd'], 'r-')
-    ax1.set_ylabel('R-d', color='r')
-    ax11 = ax1.twinx()
-    ax11.plot(data['frame_diff'], data['n_refl'], 'g-')
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.6), dpi=PLOT_DPI)
+    ax1 = fig.add_subplot(111)
+    ax1.plot(data['frame_diff'], data['rd'], 'r-', label="all")
+    ax1.set_ylabel('R-d')
     ax1.grid(True)
-    ax11.set_ylabel('# Reflections', color='g')
-    for tl in ax11.get_yticklabels():
-        tl.set_color('g')
-    for tl in ax1.get_yticklabels():
-        tl.set_color('r')
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
-    ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
-    #ax1.set_ylim((0, 105))
-    #ax11.set_ylim((0, max(data['n_refl'])+5))
 
-    ax2 = fig.add_subplot(312, sharex=ax1)
-    ax2.plot(data['frame_diff'], data['rd_friedel'], 'm-')
-    ax2.set_ylabel('R-d Friedel', color='m')
-    ax21 = ax2.twinx()
-    ax21.plot(data['frame_diff'], data['n_friedel'], 'b-')
-    ax2.grid(True)
-    ax21.set_ylabel('# Reflections', color='b')
-    for tl in ax21.get_yticklabels():
-        tl.set_color('b')
-    for tl in ax2.get_yticklabels():
-        tl.set_color('m')
-    ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
-    ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
-
-    ax3 = fig.add_subplot(313, sharex=ax1)
-    ax3.plot(data['frame_diff'], data['rd_non_friedel'], 'k-')
-    ax3.set_xlabel('Frame Difference')
-    ax3.set_ylabel('R-d Non-friedel', color='k')
-    ax31 = ax3.twinx()
-    ax31.plot(data['frame_diff'], data['n_non_friedel'], 'c-')
-    ax3.grid(True)
-    ax31.set_ylabel('# Reflections', color='c')
-    for tl in ax31.get_yticklabels():
-        tl.set_color('c')
-    for tl in ax3.get_yticklabels():
-        tl.set_color('k')
-    ax3.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
-    ax31.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
+    ax1.plot(data['frame_diff'], data['rd_friedel'], 'm-', label="friedel")
+    ax1.plot(data['frame_diff'], data['rd_non_friedel'], 'k-', label="non_friedel")
+    ax1.set_xlabel('Frame Difference')
+    ax1.legend()
 
     canvas = FigureCanvas(fig)
-    #response = HttpResponse(content_type='image/png')
-    #canvas.print_png(response)
     canvas.print_png(filename)
     return os.path.basename(filename)
 
@@ -675,7 +644,7 @@ def create_report(name, data, directory):
                                 DT('[5] - ')+DD('Quality of amplitudes. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)'), Class="note-list"), Class="tablenotes floatright size40"))   
    
     notes_spacegroup = (DIV(H3('Notes')+
-                            P('The above table contains result from POINTLESS (see Evans, Acta Cryst. D62, 72-82, 2005).')+
+                            P('The above table contains results from POINTLESS (see Evans, Acta Cryst. D62, 72-82, 2005).')+
                             P('Indistinguishable space groups will have similar probabilities. If two or more of the top candidates have the same probability, the one with the fewest symmetry assumptions is chosen. This usually corresponds to the point group,  trying out higher symmetry space groups within the top tier does not require re-indexing the data as they are already in the same setting.')+
                             P("For more detailed results, please inspect the output file 'pointless.log'."), Class="tablenotes"))
  
@@ -723,8 +692,10 @@ def create_report(name, data, directory):
     shell_notes = (DIV(H3('Notes')+DL(DT('[1] - ')+DD('Mean of intensity/Sigma(I) of unique reflections (after merging symmetry-related observations). Where Sigma(I) is the standard deviation of reflection intensity I estimated from sample statistics.')+
                                       DT('[2] - ')+DD('mean anomalous difference in units of its estimated standard deviation (|F(+)-F(-)|/Sigma). F(+), F(-) are structure factor estimates obtained from the merged intensity observations in each parity class.'), Class="note-list"), Class="tablenotes"))   
    
-    frame_notes = (DIV(H3('Notes')+DL(DT('Divergence - ')+DD('Estimated Standard Deviation of Beam divergence')+
-                                      DT('R'+SUB('d')+' - ')+DD('R-factors as a function of frame difference. See Diederichs K. (2006) Acta Cryst D62, 96-101.'), Class="note-list"), Class="tablenotes"))   
+    frame_notes = (DIV(H3('Notes')+DL(
+                        P("The above plot was calculated by XDSSTAT. See See Diederichs K. (2006) Acta Cryst D62, 96-101.")+
+                        DT('Divergence - ')+DD('Estimated Standard Deviation of Beam divergence')+
+                        DT('R'+SUB('d')+' - ')+DD('R-factors as a function of frame difference. An increase in R-d with frame difference is suggestive of radiation damage.'), Class="note-list"), Class="tablenotes"))   
 
     strategy_notes = (DIV(H3('Notes')+DL(DT('[a] - ')+DD('Recommended exposure time does not take into account overloads at low resolution!')+
                                          DT('[b] - ')+DD('Values in parenthesis represent the high resolution shell.')+
@@ -770,7 +741,7 @@ def create_report(name, data, directory):
                           Class="tablenotes")
         
         twinning_notes = DIV(H3('Notes')+
-                          P("The above clipper-style wilson plot was calculated by CTRUNCATE which is part of the CCP4 Package.")+
+                          P("The above plot was calculated by CTRUNCATE which is part of the CCP4 Package.")+
                           P("All data regardless of I/sigma(I) has been included in the L test. Anisotropy correction has been applied before calculating L.")+
                           P("See J. E. Padilla and T. O. Yeates, Acta Cryst. D59, 1124-1130 (2003)"),
                           Class="tablenotes")

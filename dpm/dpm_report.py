@@ -486,7 +486,7 @@ def plot_frame_stats(results, filename):
     ax2.plot(data['frame'], data['divergence'], 'm-')
     ax2.set_ylabel('Divergence', color='m')
     ax21 = ax2.twinx()
-    ax21.plot(data['frame'], data['i_sigma'], 'b-')
+    ax21.plot(data['frame_no'], data['i_sigma'], 'b-')
     ax2.grid(True)
     ax21.set_ylabel('I/Sigma(I)', color='b')
     for tl in ax21.get_yticklabels():
@@ -498,11 +498,11 @@ def plot_frame_stats(results, filename):
     ax2.set_ylim((min(data['divergence'])-0.02, max(data['divergence'])+0.02))
 
     ax3 = fig.add_subplot(313, sharex=ax1)
-    ax3.plot(data['frame'], data['r_meas'], 'k-')
+    ax3.plot(data['frame_no'], data['r_meas'], 'k-')
     ax3.set_xlabel('Frame Number')
     ax3.set_ylabel('R-meas', color='k')
     ax31 = ax3.twinx()
-    ax31.plot(data['frame'], data['unique'], 'c-')
+    ax31.plot(data['frame_no'], data['unique'], 'c-')
     ax3.grid(True)
     ax31.set_ylabel('Unique Reflections', color='c')
     for tl in ax31.get_yticklabels():

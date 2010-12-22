@@ -485,32 +485,34 @@ def plot_frame_stats(results, filename):
     ax2 = fig.add_subplot(312, sharex=ax1)
     ax2.plot(data['frame'], data['divergence'], 'm-')
     ax2.set_ylabel('Divergence', color='m')
-    ax21 = ax2.twinx()
-    ax21.plot(data['frame_no'], data['i_sigma'], 'b-')
-    ax2.grid(True)
-    ax21.set_ylabel('I/Sigma(I)', color='b')
-    for tl in ax21.get_yticklabels():
-        tl.set_color('b')
-    for tl in ax2.get_yticklabels():
-        tl.set_color('m')
-    ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.3f'))
-    ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     ax2.set_ylim((min(data['divergence'])-0.02, max(data['divergence'])+0.02))
+    ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.3f'))
+    ax2.grid(True)
+    if data.get('frame_no') is not None:
+        ax21 = ax2.twinx()
+        ax21.plot(data['frame_no'], data['i_sigma'], 'b-')
 
-    ax3 = fig.add_subplot(313, sharex=ax1)
-    ax3.plot(data['frame_no'], data['r_meas'], 'k-')
-    ax3.set_xlabel('Frame Number')
-    ax3.set_ylabel('R-meas', color='k')
-    ax31 = ax3.twinx()
-    ax31.plot(data['frame_no'], data['unique'], 'c-')
-    ax3.grid(True)
-    ax31.set_ylabel('Unique Reflections', color='c')
-    for tl in ax31.get_yticklabels():
-        tl.set_color('c')
-    for tl in ax3.get_yticklabels():
-        tl.set_color('k')
-    ax3.yaxis.set_major_formatter(FormatStrFormatter('%0.3f'))
-    ax31.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
+        ax21.set_ylabel('I/Sigma(I)', color='b')
+        for tl in ax21.get_yticklabels():
+            tl.set_color('b')
+        for tl in ax2.get_yticklabels():
+            tl.set_color('m')
+
+        ax3 = fig.add_subplot(313, sharex=ax1)
+        ax3.plot(data['frame_no'], data['r_meas'], 'k-')
+        ax3.set_xlabel('Frame Number')
+        ax3.set_ylabel('R-meas', color='k')
+        ax31 = ax3.twinx()
+        ax31.plot(data['frame_no'], data['unique'], 'c-')
+        ax3.grid(True)
+        ax31.set_ylabel('Unique Reflections', color='c')
+        for tl in ax31.get_yticklabels():
+            tl.set_color('c')
+        for tl in ax3.get_yticklabels():
+            tl.set_color('k')
+        ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+        ax3.yaxis.set_major_formatter(FormatStrFormatter('%0.3f'))
+        ax31.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
 
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')

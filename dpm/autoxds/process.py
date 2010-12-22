@@ -515,7 +515,8 @@ class AutoXDS:
             if dset.get('scaling') is not None:
                 if dset['scaling'].get('frame_statistics') is not None:                     
                     _t = Table(dset['scaling']['frame_statistics'])
-                    for k in ['frame_no', 'i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
+                    _section['frame_no'] = _t['frame']
+                    for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
                         _section[k] = _t[k]
                 if dset['scaling'].get('diff_statistics') is not None:
                     _t = Table(dset['scaling']['diff_statistics'])

@@ -22,157 +22,107 @@ rcParams['legend.isaxes'] = False
 rcParams['figure.facecolor'] = 'white'
 rcParams['figure.edgecolor'] = 'white'
 
-PLOT_WIDTH = 7.2
-PLOT_HEIGHT = 6.5
-PLOT_DPI = 100
+PLOT_WIDTH = 8
+PLOT_HEIGHT = 6
+PLOT_DPI = 75
 IMG_WIDTH = int(round(PLOT_WIDTH * PLOT_DPI))
 
 
 HTML_TEMPLATE = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html>
 <head>
+<title>AutoProcess - Data processing report</title>
 <link href='http://fonts.googleapis.com/css?family=Cantarell:regular,italic,bold,bolditalic' rel='stylesheet' type='text/css'>
 <style type="text/css">
 body {
- font-size: 90%;
- font-family: Cantarell, sans-serif;
+ font-size: 14px; font-family: Cantarell, sans-serif; line-height: 130%;
 }
 #result-page {
- margin: 0 auto;
- text-align:left;
- padding:0px;
+ margin: 0 auto; text-align:left; padding:0px;
 }
 #result-table {
- font-size: 88%;
- border-collapse:collapse;
- text-align:left;
- width: 100%;
+ font-size: 88%; border-collapse:collapse; text-align:left; width: 100%;
 }
 #result-table th {
- color:#003399;
- font-size: 1.2em;
- font-weight:normal;
- padding:8px 8px;
+ color:#003399; font-size: 1.2em; font-weight:normal; padding:8px 8px;
 }
 #result-table td {
- border-top:1px solid #eee;
- padding:5px 8px;
+ border-top:1px solid #eee; padding:5px 8px;
 }
 #strategy-table {
- font-size: 88%;
- border-collapse:collapse;
- text-align:left;
- width: 45%;
+ font-size: 88%; border-collapse:collapse; text-align:left; width: 45%;
 }
 #strategy-table td {
- border-top:1px solid #eee;
- padding:5px 8px;
+ border-top:1px solid #eee; padding:5px 8px;
 }
 .result-labels {
-font-weight: bold;
+ font-weight: bold;
 }
 #result-summary {
- border-collapse:collapse;
- border:1px solid #ccc;
- float: left;
- width: 45%;
- margin-right:2%;
- text-align:left;
+ border-collapse:collapse; border:1px solid #ccc; float: left; text-align:left;
 }
-.size30 {
- width: 30%;
+div.tablenotes {
+ font-size: 90%; background:#EFF6FF none repeat scroll 0 0; padding: 20px; margin-bottom: 10px;
 }
-.size40 {
- width: 40%;
+div.tablenotes h3 {
+ padding: 0px; margin: 0px;
 }
-.size60 {
- width: 60%;
+dl.note-list {
+ margin-bottom: 0px;
 }
-.size45 {
- width: 45%;
-}
-.tablenotes {
- font-size: 90%;
- background:#EFF6FF none repeat scroll 0 0;
- padding: 1.5em;
- margin-bottom: 10px;
-}
-.tablenotes h3 {
- padding: 0px;
- margin: 0px;
-}
-
 dl.note-list dt {
- float: left;
- clear: left;
- text-align: right;
- font-weight: bold;
- color: #000;
+ float: left; clear: left; text-align: right; font-weight: bold; color: #000;
 }
 dl.note-list dd {
- margin: 0 0 0 3em;
- padding: 0 0 0.5em 0;
+ margin: 0 0 0 3em; padding: 0 0 0.5em 0;
 }
 h1, h2, h3, h4 {
- font-weight:normal;
- margin-top:1.4em;
+ display: block;
+ font-weight:normal; margin-top:1.4em;
+ page-break-after: avoid;
 }
 #result-title h2{
- font-size:190%;
- line-height:1.2em;
- margin-bottom:0.8em;
- margin-top: 1em;
- color: #666666;
+ font-size:190%; line-height:1.2em; margin-bottom:0.8em; margin-top: 1em; color: #666666;
 }
 div.spacer {
- padding: 0.3em 0;
+ padding: 5px 0;
 }
 .clear {
 clear: both !important;
 }
+.pagebreak {
+clear: both !important; display: block; page-break-after: always;
+}
+p {
+ margin: 0.7em 0px;
+}
 #result-page h3 {
- font-size: 140%;
- border-bottom: 1px dotted #ccc;
-}
-.rtable {
- border-collapse:collapse;
- text-align:left;
- border: solid 1px #ccc;
- margin: 8px 0px;
-}
-.rtable th {
- color: rgb(102, 153, 204);
- font-weight: bold;
- padding:4px 4px;
- text-align: right;
- font-size: 80%;
-}
-.rtable td {
- text-align: right;
- font-family: Consolas, monospace;
- border-top:1px solid #eee;
- color:#666699;
- padding:5px 8px;
- font-size: 12px;
-}
-.half {
- width: 49%;
+ font-size: 130%; border-bottom: 1px dotted #ccc;
+ margin-top: 0.3em; page-break-after: avoid;
 }
 .full {
  width: 100% !important;
 }
+.rtable {
+ border-collapse:collapse; text-align:left; border: solid 1px #ccc; margin: 8px 0px;
+}
+.rtable th {
+ color: rgb(102, 153, 204); font-weight: bold; padding:4px 4px; text-align: right; font-size: 80%;
+}
+.rtable td {
+ text-align: right; font-family: Consolas, monospace; border-top:1px solid #eee; color:#666699; padding:5px 8px; font-size: 12px;
+}
 .floatleft {
  float: left;
-
 }
 .floatright {
  float: right;
 }
-img.image  {
+div.image {
  display: block;
- margin-left:
- auto;
- margin-right: auto;
+ margin: 0 auto;
+ page-break-inside: avoid;
+ float: none;
 }
 </style>
 </head>
@@ -194,15 +144,15 @@ class TAG:
         res=cStringIO.StringIO()
         w=res.write
         if self.tag != "TEXT":
-            w("<%s" %self.tag)
+            w("<%s" %self.tag.lower())
             # attributes which will produce arg = "val"
             attr1 = [ k for k in self.attrs 
                 if not isinstance(self.attrs[k],bool) ]
             w("".join([' %s="%s"' 
-                %(k.replace('_','-'),self.attrs[k]) for k in attr1]))
+                %(k.replace('_','-').lower(),self.attrs[k]) for k in attr1]))
             # attributes with no argument
             # if value is False, don't generate anything
-            attr2 = [ k for k in self.attrs if self.attrs[k] is True ]
+            attr2 = [ k.lower() for k in self.attrs if self.attrs[k] is True ]
             w("".join([' %s' %k for k in attr2]))
             w(">")
         if self.tag in ONE_LINE:
@@ -211,7 +161,7 @@ class TAG:
         for child in self.children:
             w(str(child))
         if self.tag in CLOSING_TAGS:
-            w("</%s>" %self.tag)
+            w("</%s>" %self.tag.lower())
         if self.tag in LINE_BREAK_AFTER:
             w('\n')
         if hasattr(self,"brothers"):
@@ -276,7 +226,7 @@ CLOSING_TAGS =  ['A', 'ABBR', 'ACRONYM', 'ADDRESS', 'APPLET',
             'HTML', 'LI', 'P', 'TBODY','OPTION', 
             'TD', 'TFOOT', 'TH', 'THEAD', 'TR']
 
-NON_CLOSING_TAGS = ['AREA', 'BASE', 'BASEFONT', 'BR', 'COL', 'FRAME',
+NON_CLOSING_TAGS =  ['AREA', 'BASE', 'BASEFONT', 'BR', 'COL', 'FRAME',
             'HR', 'IMG', 'INPUT', 'ISINDEX', 'LINK',
             'META', 'PARAM']
 
@@ -297,16 +247,16 @@ def Sum(iterable):
 LINE_BREAK_AFTER = NON_CLOSING_TAGS + ['HTML','HEAD','BODY',
     'FRAMESET','FRAME',
     'TITLE','SCRIPT',
-    'TABLE','TR','TD','TH','SELECT','OPTION',
-    'FORM',
+    'TABLE','TR','TD', 'TH','SELECT','OPTION',
+    'FORM','DIV','DL','DD','P',
     'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
     ]
 # tags whose opening tag should be alone in its line
 ONE_LINE = ['HTML','HEAD','BODY',
     'FRAMESET'
-    'SCRIPT',
-    'TABLE','TR','TD','TH','SELECT','OPTION',
-    'FORM',
+    'SCRIPT','TR','DL',
+    'TABLE','SELECT','OPTION',
+    'FORM','DIV'
     ]
 
 
@@ -464,10 +414,10 @@ def plot_wilson_stats(results, filename):
     fontpar = {}
     fontpar["family"]="monospace"
     #fontpar["size"]=8
-    info =  "Estimated B factor: %0.3f\n" % wilson_line[0]
+    info =  "Estimated B: %0.3f\n" % wilson_line[0]
     info += "sigma a: %8.3f\n" % wilson_line[1]
     info += "sigma b: %8.3f\n" % wilson_line[2]
-    info += "Intensity scale factor: %0.3f\n" % wilson_scale    
+    info += "Scale factor: %0.3f\n" % wilson_scale    
     fig.text(0.55,0.65, info, fontdict=fontpar, color='k')
 
     canvas = FigureCanvas(fig)
@@ -586,9 +536,10 @@ def create_report(name, data, directory):
 
     clear = (DIV('', Class="clear"))    
     spacer = (DIV('', Class="clear spacer"))
+    pagebreak = (DIV('', Class="pagebreak"))
 
-    result_table_head = (COLGROUP(COL('', Class='result-labels'))+
-                         THEAD(TR(TH("Dataset", scope="col")+(TH('"'+results['name']+'"')))))
+    result_table_head = (COLGROUP(COL('', Class='result-labels'))
+                         )
     result_table_body = (TBODY(TR(TD('Score'+(SUP('[1]', Class="footnote")))+TD("%0.2f" % results['score']))+
                                TR(TD('Wavelength (A)')+TD(results['wavelength']))+    
                                TR(TD('Space Group'+(SUP('[2]', Class="footnote")))+TD(results['space_group_name']))+  
@@ -606,9 +557,9 @@ def create_report(name, data, directory):
                                TR(TD('Spindle deviation')+TD(results['sigma_angle']))+
                                TR(TD('Ice Rings')+TD(results['ice_rings']))
                                   ))
-    result_table = (TABLE(result_table_head+result_table_body, id="result-table"))                    
+    result_table = (TABLE(result_table_head+result_table_body, id="result-table", summary="Summary of data processing results."))                    
 
-    summary = H3('Summary')+DIV(result_table, id="result-summary")
+    summary = H3('Summary')+DIV(result_table, id="result-summary", style="width: %dpx;" % ((IMG_WIDTH/2) - 10))
 
     lattice_title = H3('Compatible Bravais Lattice Types')
     lattice_table = TABLE()
@@ -635,13 +586,14 @@ def create_report(name, data, directory):
         row <= (TD(lattices['quality'][x])+
                 TD("%i" % lattices['volume'][x]))
         lattice_table_body <= row
-    lattice_table = TABLE(lattice_table_head+lattice_table_body, Class="rtable full")
+    lattice_table = TABLE(lattice_table_head+lattice_table_body, Class="rtable full", summary="Compatible lattices.")
 
     notes = (DIV(H3('Notes')+DL(DT('[1] - ')+DD('Data Quality Score for comparing similar data sets. Typically, values > 0.8 are excellent, > 0.6 are good, > 0.5 are acceptable, > 0.4 marginal, and &lt; 0.4 are Barely usable')+
                                 DT('[2] - ')+DD('This space group was automatically assigned using POINTLESS (see P.R.Evans, Acta Cryst. D62, 72-82, 2005). This procedure is unreliable for incomplete datasets such as those used for screening. Please Inspect the detailed results below.')+
                                 DT('[3] - ')+DD('Resolution selected based on a cut-off of I/sigma(I) > 1.0. Statistics presented reflect this resolution.')+
-                                DT('[4] - ')+DD('Redundancy independent R-factor. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)')+
-                                DT('[5] - ')+DD('Quality of amplitudes. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)'), Class="note-list"), Class="tablenotes floatright size40"))   
+                                DT('[4] - ')+DD('Redundancy independent R-factor. (see Diederichs &amp; Karplus, 1997, Nature Struct. Biol. 4, 269-275.)')+
+                                DT('[5] - ')+DD('Quality of amplitudes. (see Diederichs &amp; Karplus, 1997, Nature Struct. Biol. 4, 269-275.)'), Class="note-list"), 
+                                Class="tablenotes floatright", style="width: %dpx;" % ((IMG_WIDTH/2) - 45)))   
    
     notes_spacegroup = (DIV(H3('Notes')+
                             P('The above table contains results from POINTLESS (see Evans, Acta Cryst. D62, 72-82, 2005).')+
@@ -667,7 +619,7 @@ def create_report(name, data, directory):
                     TD(pointless['space_group'][x])+
                     TD(pointless['probability'][x]))
         pointless_table_body <= row
-    pointless_table = H3('Automatic Space-Group Selection')+TABLE(pointless_table_head+pointless_table_body, Class="rtable full") 
+    pointless_table = H3('Automatic Space-Group Selection')+TABLE(pointless_table_head+pointless_table_body, Class="rtable full", summary="Spacegroup Selection.") 
 
     shell_title = H3('Statistics of final reflections by shell')
     shell_table_head = THEAD(TR(TH('Shell', scope="col")+
@@ -687,13 +639,14 @@ def create_report(name, data, directory):
                 TD(shell_data['i_sigma'][x])+
                 TD(shell_data['sig_ano'][x]))
         shell_table_body <= row
-    shell_table = TABLE(shell_table_head + shell_table_body, Class="rtable full")
+    shell_table = TABLE(shell_table_head + shell_table_body, Class="rtable full", summary="Statistics of dataset by shell.")
 
     shell_notes = (DIV(H3('Notes')+DL(DT('[1] - ')+DD('Mean of intensity/Sigma(I) of unique reflections (after merging symmetry-related observations). Where Sigma(I) is the standard deviation of reflection intensity I estimated from sample statistics.')+
                                       DT('[2] - ')+DD('mean anomalous difference in units of its estimated standard deviation (|F(+)-F(-)|/Sigma). F(+), F(-) are structure factor estimates obtained from the merged intensity observations in each parity class.'), Class="note-list"), Class="tablenotes"))   
    
-    frame_notes = (DIV(H3('Notes')+DL(
+    frame_notes = (DIV(H3('Notes')+
                         P("The above plot was calculated by XDSSTAT. See See Diederichs K. (2006) Acta Cryst D62, 96-101.")+
+                        DL(
                         DT('Divergence - ')+DD('Estimated Standard Deviation of Beam divergence')+
                         DT('R'+SUB('d')+' - ')+DD('R-factors as a function of frame difference. An increase in R-d with frame difference is suggestive of radiation damage.'), Class="note-list"), Class="tablenotes"))   
 
@@ -702,12 +655,12 @@ def create_report(name, data, directory):
                                          DT('[c] - ')+DD('Resolution limit is set by the initial image resolution.'), Class="note-list"), Class="tablenotes floatright size40"))   
 
     plot_shell = plot_shell_stats(results, os.path.join(directory, '%sshell.png' % prefix))
-    shell_img = IMG(src=plot_shell, Class="image")
+    shell_img = DIV(IMG(src=plot_shell), Class="image")
     
     shell_report = (shell_title + shell_img + shell_table + shell_notes + spacer)
     
     if results['kind'] == 0:
-        kind = "Crystal Screening Report"
+        kind = "Crystal Screening Report - &ldquo;%s&rdquo;" % results['name']
         strategy_title = H3('Data Collection Strategy')+P('Recommended Strategy for Native Data Collection')
         if strategy is not None:
             strategy_data = strategy
@@ -727,7 +680,7 @@ def create_report(name, data, directory):
             strategy = strategy_title + TABLE(strategy_table_body, id="strategy-table", Class="floatleft") + strategy_notes
             dp_report = (strategy + clear + shell_report + clear)
     elif results['kind'] == 1:
-        kind = "Data Processing Report"
+        kind = "Data Processing Report - &ldquo;%s&rdquo;" % results['name']
         plot_frame = plot_frame_stats(results, os.path.join(directory, '%sframe.png' % prefix))
         plot_diff = plot_diff_stats(results, os.path.join(directory, '%sdiff.png' % prefix))
         plot_wilson = plot_wilson_stats(results, os.path.join(directory, '%swilson.png' % prefix))
@@ -736,8 +689,7 @@ def create_report(name, data, directory):
         
         wilson_notes = DIV(H3('Notes')+
                           P("The above clipper-style wilson plot was calculated by CTRUNCATE which is part of the CCP4 Package.")+
-                          P("See S. French and K. Wilson, Acta Cryst. A34, 517-525 (1978).")+
-                          P(""), 
+                          P("See S. French and K. Wilson, Acta Cryst. A34, 517-525 (1978)."),
                           Class="tablenotes")
         
         twinning_notes = DIV(H3('Notes')+
@@ -748,37 +700,38 @@ def create_report(name, data, directory):
 
         stderr_notes = DIV(H3('Notes')+DL(
                            DT('I/Sigma    - ')+DD('Mean intensity/Sigma of a reflection in shell')+
-                           DT('&#0967;&sup2;  - ')+DD('Goodness of fit between sample variances of symmetry-related intensities and their errors (&#0967;&sup2; = 1 for perfect agreement).')+
-                           DT('R-observed - ')+DD('&#0931;|I(h,i)-I(h)| / &#0931;[I(h,i)]')+
+                           DT('&chi;&sup2;  - ')+DD('Goodness of fit between sample variances of symmetry-related intensities and their errors (&chi;&sup2; = 1 for perfect agreement).')+
+                           DT('R-observed - ')+DD('&Sigma;|I(h,i)-I(h)| / &Sigma;[I(h,i)]')+
                            DT('R-expected - ')+DD('Expected R-FACTOR derived from Sigma(I)'), Class="note-list"), 
                            Class="tablenotes")   
 
-        dp_report = (H3('Standard errors of reflection intensities by resolution')+
-                     IMG(src=plot_stderr, Class="image")+clear+
-                     stderr_notes+
-                     shell_report+
-                     H3('Statistics of final reflections (by frame and frame difference)')+
-                     IMG(src=plot_frame, Class="image")+clear+
-                     IMG(src=plot_diff, Class="image")+clear+
+        dp_report = (DIV(H3('Standard errors of reflection intensities by resolution')+
+                         IMG(src=plot_stderr), 
+                         Class="image")+clear+
+                     stderr_notes +
+                     pagebreak + shell_report+ pagebreak +
+                      DIV(H3('Statistics of final reflections (by frame and frame difference)')+
+                          IMG(src=plot_frame), Class="image")+clear+
+                     DIV(IMG(src=plot_diff), Class="image")+clear+
                      frame_notes+
-                     H3('Wilson Plot')+
-                     IMG(src=plot_wilson, Class="image")+clear+
+                     DIV(H3('Wilson Plot')+
+                         IMG(src=plot_wilson), Class="image")+clear+
                      wilson_notes+
-                     H3('L Test for twinning')+
-                     IMG(src=plot_twinning, Class="image")+clear+
+                     DIV(H3('L Test for twinning')+
+                         IMG(src=plot_twinning), Class="image")+clear+
                      twinning_notes
                      )
         
 
     report_title = (DIV(H2(kind), id="result-title"))
-    base_report = (report_title + clear + summary + notes + spacer + 
-                   lattice_title + lattice_table + spacer +  
-                   pointless_table + notes_spacegroup + spacer + 
+    base_report = (report_title + clear + summary + notes + spacer  +
+                   lattice_title + lattice_table + spacer + 
+                   pointless_table + notes_spacegroup + spacer + pagebreak +
                    dp_report)
 
     report = DIV(base_report, id="result-page", style="width: %dpx;" % IMG_WIDTH)
-          
-    html.write(HTML_TEMPLATE + str(report) + "</body></html>")
+    htmldoc = HTML_TEMPLATE + str(report) + "</body></html>"
+    html.write(htmldoc)
     return os.path.basename(report_file)
 
 if __name__ == '__main__':

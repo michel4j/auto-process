@@ -539,7 +539,7 @@ def plot_profiles(results, filename):
                     cbar_mode=None,
                     )
     for i, profile in enumerate(profiles):
-        grid[i*10].plot([profile['x']],[profile['y']], 'cs', markersize=20)
+        grid[i*10].plot([profile['x']],[profile['y']], 'cs', markersize=22)
         for loc in ['left','top','bottom','right']:
             grid[i*10].axis[loc].toggle(ticklabels=False, ticks=False)
         for j,spot in enumerate(profile['spots']):

@@ -13,6 +13,10 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.ticker import Formatter, FormatStrFormatter, Locator
 from matplotlib.figure import Figure
 from matplotlib import rcParams
+from matplotlib.colors import LogNorm, Normalize
+import matplotlib.cm as cm
+from mpl_toolkits.axes_grid import AxesGrid
+
 
 
 # Adjust Legend parameters
@@ -520,6 +524,36 @@ def plot_frame_stats(results, filename):
     canvas.print_png(filename)
     return os.path.basename(filename)
 
+def plot_profiles(results, filename):
+    profiles = results['details'].get('integration_profiles')
+    if profiles is None:
+        return ''
+    fig = Figure(figsize=(10,9), dpi=75)
+    cmap = cm.get_cmap('gray_r')
+    norm = Normalize(None, 100, clip=True)
+    grid = AxesGrid(fig, 111,
+                    nrows_ncols = (9,10),
+                    share_all=True,
+                    axes_pad = 0,
+                    label_mode = '1',
+                    cbar_mode=None,
+                    )
+    for i, profile in enumerate(profiles):
+        grid[i*10].plot([profile['x']],[profile['y']], 'cs', markersize=20)
+        for loc in ['left','top','bottom','right']:
+            grid[i*10].axis[loc].toggle(ticklabels=False, ticks=False)
+        for j,spot in enumerate(profile['spots']):
+            idx = i*10 + j+1
+            _a = numpy.array(spot).reshape((9,9))
+            intpl = 'nearest' #'mitchell'
+            grid[idx].imshow(_a, cmap=cmap, norm=norm, interpolation=intpl)
+            for loc in ['left','top','bottom','right']:
+                grid[idx].axis[loc].toggle(ticklabels=False, ticks=False)
+    canvas = FigureCanvas(fig)
+    canvas.print_png(filename)
+    return os.path.basename(filename)
+
+
 def create_report(name, data, directory):
     if name != '':
         prefix = '%s-' % name
@@ -660,7 +694,28 @@ def create_report(name, data, directory):
     shell_img = DIV(IMG(src=plot_shell), Class="image")
     
     shell_report = (shell_title + shell_img + shell_table + shell_notes + spacer)
-    
+
+    profile_notes = DIV(H3('Notes')+
+                      P("Profiles are determined at 9 region on the detector surface shown on the left most column.")+
+                      P("Nice slices for the corresponding detector region are shown on the right of each region "),
+                      Class="tablenotes")
+    profile_plot = plot_profiles(results, os.path.join(directory, '%sprofiles.png' % prefix))
+    if profile_plot != "":
+        profile_report = DIV(H3('Reference Profiles as a function of detector region')+
+                         IMG(src=profile_plot), 
+                         Class="image")+clear+profile_notes
+    else:
+        profile_report = ""
+    plot_stderr = plot_error_stats(results, os.path.join(directory, '%sstderr.png' % prefix))
+    stderr_notes = DIV(H3('Notes')+DL(
+                       DT('I/Sigma    - ')+DD('Mean intensity/Sigma of a reflection in shell')+
+                       DT('&chi;&sup2;  - ')+DD('Goodness of fit between sample variances of symmetry-related intensities and their errors (&chi;&sup2; = 1 for perfect agreement).')+
+                       DT('R-observed - ')+DD('&Sigma;|I(h,i)-I(h)| / &Sigma;[I(h,i)]')+
+                       DT('R-expected - ')+DD('Expected R-FACTOR derived from Sigma(I)'), Class="note-list"), 
+                       Class="tablenotes")   
+    stderr_report = DIV(H3('Standard errors of reflection intensities by resolution')+
+                         IMG(src=plot_stderr), 
+                         Class="image")+clear+ stderr_notes
     if results['kind'] == 0:
         kind = "Crystal Screening Report - &ldquo;%s&rdquo;" % results['name']
         strategy_title = H3('Data Collection Strategy')+P('Recommended Strategy for Native Data Collection')
@@ -680,14 +735,13 @@ def create_report(name, data, directory):
                                         TR(TD('I/sigma (I) [b]')+TD(strategy_data['exp_i_sigma']))+
                                         TR(TD('R-factor (%) [b]')+TD(strategy_data.get('exp_r_factor',''))))) 
             strategy = strategy_title + TABLE(strategy_table_body, id="strategy-table", Class="floatleft") + strategy_notes
-            dp_report = (strategy + clear + shell_report + clear)
+            dp_report = (strategy + clear + stderr_report + pagebreak + shell_report + clear)
     elif results['kind'] == 1:
         kind = "Data Processing Report - &ldquo;%s&rdquo;" % results['name']
         plot_frame = plot_frame_stats(results, os.path.join(directory, '%sframe.png' % prefix))
         plot_diff = plot_diff_stats(results, os.path.join(directory, '%sdiff.png' % prefix))
         plot_wilson = plot_wilson_stats(results, os.path.join(directory, '%swilson.png' % prefix))
         plot_twinning = plot_twinning_stats(results, os.path.join(directory, '%stwinning.png' % prefix))
-        plot_stderr = plot_error_stats(results, os.path.join(directory, '%sstderr.png' % prefix))
         
         wilson_notes = DIV(H3('Notes')+
                           P("The above clipper-style wilson plot was calculated by CTRUNCATE which is part of the CCP4 Package.")+
@@ -700,17 +754,9 @@ def create_report(name, data, directory):
                           P("See J. E. Padilla and T. O. Yeates, Acta Cryst. D59, 1124-1130 (2003)"),
                           Class="tablenotes")
 
-        stderr_notes = DIV(H3('Notes')+DL(
-                           DT('I/Sigma    - ')+DD('Mean intensity/Sigma of a reflection in shell')+
-                           DT('&chi;&sup2;  - ')+DD('Goodness of fit between sample variances of symmetry-related intensities and their errors (&chi;&sup2; = 1 for perfect agreement).')+
-                           DT('R-observed - ')+DD('&Sigma;|I(h,i)-I(h)| / &Sigma;[I(h,i)]')+
-                           DT('R-expected - ')+DD('Expected R-FACTOR derived from Sigma(I)'), Class="note-list"), 
-                           Class="tablenotes")   
 
-        dp_report = (DIV(H3('Standard errors of reflection intensities by resolution')+
-                         IMG(src=plot_stderr), 
-                         Class="image")+clear+
-                     stderr_notes +
+
+        dp_report = (stderr_report +
                      pagebreak + shell_report+ pagebreak +
                       DIV(H3('Statistics of final reflections (by frame and frame difference)')+
                           IMG(src=plot_frame), Class="image")+clear+
@@ -729,6 +775,7 @@ def create_report(name, data, directory):
     base_report = (report_title + clear + summary + notes + spacer  +
                    lattice_title + lattice_table + spacer + 
                    pointless_table + notes_spacegroup + spacer + pagebreak +
+                   profile_report +
                    dp_report)
 
     report = DIV(base_report, id="result-page", style="width: %dpx;" % IMG_WIDTH)

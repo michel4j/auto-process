@@ -83,10 +83,10 @@ def parse_integrate(filename='INTEGRATE.LP'):
     for i in range(9):
         profile = {}
         if i == 0:
-            x_max = round(info['profiles']['detector_regions'][0]['positions'][i])*2
-            y_max = round(info['profiles']['detector_regions'][1]['positions'][i])*2
-        profile['x'] = int(10 * info['profiles']['detector_regions'][0]['positions'][i]/x_max)
-        profile['y'] = int(10* info['profiles']['detector_regions'][1]['positions'][i]/y_max)
+            x_max = info['profiles']['detector_regions'][0]['positions'][i]*2
+            y_max = info['profiles']['detector_regions'][1]['positions'][i]*2
+        profile['x'] = 9 * info['profiles']['detector_regions'][0]['positions'][i]/x_max
+        profile['y'] = 9* info['profiles']['detector_regions'][1]['positions'][i]/y_max
         profile['spots'] = []
         for j in range(9):
             spot = tuple()

@@ -528,7 +528,7 @@ def plot_profiles(results, filename):
     profiles = results['details'].get('integration_profiles')
     if profiles is None:
         return ''
-    fig = Figure(figsize=(10,9), dpi=75)
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_WIDTH), dpi=PLOT_DPI)
     cmap = cm.get_cmap('gray_r')
     norm = Normalize(None, 100, clip=True)
     grid = AxesGrid(fig, 111,
@@ -696,7 +696,7 @@ def create_report(name, data, directory):
     shell_report = (shell_title + shell_img + shell_table + shell_notes + spacer)
 
     profile_notes = DIV(H3('Notes')+
-                      P("Profiles are determined at 9 region on the detector surface shown on the left most column.")+
+                      P("Profiles are determined at 9 region on the detector surface shown on the left-most column.")+
                       P("Nice slices for the corresponding detector region are shown on the right of each region "),
                       Class="tablenotes")
     profile_plot = plot_profiles(results, os.path.join(directory, '%sprofiles.png' % prefix))

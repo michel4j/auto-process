@@ -550,7 +550,7 @@ def plot_profiles(results, filename):
             for loc in ['left','top','bottom','right']:
                 grid[idx].axis[loc].toggle(ticklabels=False, ticks=False)
     canvas = FigureCanvas(fig)
-    canvas.print_png(filename)
+    canvas.print_png(filename, bbox_inches='tight')
     return os.path.basename(filename)
 
 
@@ -774,8 +774,8 @@ def create_report(name, data, directory):
     report_title = (DIV(H2(kind), id="result-title"))
     base_report = (report_title + clear + summary + notes + spacer  +
                    lattice_title + lattice_table + spacer + 
-                   pointless_table + notes_spacegroup + spacer + pagebreak +
-                   profile_report +
+                   pointless_table + notes_spacegroup + spacer +
+                   profile_report + pagebreak +
                    dp_report)
 
     report = DIV(base_report, id="result-page", style="width: %dpx;" % IMG_WIDTH)

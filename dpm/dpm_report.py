@@ -444,14 +444,16 @@ def plot_twinning_stats(results, filename):
     ax1.grid(True)
     
     # set font parameters for the ouput table
-    l_statistic = results['details']['twinning_l_statistic']
-    fontpar = {}
-    fontpar["family"]="monospace"
-    #fontpar["size"]=8
-    info =  "Observed:     %0.3f\n" % l_statistic[0]
-    info += "Untwinned:    %0.3f\n" % l_statistic[1]
-    info += "Perfect twin: %0.3f\n" % l_statistic[2]
-    fig.text(0.6,0.2, info, fontdict=fontpar, color='k')
+    
+    l_statistic = results['details'].get('twinning_l_statistic')
+    if l_statistic is not None:
+        fontpar = {}
+        fontpar["family"]="monospace"
+        #fontpar["size"]=8
+        info =  "Observed:     %0.3f\n" % l_statistic[0]
+        info += "Untwinned:    %0.3f\n" % l_statistic[1]
+        info += "Perfect twin: %0.3f\n" % l_statistic[2]
+        fig.text(0.6,0.2, info, fontdict=fontpar, color='k')
     ax1.legend()
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')

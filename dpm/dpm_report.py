@@ -699,13 +699,13 @@ def create_report(name, data, directory):
                       P("Profiles are determined at 9 region on the detector surface shown on the left-most column.")+
                       P("Nice slices for the corresponding detector region are shown on the right of each region "),
                       Class="tablenotes")
+    profile_report = ""
 #    profile_plot = plot_profiles(results, os.path.join(directory, '%sprofiles.png' % prefix))
 #    if profile_plot != "":
 #        profile_report = DIV(H3('Reference Profiles as a function of detector region')+
 #                         IMG(src=profile_plot), 
 #                         Class="image")+clear+profile_notes
-#    else:
-#        profile_report = ""
+
     plot_stderr = plot_error_stats(results, os.path.join(directory, '%sstderr.png' % prefix))
     stderr_notes = DIV(H3('Notes')+DL(
                        DT('I/Sigma    - ')+DD('Mean intensity/Sigma of a reflection in shell')+

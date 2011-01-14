@@ -475,7 +475,8 @@ def execute_pointless():
     cmd = """pointless << eof
 xdsin INTEGRATE.HKL
 xmlout pointless.xml
-resol 4.0
+resol 3.0
+hklout unmerged.mtz
 eof
 """
     f.write(cmd)
@@ -489,6 +490,7 @@ def execute_pointless_retry():
 xdsin INTEGRATE.HKL
 xmlout pointless.xml
 resol 4.0
+hklout unmerged.mtz
 choose solution 1
 eof
 """

@@ -947,6 +947,7 @@ class AutoXDS:
                 continue
             for infile in rres['files']['xscale']:
                 out_file_root = name
+                print out_file_root
 
                 # CNS File
                 out_files.append(out_file_root + ".cns")

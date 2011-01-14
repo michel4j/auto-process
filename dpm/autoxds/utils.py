@@ -521,6 +521,11 @@ def execute_distl(filename):
     return sts==0
 
 def execute_ctruncate(filename, anomalous=False):
+    command = "ctruncate -hklin %s -colin '/*/*/[I,SIGI]' > %s.log" % (filename, filename)
+    sts, output = commands.getstatusoutput(command)
+    return sts==0
+
+def execute_ctruncate_old(filename, anomalous=False):
     if anomalous:
         command = "ctruncate -hklin %s -amplitudes -colin '/*/*/[FP,SIGFP]' -colano '/*/*/[F(+),SIGF(+),F(-),SIGF(-)]' > %s.log" % (filename, filename)
     else:

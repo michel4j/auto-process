@@ -417,7 +417,7 @@ def plot_wilson_stats(results, filename):
     wilson_scale = results['details']['wilson_scale']
     fontpar = {}
     fontpar["family"]="monospace"
-    #fontpar["size"]=8
+    fontpar["size"]=9
     info =  "Estimated B: %0.3f\n" % wilson_line[0]
     info += "sigma a: %8.3f\n" % wilson_line[1]
     info += "sigma b: %8.3f\n" % wilson_line[2]
@@ -449,7 +449,7 @@ def plot_twinning_stats(results, filename):
     if l_statistic is not None:
         fontpar = {}
         fontpar["family"]="monospace"
-        #fontpar["size"]=8
+        fontpar["size"]=9
         info =  "Observed:     %0.3f\n" % l_statistic[0]
         info += "Untwinned:    %0.3f\n" % l_statistic[1]
         info += "Perfect twin: %0.3f\n" % l_statistic[2]

@@ -947,7 +947,6 @@ class AutoXDS:
                 continue
             for infile in rres['files']['xscale']:
                 out_file_root = name
-                print out_file_root
 
                 # CNS File
                 out_files.append(out_file_root + ".cns")
@@ -1001,8 +1000,9 @@ class AutoXDS:
                 utils.execute_f2mtz()
                 
                 # run truncate on mtz files and parse output
+                truncate_input_file = os.path.join(os.path.dirname(f2mtz_options['output_file']), 'unmerged.mtz')
                 truncate_output = '%s.log' % f2mtz_options['output_file']
-                res = utils.execute_ctruncate(f2mtz_options['output_file'], True)
+                res = utils.execute_ctruncate(truncate_input_file, self.options.get('anomalous', False))
                 if res:
                     truncate_info[name] = parse_ctruncate(truncate_output)
                 

@@ -19,6 +19,10 @@ from dpm.parser.utils import Table
 from gnosis.xml import pickle
 from dpm.utils.odict import SortedDict
 import utils, io
+try:
+    import json
+except:
+    import simplejson as json
 
 
 _logger = get_module_logger('AutoXDS')
@@ -187,6 +191,7 @@ class AutoXDS:
             info['details'][dataset_name] = {}
             dset = self.results[dataset_name]
             # print out data collection parameters
+            
             if dset.get('parameters', None) is not None:
                 _section = {}
                 _section['title'] = 'Data Collection and Processing Parameters'
@@ -420,6 +425,17 @@ class AutoXDS:
         for dataset_name in self.dataset_names:
             _dataset_info = {}
             dset = self.results[dataset_name]
+            
+            # read dataset file if present and use that to figure out the data_id
+            data_id = None
+
+            dataset_file = os.path.join(
+                              os.path.dirname(dset['parameters']['template']),
+                              '%s.SUMMARY' % (dataset_name))
+            if os.path.exists(dataset_file):
+                dataset_info = json.load(file(dataset_file))
+                data_id = dataset_info.get('id')
+            
             if dset.get('image_analysis', None) is not None:
                 _ice_rings = dset['image_analysis']['summary']['ice_rings']
             else:
@@ -429,11 +445,12 @@ class AutoXDS:
                 _summary = dset['scaling']
             else:
                 _summary= dset['correction']
-            _sum_keys = ['name', 'score', 'space_group_id', 'space_group_name', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
+            _sum_keys = ['name', 'data_id', 'score', 'space_group_id', 'space_group_name', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
                      'resolution','reflections', 'unique','multiplicity', 'completeness','mosaicity', 'i_sigma',
                      'r_meas','r_mrgdf', 'sigma_spot', 'sigma_angle','ice_rings', 'url', 'wavelength']
             _sum_values = [
-                dataset_name, 
+                dataset_name,
+                data_id,
                 dset['crystal_score'], 
                 dset['correction']['symmetry']['space_group']['sg_number'],
                 utils.SPACE_GROUP_NAMES[dset['correction']['symmetry']['space_group']['sg_number']],
@@ -590,14 +607,7 @@ class AutoXDS:
         fh.close()
     
     def export_json(self, filename, err=None, traceback=None, code=1):
-        try:
-            import json
-        except:
-            try:
-                import simplejson as json
-            except:
-                _logger.info('JSON exporter not available ...')
-                return
+
         result_dict = self.get_json_dict()
             
         

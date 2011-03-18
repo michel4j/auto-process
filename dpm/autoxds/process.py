@@ -430,7 +430,7 @@ class AutoXDS:
             data_id = None
 
             dataset_file = os.path.join(
-                              os.path.dirname(dset['parameters']['template']),
+                              os.path.dirname(dset['parameters']['file_template']),
                               '%s.SUMMARY' % (dataset_name))
             if os.path.exists(dataset_file):
                 dataset_info = json.load(file(dataset_file))

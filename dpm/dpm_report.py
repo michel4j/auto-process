@@ -578,7 +578,7 @@ def create_report(name, data, directory):
 
     result_table_head = (COLGROUP(COL('', Class='result-labels'))
                          )
-    sg_name = SPACE_GROUP_NAMES(results['space_group_id'])
+    sg_name = SPACE_GROUP_NAMES[results['space_group_id']]
     result_table_body = (TBODY(TR(TD('Score'+(SUP('[1]', Class="footnote")))+TD("%0.2f" % results['score']))+
                                TR(TD('Wavelength (A)')+TD(results['wavelength']))+    
                                TR(TD('Space Group'+(SUP('[2]', Class="footnote")))+TD(sg_name))+  

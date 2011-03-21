@@ -433,6 +433,7 @@ class AutoXDS:
             dataset_file = os.path.join(
                               os.path.dirname(dset['parameters']['file_template']),
                               '%s.SUMMARY' % (dataset_name))
+
             if os.path.exists(dataset_file):
                 dataset_info = json.load(file(dataset_file))
                 data_id = dataset_info.get('id')
@@ -615,7 +616,15 @@ class AutoXDS:
 
         result_dict = self.get_json_dict()
             
-        
+        # read previous json_file and obtain id from it if one exists:
+        json_file_name = os.path.join(self.top_directory, filename)
+        if os.path.exists(json_file_name):
+            old_json = json.load(file(json_file_name))
+            for info in old_json['result']:
+                dataset_name = info['result']['name']
+                if dataset_name in result_dict:
+                    result_dict[dataset_name]['id'] = info['result']['id']
+                    
         # save json information to file
         if err is not None:
             error = {'message': err, "traceback": traceback, "code": code }

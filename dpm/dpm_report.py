@@ -15,7 +15,6 @@ from matplotlib.figure import Figure
 from matplotlib import rcParams
 from matplotlib.colors import LogNorm, Normalize
 import matplotlib.cm as cm
-from mpl_toolkits.axes_grid import AxesGrid
 
 
 
@@ -36,10 +35,10 @@ HTML_TEMPLATE = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
 <html>
 <head>
 <title>AutoProcess - Data processing report</title>
-<link href='http://fonts.googleapis.com/css?family=Cantarell:regular,italic,bold,bolditalic' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Ubuntu:regular,italic,bold,bolditalic' rel='stylesheet' type='text/css'>
 <style type="text/css">
 body {
- font-size: 14px; font-family: Cantarell, sans-serif; line-height: 130%;
+ font-size: 14px; font-family: Ubuntu, sans-serif; line-height: 130%;
 }
 #result-page {
  margin: 0 auto; text-align:left; padding:0px;
@@ -527,6 +526,7 @@ def plot_frame_stats(results, filename):
     return os.path.basename(filename)
 
 def plot_profiles(results, filename):
+    from mpl_toolkits.axes_grid import AxesGrid
     profiles = results['details'].get('integration_profiles')
     if profiles is None:
         return ''
@@ -697,18 +697,18 @@ def create_report(name, data, directory):
     
     shell_report = (shell_title + shell_img + shell_table + shell_notes + spacer)
 
-    profile_notes = DIV(H3('Notes')+
-                      P("Profiles are determined at 9 region on the detector surface shown on the left-most column.")+
-                      P("Nice slices for the corresponding detector region are shown on the right of each region "),
-                      Class="tablenotes")
-    profile_plot = plot_profiles(results, os.path.join(directory, '%sprofiles.png' % prefix))
-    profile_report = ""
-    if profile_plot != "":
-        profile_report = DIV(H3('Reference Profiles as a function of detector region')+
-                         IMG(src=profile_plot), 
-                         Class="image")+clear+profile_notes
-    else:
-        profile_report = ""
+#    profile_notes = DIV(H3('Notes')+
+#                      P("Profiles are determined at 9 region on the detector surface shown on the left-most column.")+
+#                      P("Nice slices for the corresponding detector region are shown on the right of each region "),
+#                      Class="tablenotes")
+#    profile_plot = plot_profiles(results, os.path.join(directory, '%sprofiles.png' % prefix))
+#    profile_report = ""
+#    if profile_plot != "":
+#        profile_report = DIV(H3('Reference Profiles as a function of detector region')+
+#                         IMG(src=profile_plot), 
+#                         Class="image")+clear+profile_notes
+#    else:
+#        profile_report = ""
     plot_stderr = plot_error_stats(results, os.path.join(directory, '%sstderr.png' % prefix))
     stderr_notes = DIV(H3('Notes')+DL(
                        DT('I/Sigma    - ')+DD('Mean intensity/Sigma of a reflection in shell')+
@@ -778,8 +778,8 @@ def create_report(name, data, directory):
     base_report = (report_title + clear + summary + notes + spacer  +
                    lattice_title + lattice_table + spacer + 
                    pointless_table + notes_spacegroup + spacer +
-                   profile_report + pagebreak +
-                   dp_report)
+                   #profile_report + 
+                   pagebreak + dp_report)
 
     report = DIV(base_report, id="result-page", style="width: %dpx;" % IMG_WIDTH)
     htmldoc = HTML_TEMPLATE + str(report) + "</body></html>"

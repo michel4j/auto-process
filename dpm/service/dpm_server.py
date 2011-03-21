@@ -163,7 +163,7 @@ class CommandProtocol(protocol.ProcessProtocol):
         self.output += output
     
     def errReceived(self, error):
-        self.errors += error        
+        self.errors += error     
 
     def outConnectionLost(self):
         pass

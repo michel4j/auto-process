@@ -535,7 +535,7 @@ def execute_ctruncate_old(filename, anomalous=False):
 
 def generate_report(path):
     if os.path.exists(path) and os.access(path, os.W_OK):
-        command = "dpm_report %s" % path
+        command = "dpm_report %s " % path
         sts, output = commands.getstatusoutput(command)
         return sts==0
     else:

@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 from matplotlib import rcParams
 from matplotlib.colors import LogNorm, Normalize
 import matplotlib.cm as cm
-
+from dpm.autoxds.utils import SPACE_GROUP_NAMES
 
 
 # Adjust Legend parameters
@@ -578,9 +578,10 @@ def create_report(name, data, directory):
 
     result_table_head = (COLGROUP(COL('', Class='result-labels'))
                          )
+    sg_name = SPACE_GROUP_NAMES(results['space_group_id'])
     result_table_body = (TBODY(TR(TD('Score'+(SUP('[1]', Class="footnote")))+TD("%0.2f" % results['score']))+
                                TR(TD('Wavelength (A)')+TD(results['wavelength']))+    
-                               TR(TD('Space Group'+(SUP('[2]', Class="footnote")))+TD(results['space_group_name']))+  
+                               TR(TD('Space Group'+(SUP('[2]', Class="footnote")))+TD(sg_name))+  
                                TR(TD('Unit Cell (A)')+TD("%0.1f %0.1f %0.1f <br> %0.1f %0.1f %0.1f" % (results['cell_a'], results['cell_b'], results['cell_c'], results['cell_alpha'], results['cell_beta'], results['cell_gamma'])))+  
                                TR(TD('Resolution'+(SUP('[3]', Class="footnote")))+TD("%0.2f" % results['resolution']))+  
                                TR(TD('All Reflections')+TD(results['reflections']))+

@@ -449,7 +449,7 @@ class AutoXDS:
                 _summary = dset['scaling']
             else:
                 _summary= dset['correction']
-            _sum_keys = ['name', 'data_id', 'crystal_id', 'experiment_id', 'score', 'space_group_id', 'space_group_name', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
+            _sum_keys = ['name', 'data_id', 'crystal_id', 'experiment_id', 'score', 'space_group_id', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
                      'resolution','reflections', 'unique','multiplicity', 'completeness','mosaicity', 'i_sigma',
                      'r_meas','r_mrgdf', 'sigma_spot', 'sigma_angle','ice_rings', 'url', 'wavelength']
             _sum_values = [
@@ -459,7 +459,6 @@ class AutoXDS:
                 exp_id,
                 dset['crystal_score'], 
                 dset['correction']['symmetry']['space_group']['sg_number'],
-                utils.SPACE_GROUP_NAMES[dset['correction']['symmetry']['space_group']['sg_number']],
                 dset['correction']['symmetry']['space_group']['unit_cell'][0],
                 dset['correction']['symmetry']['space_group']['unit_cell'][1],
                 dset['correction']['symmetry']['space_group']['unit_cell'][2],

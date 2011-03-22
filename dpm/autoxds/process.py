@@ -18,6 +18,7 @@ from dpm.utils.progress import ProgDisplay, ProgChecker
 from dpm.parser.utils import Table
 from gnosis.xml import pickle
 from dpm.utils.odict import SortedDict
+from dpm.utils import htmlreport
 import utils, io
 try:
     import json
@@ -419,7 +420,7 @@ class AutoXDS:
         return info
 
     
-    def get_json_dict(self):
+    def get_json_data(self):
         info = []
         
         for dataset_name in self.dataset_names:
@@ -613,16 +614,18 @@ class AutoXDS:
     
     def export_json(self, filename, err=None, traceback=None, code=1):
 
-        result_dict = self.get_json_dict()
-            
+        result_list = self.get_json_data()
+        names = [v['name'] for v in result_list]
+        
         # read previous json_file and obtain id from it if one exists:
         json_file_name = os.path.join(self.top_directory, filename)
         if os.path.exists(json_file_name):
             old_json = json.load(file(json_file_name))
             for info in old_json['result']:
                 dataset_name = info['result']['name']
-                if dataset_name in result_dict:
-                    result_dict[dataset_name]['id'] = info['result']['id']
+                if dataset_name in names:
+                    pos = names.index(dataset_name)
+                    result_list[pos]['id'] = info['result']['id']
                     
         # save json information to file
         if err is not None:
@@ -631,7 +634,7 @@ class AutoXDS:
             error = None
             
         info = {
-            'result': result_dict,
+            'result': result_list,
             'error': error,
         }
         
@@ -647,12 +650,16 @@ class AutoXDS:
         fh.close()
         
         
-        #generate html report
-        _logger.info('Generating report in %s ...' % (os.path.join(self.top_directory, 'report')))  
-        sts = utils.generate_report(self.top_directory)
-        if not sts:
-            _logger.error('Could not generate report!')  
-            
+        #generate html reports
+        for report in result_list:
+            report_directory = os.path.join(report['result']['url'],'report')
+            _logger.info('Generating report in %s ...' % (report_directory))
+            if not os.path.exists(report_directory):
+                os.makedirs(report_directory)
+            if self.options.get('command', None) == 'screen':
+                htmlreport.create_screening_report(report, report_directory)
+            else:
+                htmlreport.create_full_report(report, report_directory)            
 
     def find_spots(self, run_info):
         os.chdir(run_info['working_directory'])
@@ -969,7 +976,8 @@ class AutoXDS:
             if rres['files'].get('xscale') is None: 
                 continue
             for infile in rres['files']['xscale']:
-                out_file_root = name
+                out_file_dir = os.path.dirname(infile)
+                out_file_root = os.path.join(out_file_dir, name)
 
                 # CNS File
                 out_files.append(out_file_root + ".cns")

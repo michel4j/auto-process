@@ -559,12 +559,9 @@ def plot_profiles(results, filename):
     return os.path.basename(filename)
 
 
-def create_report(name, data, directory):
-    if name != '':
-        prefix = '%s-' % name
-    else:
-        prefix = ''
-    report_file = os.path.join(directory,'%sindex.html' % prefix)
+def create_full_report(data, directory):
+    prefix = ''
+    report_file = os.path.join(directory,'index.html')
     html=open(report_file, 'w')
 
     try:
@@ -790,8 +787,11 @@ def create_report(name, data, directory):
     html.write(htmldoc)
     return os.path.basename(report_file)
 
+# Currently the same
+create_screening_report = create_full_report
+
 if __name__ == '__main__':
-    directory = sys.argv[1]
+    json_file = sys.argv[1]
     if os.path.exists(os.path.join(directory, 'process.json')):
         data = json.load(file(os.path.join(directory, 'process.json')))
 
@@ -799,13 +799,10 @@ if __name__ == '__main__':
         if not os.path.exists(report_directory):
             os.mkdir(report_directory)
         
-        if data.get('result') is not None:
-            if len(data.get('result')) == 1:
-                create_report('', data['result'][0], report_directory)
-            else:
-                report_files = []
-                for dat in data.get('result'):
-                    name = dat['result']['name']
-                    out = create_report(name, dat, report_directory)
-                    report_files.append(out)
+        for report in data['result']:
+            report_directory = os.path.join(report['result']['url'],'report')
+            if not os.path.exists(report_directory):
+                os.makedirs(report_directory)
+            out = create_full_report(report, report_directory)
+            report_files.append(out)
                 

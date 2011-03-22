@@ -1,0 +1,4 @@
+#!/bin/csh
+
+/usr/bin/env python $DPM_PATH/dpm/utils/htmlreport.py $*
+exit

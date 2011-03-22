@@ -21,7 +21,7 @@ from dpm.autoxds.utils import SPACE_GROUP_NAMES
 
 
 # Adjust Legend parameters
-os.environ['MPLCONFIGDIR'] = /tmp/matplotlibrc
+os.environ['MPLCONFIGDIR'] = '/tmp/matplotlibrc'
 from matplotlib import rcParams
 rcParams['legend.loc'] = 'best'
 rcParams['legend.fontsize'] = 10

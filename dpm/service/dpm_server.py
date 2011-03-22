@@ -163,7 +163,7 @@ class CommandProtocol(protocol.ProcessProtocol):
         self.output += output
     
     def errReceived(self, error):
-        self.errors += error     
+        self.errors += error
 
     def outConnectionLost(self):
         pass
@@ -190,6 +190,7 @@ class CommandProtocol(protocol.ProcessProtocol):
                     self.deferred.errback(f)
             else:
                 self.deferred.callback(data)
+            log.msg(self.errors)
         else:
             f = Failure(CommandFailed('Command `%s` died with code `%d`.' % (self.command, rc)))
             log.msg(self.output)
@@ -201,7 +202,7 @@ def run_command(command, args, path='/tmp', uid=0, gid=0):
     prot = CommandProtocol(path, command)
     prot.deferred = defer.Deferred()
     args = [dpm.utils.which(command)] + args
-    p = reactor.spawnProcess(
+    reactor.spawnProcess(
         prot,
         args[0],
         args,
@@ -216,7 +217,7 @@ def run_command_output(command, args, path='/tmp', uid=0, gid=0, output=None):
     prot = CommandProtocol(path, command, output_file=output)
     prot.deferred = defer.Deferred()
     args = [dpm.utils.which(command)] + args
-    p = reactor.spawnProcess(
+    reactor.spawnProcess(
         prot,
         args[0],
         args,

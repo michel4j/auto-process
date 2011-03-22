@@ -1,3 +1,6 @@
+import warnings
+warnings.simplefilter("ignore") # ignore deprecation warnings
+
 import re
 import string
 import sys

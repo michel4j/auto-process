@@ -15,13 +15,14 @@ import cStringIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.ticker import Formatter, FormatStrFormatter, Locator
 from matplotlib.figure import Figure
-from matplotlib import rcParams
 from matplotlib.colors import LogNorm, Normalize
 import matplotlib.cm as cm
 from dpm.autoxds.utils import SPACE_GROUP_NAMES
 
 
 # Adjust Legend parameters
+os.environ['MPLCONFIGDIR'] = /tmp/matplotlibrc
+from matplotlib import rcParams
 rcParams['legend.loc'] = 'best'
 rcParams['legend.fontsize'] = 10
 rcParams['legend.isaxes'] = False

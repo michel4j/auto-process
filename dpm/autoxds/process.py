@@ -18,7 +18,6 @@ from dpm.utils.progress import ProgDisplay, ProgChecker
 from dpm.parser.utils import Table
 from gnosis.xml import pickle
 from dpm.utils.odict import SortedDict
-from dpm.utils import htmlreport
 import utils, io
 try:
     import json
@@ -651,6 +650,7 @@ class AutoXDS:
         
         
         #generate html reports
+        from dpm.utils import htmlreport
         for report in result_list:
             report_directory = os.path.join(report['result']['url'],'report')
             _logger.info('Generating report in %s ...' % (report_directory))

@@ -614,7 +614,7 @@ class AutoXDS:
     def export_json(self, filename, err=None, traceback=None, code=1):
 
         result_list = self.get_json_data()
-        names = [v['name'] for v in result_list]
+        names = [v['result']['name'] for v in result_list]
         
         # read previous json_file and obtain id from it if one exists:
         json_file_name = os.path.join(self.top_directory, filename)
@@ -624,7 +624,7 @@ class AutoXDS:
                 dataset_name = info['result']['name']
                 if dataset_name in names:
                     pos = names.index(dataset_name)
-                    result_list[pos]['id'] = info['result']['id']
+                    result_list[pos]['id'] = info['result'].get('id')
                     
         # save json information to file
         if err is not None:

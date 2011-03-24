@@ -6,9 +6,10 @@ import string
 import sys
 import os
 import numpy
-
-    
 import cStringIO
+from dpm.utils import json, misc
+
+os.environ['HOME'] = misc.get_home_dir()
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.ticker import Formatter, FormatStrFormatter, Locator
 from matplotlib.figure import Figure
@@ -19,7 +20,6 @@ from dpm.utils import json
 
 
 # Adjust Legend parameters
-os.environ['MPLCONFIGDIR'] = '/tmp/matplotlibrc'
 from matplotlib import rcParams
 rcParams['legend.loc'] = 'best'
 rcParams['legend.fontsize'] = 10

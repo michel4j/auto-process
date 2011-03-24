@@ -808,6 +808,5 @@ if __name__ == '__main__':
             report_directory = os.path.join(report['result']['url'],'report')
             if not os.path.exists(report_directory):
                 os.makedirs(report_directory)
-            out = create_full_report(report, report_directory)
-            report_files.append(out)
+            create_full_report(report, report_directory)
                 

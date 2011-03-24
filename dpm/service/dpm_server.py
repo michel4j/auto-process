@@ -13,16 +13,13 @@ from zope.interface import Interface, implements
 
 from dpm.service.interfaces import *
 from bcm.service.utils import log_call
-from bcm.utils import mdns, converter
+from bcm.utils import mdns, converter, json
 from bcm.utils.misc import get_short_uuid
 from dpm.service.common import *
 import os, sys
 import dpm.utils
 import pwd
-try:
-    import json
-except:
-    import simplejson as json
+
 
 log.FileLogObserver(sys.stdout).start()
 

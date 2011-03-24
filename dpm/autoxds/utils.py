@@ -12,7 +12,7 @@ from math import exp
 import fnmatch
 import shutil
 import commands
-from bcm.libs.imageio import read_header
+from bcm.utils.imageio import read_header
 from dpm.parser.utils import Table
 from dpm.utils import magic
 from dpm.utils import fitting

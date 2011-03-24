@@ -16,13 +16,10 @@ from dpm.parser.ccp4 import parse_ctruncate
 from dpm.utils.log import get_module_logger
 from dpm.utils.progress import ProgDisplay, ProgChecker
 from dpm.parser.utils import Table
-from gnosis.xml import pickle
 from dpm.utils.odict import SortedDict
+from dpm.utils import json
 import utils, io
-try:
-    import json
-except:
-    import simplejson as json
+
 
 
 _logger = get_module_logger('AutoXDS')
@@ -602,14 +599,6 @@ class AutoXDS:
                 _dataset_info['result']['kind'] = AUTOXDS_PROCESSING
             info.append(_dataset_info)
         return info
-
-    def save_xml(self, info=None, filename='debug.xml'):
-        os.chdir(self.top_directory)
-        fh = open(filename, 'w')
-        if info is None:
-            info = self.results
-        pickle.dump(info, fh)
-        fh.close()
     
     def export_json(self, filename, err=None, traceback=None, code=1):
 

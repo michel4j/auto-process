@@ -4,12 +4,7 @@ import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
 
 from dpm.parser.distl import parse_distl_string
-import dpm.utils
-
-try: 
-    import json
-except ImportError: 
-    import simplejson as json
+from dpm.utils import json
     
 
 def _save_json_output(filename, data):

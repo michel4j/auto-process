@@ -6,10 +6,7 @@ import string
 import sys
 import os
 import numpy
-try: 
-    import json
-except:
-    import simplejson as json
+
     
 import cStringIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -18,6 +15,7 @@ from matplotlib.figure import Figure
 from matplotlib.colors import LogNorm, Normalize
 import matplotlib.cm as cm
 from dpm.autoxds.utils import SPACE_GROUP_NAMES
+from dpm.utils import json
 
 
 # Adjust Legend parameters

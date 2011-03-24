@@ -793,10 +793,12 @@ create_screening_report = create_full_report
 
 if __name__ == '__main__':
     json_file = sys.argv[1]
-    if os.path.exists(os.path.join(directory, 'process.json')):
-        data = json.load(file(os.path.join(directory, 'process.json')))
+    if os.path.exists(json_file):
+        data = json.load(file(json_file))
 
-        report_directory = os.path.join(directory, 'report')
+        report_directory = os.path.join(
+                                os.path.dirname(os.path.abspath(json_file)),
+                                'report')
         if not os.path.exists(report_directory):
             os.mkdir(report_directory)
         

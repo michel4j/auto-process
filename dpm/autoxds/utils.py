@@ -20,13 +20,6 @@ import numpy
 from dpm.utils.prettytable import PrettyTable
 from dpm.utils.odict import SortedDict
 import textwrap
-
-#for python 2.3
-try:
-    _ = set([1,2])
-except:
-    import sets
-    set = sets.Set
    
 from dpm.utils.log import get_module_logger
 _logger = get_module_logger('AutoXDS')

@@ -416,16 +416,18 @@ def plot_wilson_stats(results, filename):
     ax1.xaxis.set_major_locator(ResLocator())
     
     # set font parameters for the ouput table
-    wilson_line = results['details']['wilson_line']
-    wilson_scale = results['details']['wilson_scale']
-    fontpar = {}
-    fontpar["family"]="monospace"
-    fontpar["size"]=9
-    info =  "Estimated B: %0.3f\n" % wilson_line[0]
-    info += "sigma a: %8.3f\n" % wilson_line[1]
-    info += "sigma b: %8.3f\n" % wilson_line[2]
-    info += "Scale factor: %0.3f\n" % wilson_scale    
-    fig.text(0.55,0.65, info, fontdict=fontpar, color='k')
+    wilson_line = results['details'].get('wilson_line')
+    wilson_scale = results['details'].get('wilson_scale')
+    if wilson_line is not None:
+        fontpar = {}
+        fontpar["family"]="monospace"
+        fontpar["size"]=9
+        info =  "Estimated B: %0.3f\n" % wilson_line[0]
+        info += "sigma a: %8.3f\n" % wilson_line[1]
+        info += "sigma b: %8.3f\n" % wilson_line[2]
+        if wilson_scale is not None:
+            info += "Scale factor: %0.3f\n" % wilson_scale    
+        fig.text(0.55,0.65, info, fontdict=fontpar, color='k')
 
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')

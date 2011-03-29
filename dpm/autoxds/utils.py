@@ -24,6 +24,7 @@ import textwrap
 from dpm.utils.log import get_module_logger
 _logger = get_module_logger('AutoXDS')
 
+DEBUG = False
 
 # each rule is a list of 9 boolean values representing
 # a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120
@@ -558,9 +559,11 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
         -0.05 * score_penalty(ice_rings, 0, 5),
         ]
     
-    names = ['Root', 'Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spot', 'Std_spindle', 'Ice']
-    for name, contrib in zip(names,score):
-        print '\t\t%s : %0.3f' % (name, contrib)
+    if DEBUG:
+        names = ['Root', 'Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spot', 'Std_spindle', 'Ice']
+        vals = [1, resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings]
+        for name, contrib, val in zip(names,score, vals):
+            print '\t\t%s : %0.3f (%0.3f)' % (name, contrib, val)
         
     return sum(score)
 

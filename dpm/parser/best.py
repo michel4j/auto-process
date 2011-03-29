@@ -39,19 +39,19 @@ def parse_best_plot(filename):
         info['completeness_statistics'][percent] = list(curve[:,1])
        
     
-    exp_data, pos = utils.cut_section('Total exposure time vs resolution', 'DATA=CURVE2D', data)
-    exp_info = {}
-    for m in re.finditer("# Curve (?P<index>\d+)\n(%.+\n)*(?P<curve>(\s*\d+\.\d+\s+\d+\.\d+\n)+)", exp_data):
-        exp_info[m.group('index')] = numpy.fromstring(m.group('curve'), sep=' ').reshape((-1,2))
-       
-    info['exposure_statistics'] = {
-        'inv_res_sq': list(exp_info['1'][:,0]),
-        'time': list(exp_info['1'][:,1]),
-        'prediction': {
-            'inv_res_sq': list(exp_info['2'][:,0]),
-            'time': list(exp_info['2'][:,1]),
-        }
-    }
+#    exp_data, pos = utils.cut_section('Total exposure time vs resolution', 'DATA=CURVE2D', data)
+#    exp_info = {}
+#    for m in re.finditer("# Curve (?P<index>\d+)\n(%.+\n)*(?P<curve>(\s*\d+\.\d+\s+\d+\.\d+\n)+)", exp_data):
+#        exp_info[m.group('index')] = numpy.fromstring(m.group('curve'), sep=' ').reshape((-1,2))
+#       
+#    info['exposure_statistics'] = {
+#        'inv_res_sq': list(exp_info['1'][:,0]),
+#        'time': list(exp_info['1'][:,1]),
+#        'prediction': {
+#            'inv_res_sq': list(exp_info['2'][:,0]),
+#            'time': list(exp_info['2'][:,1]),
+#        }
+#    }
 
     return info
 

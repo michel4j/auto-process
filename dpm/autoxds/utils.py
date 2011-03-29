@@ -492,7 +492,7 @@ eof
     sts, output = commands.getstatusoutput('sh pointless.com > pointless.log')
     return sts==0     
 
-def execute_best(info):
+def execute_best(info, output_prefix='best'):
     anom_flag = ''
     if info['anomalous']:
         anom_flag = '-a'
@@ -504,8 +504,8 @@ def execute_best(info):
         det_flag = ''
     # removed -q option
     command  = "best %s -t %f " % (det_flag, info['exposure_time'])
-    command += " -e none -M 0.5 -w 0.2 %s -dna best.xml" % anom_flag
-    command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL > best.log"
+    command += " -e none -M 0.5 -w 0.2 %s -o %s.plot -dna %s.xml" % (anom_flag, output_prefix, output_prefix)
+    command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL > %s.log" % (output_prefix,)
     sts, output = commands.getstatusoutput(command)
     return sts==0
 
@@ -526,41 +526,36 @@ def execute_ctruncate_old(filename, anomalous=False):
     sts, output = commands.getstatusoutput(command)
     return sts==0
     
-def score_crystal_old(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
 
-    score = [ 1.0,
-        -0.45 * max(0.0, min(1.0, math.exp(-4.0 + resolution))),
-        -0.2 * max(0.0, min(1.0, math.exp(-3.0 + std_spot))),
-        -0.05 * max(0.0, min(1.0, math.exp(-1.0 + std_spindle))),
-        -0.1 * max(0.0, min(1.0, math.exp(-0.5 + mosaicity))),
-        -0.1 * max(0.0, min(1.0, math.exp(-5.0 + abs(r_meas)))),
-        -0.05 * max(0.0, min(1.0, math.exp(1.0 - abs(i_sigma)))),
-        -0.05 * max(0.0, min(1.0, math.exp(ice_rings))),
-        ]
+def score_penalty(x, best=1, worst=0):
+    """Calculate an exponential score penalty for any value given the limits [best, worst]
+    so that values close to the best are penalized least but easily distinguishable from each other
+    while those far away from best but close to worst are penalized most but not that easily distinguishable.
     
-    #names = ['Root', 'Resolution', 'Spindle', 'Spot', 'Mosaicity','R_meas', 'I/Sigma', 'Ice', 'Satellites']
-    #for name, contrib in zip(names,score):
-    #    print '\t\t%s : %0.3f' % (name, contrib)
-        
-    return sum(score)
+    Any value better than or equal to best is not penalized and any value worse than worst, is penalized maximally
+    """
+    
+    # clip the values so they stay in the range
+    if best > worst:
+        x = min(best, max(worst, x))
+    else:
+        x = max(best, min(worst, x))
+    
+    x = (x-worst)/float(best-worst)
+    return numpy.sqrt(1 - x*x)
 
-def score_crystal(resolution, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
-    def nearest_index(ar, v):
-        return (numpy.abs(ar-v)).argmin()
-        
-    SIG = 1.0 / (1.0 + numpy.exp(-numpy.linspace(-3,6,1000)))
-    R_X = numpy.linspace(1, 20, 1000) 
-    RES_X = numpy.linspace(1, 4, 1000)
-    MOS_X = numpy.linspace(0.1, 1.5, 1000)
     
+def score_crystal(resolution, completeness, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
+            
     score = [ 1.0,
-        -0.45 * SIG[nearest_index(RES_X, resolution)],
-        -0.1 * max(0.0, min(1.0, math.exp(-2.0 + std_spot))),
-        -0.05 * max(0.0, min(1.0, math.exp(-1.0 + std_spindle))),
-        -0.2 * SIG[nearest_index(MOS_X, mosaicity)],
-        -0.1 * SIG[nearest_index(R_X, r_meas)],
-        -0.05 * max(0.0, min(1.0, math.exp(1.0 - abs(i_sigma)))),
-        max(-0.05,  -0.01 * ice_rings),
+        -0.4 * score_penalty(resolution, 1, 6),
+        -0.15 * score_penalty(completeness, 70, 100),
+        -0.1 * score_penalty(r_meas, 3, 60),
+        -0.1 *  score_penalty(std_spot, 1, 5),
+        -0.05 * score_penalty(std_spindle, 0.1, 3),
+        -0.1 * score_penalty(mosaicity, 0.1, 2),
+        -0.05 * score_penalty(i_sigma, 20, 1),
+        -0.05 * score_penalty(ice_rings, 0, 5),
         ]
     
     #names = ['Root', 'Resolution', 'Spot', 'Spindle', 'Mosaicity','R_meas', 'I/Sigma', 'Ice']

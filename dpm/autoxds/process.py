@@ -1043,7 +1043,7 @@ class AutoXDS:
         info_x = xds.parse_xplan()
         _logger.info('Calculating Alternate Strategy ...')
         success = utils.execute_best(run_info)
-        info_b = parse_best('best.xml')
+        info_b = parse_best('best')
         info_b['xplan'] = info_x
         if not success:
             _logger.error(':-( Strategy failed!')
@@ -1078,10 +1078,12 @@ class AutoXDS:
                 resolution = rres['scaling']['resolution'][1]
                 i_sigma = rres['scaling']['summary']['i_sigma']
                 r_meas = rres['scaling']['summary']['r_meas']
+                completeness = rres['scaling']['summary']['completeness']
             else:
                 resolution = rres['correction']['resolution'][1]
                 i_sigma = rres['correction']['summary']['i_sigma']
                 r_meas = rres['correction']['summary']['r_meas']          
+                completeness = rres['correction']['summary']['completeness']
             st_table = rres['indexing']['subtrees']            
             st_array = [i['population'] for i in st_table]
             subtree_skew = sum(st_array[1:]) / float(sum(st_array))
@@ -1089,7 +1091,16 @@ class AutoXDS:
                 ice_rings = rres['image_analysis']['summary']['ice_rings']
             else:
                 ice_rings = 0
-            score = utils.score_crystal(resolution, mosaicity, r_meas, i_sigma,
+            #use predicted values for resolution, r_meas, i_sigma if we are screening
+            if self.options.get('command',None) == 'screen':
+                resolution = rres['strategy']['resolution']
+                if rres['strategy'].get('prediction_all') is not None:
+                    r_meas = rres['strategy']['prediction_all']['R_factor']
+                    i_sigma = rres['strategy']['prediction_all']['average_i_over_sigma']
+                    completeness = rres['strategy']['prediction_all']['completeness']*100.0
+                
+            score = utils.score_crystal(resolution, completeness,
+                                mosaicity, r_meas, i_sigma,
                                 std_spot, std_spindle,
                                 subtree_skew, ice_rings)
             _logger.info("Dataset '%s' Score: %0.2f" % (dataset_name, score))

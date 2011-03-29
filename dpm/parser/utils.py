@@ -165,7 +165,7 @@ def cut_section(start, end, s, position=0):
         _s = position
     if end is not None:
         end_re = re.compile(end)
-        end_m = end_re.search(s, position)
+        end_m = end_re.search(s, _s)
         if end_m:
             _e = end_m.end()
         else:

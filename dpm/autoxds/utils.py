@@ -545,22 +545,22 @@ def score_penalty(x, best=1, worst=0):
     return numpy.sqrt(1 - x*x)
 
     
-def score_crystal(resolution, completeness, mosaicity, r_meas, i_sigma, std_spot, std_spindle, subtree_skew, ice_rings):
+def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings):
             
     score = [ 1.0,
-        -0.4 * score_penalty(resolution, 1, 6),
-        -0.15 * score_penalty(completeness, 70, 100),
+        -0.3 * score_penalty(resolution, 1, 6),
+        -0.2 * score_penalty(completeness, 100, 70),
         -0.1 * score_penalty(r_meas, 3, 60),
-        -0.1 *  score_penalty(std_spot, 1, 5),
-        -0.05 * score_penalty(std_spindle, 0.1, 3),
-        -0.1 * score_penalty(mosaicity, 0.1, 2),
-        -0.05 * score_penalty(i_sigma, 20, 1),
+        -0.1 * score_penalty(i_sigma, 20, 1),
+        -0.1 * score_penalty(mosaicity, 0.25, 3),
+        -0.1 * score_penalty(std_spindle, 0.1, 3),
+        -0.05 * score_penalty(std_spot, 1, 3),
         -0.05 * score_penalty(ice_rings, 0, 5),
         ]
     
-    #names = ['Root', 'Resolution', 'Spot', 'Spindle', 'Mosaicity','R_meas', 'I/Sigma', 'Ice']
-    #for name, contrib in zip(names,score):
-    #    print '\t\t%s : %0.3f' % (name, contrib)
+    names = ['Root', 'Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spot', 'Std_spindle', 'Ice']
+    for name, contrib in zip(names,score):
+        print '\t\t%s : %0.3f' % (name, contrib)
         
     return sum(score)
 

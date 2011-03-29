@@ -1099,10 +1099,12 @@ class AutoXDS:
                     i_sigma = rres['strategy']['prediction_all']['average_i_over_sigma']
                     completeness = rres['strategy']['prediction_all']['completeness']*100.0
                 
-            score = utils.score_crystal(resolution, completeness,
-                                mosaicity, r_meas, i_sigma,
-                                std_spot, std_spindle,
-                                subtree_skew, ice_rings)
+            score = utils.score_crystal(resolution, 
+                                        completeness,
+                                        r_meas, i_sigma,
+                                        mosaicity, 
+                                        std_spot, std_spindle,
+                                        ice_rings)
             _logger.info("Dataset '%s' Score: %0.2f" % (dataset_name, score))
             rres['crystal_score'] = score
 

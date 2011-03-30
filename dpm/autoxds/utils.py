@@ -549,19 +549,19 @@ def score_penalty(x, best=1, worst=0):
 def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings):
             
     score = [ 1.0,
-        -0.3 * score_penalty(resolution, 1, 6),
-        -0.2 * score_penalty(completeness, 100, 70),
-        -0.1 * score_penalty(r_meas, 3, 60),
-        -0.1 * score_penalty(i_sigma, 20, 1),
-        -0.1 * score_penalty(mosaicity, 0.25, 3),
-        -0.1 * score_penalty(std_spindle, 0.1, 3),
+        -0.30 * score_penalty(resolution, 1.5, 5),
+        -0.20 * score_penalty(completeness, 98, 70),
+        -0.10 * score_penalty(r_meas, 3, 30),
+        -0.10 * score_penalty(i_sigma, 20, 1),
+        -0.10 * score_penalty(mosaicity, 0.25, 3),
+        -0.10 * score_penalty(std_spindle, 0.1, 1),
         -0.05 * score_penalty(std_spot, 1, 3),
         -0.05 * score_penalty(ice_rings, 0, 5),
         ]
     
     if DEBUG:
-        names = ['Root', 'Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spot', 'Std_spindle', 'Ice']
-        vals = [1, resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings]
+        names = ['Root', 'Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Ice']
+        vals = [1, resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, ice_rings]
         for name, contrib, val in zip(names,score, vals):
             print '\t\t%s : %0.3f (%0.3f)' % (name, contrib, val)
         

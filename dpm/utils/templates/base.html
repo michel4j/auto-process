@@ -1,0 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <meta name="robots" content="NONE,NOARCHIVE" />
+    <title>AutoProcess - Data processing report</title>
+    <link href='http://fonts.googleapis.com/css?family=Ubuntu:regular,italic,bold,bolditalic' rel='stylesheet' type='text/css'>
+    <style type="text/css">
+    {% include "style-min.css" %}
+    </style>
+</head>
+<body class="{% block bodyclass %}{% endblock %}">
+    <div id="main-wrapper">
+    <div id="headline">
+	    <div class="wrapper">
+	        <div class="col-12">
+                <div id="content-title">
+                {% block headline %}{% endblock %}
+                </div>
+                {% block object-tools %}{% endblock %}
+            </div>
+	    </div>
+    </div>
+    
+    <div id="container">
+    <div id="subcontainer">
+{% block content-override %}
+{% endblock %}
+    </div><!-- end subcontainer -->
+    </div><!-- end container -->
+    <div class="push"></div>
+    </div><!-- end main-wrapper -->
+    <!-- footer -->
+    <div id="footer">
+        {% block footer %}
+            <p>&copy;2008-11 Canadian Light Source, Inc.&nbsp;
+            |
+            <a href="http://www.lightsource.ca">CLS Home</a> 
+            | 
+            <a href="http://cmcf.lightsource.ca">CMCF Home</a>
+            |
+            <a href="http://cmcf.lightsource.ca/contact-us/">Contact</a>
+        {% endblock %}
+    </div><!-- end footer -->    

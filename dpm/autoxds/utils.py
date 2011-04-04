@@ -24,7 +24,7 @@ import textwrap
 from dpm.utils.log import get_module_logger
 _logger = get_module_logger('AutoXDS')
 
-DEBUG = True
+DEBUG = False
 
 # each rule is a list of 9 boolean values representing
 # a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120

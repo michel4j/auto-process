@@ -70,7 +70,7 @@ def extract_xml_table(xml_node, list_name):
                 except:
                     value = value
                 _entry[key] = value
-                _table.append((int(index), _entry))
+            _table.append((int(index), _entry))
     _sorted_table = utils.Table([v for _,v in sorted(_table)])
     final_table = {}
     for k in _sorted_table.keys():

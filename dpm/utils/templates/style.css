@@ -62,27 +62,37 @@ h2 {
  margin: 0 auto; text-align:left; padding:0px;
 }
 #result-summary {
-    border: 1px solid #CCCCCC;
-    border-collapse: collapse;
     float: left;
     text-align: left;
-    width: 290px;
+    width: 300px;
 }
-#result-table, strategy-table {
+#result-table {
+    border: 1px solid #CCCCCC;
+    border-collapse: collapse;
+    text-align: left;
     border-collapse: collapse;
     text-align: left;
     width: 100%;
 }
-#result-table td, strategy-table td {
-    border-bottom: 1px solid #EEEEEE;
+
+#result-table td, #result-table th {
     padding: 5px 8px;
 }
+
+#result-table tr + tr {
+    border-top: 1px dotted #ccc;
+}
+
+#result-table th{
+    color: #6699CC;
+    font-weight: 700;
+    text-align: center;
+}
+
 #summary-notes {
-    border: 1px solid #CCCCCC;
-    border-collapse: collapse;
     float: right;
     text-align: left;
-    width: 255px;
+    width: 280px;
 }
 
 #result-page h3 {
@@ -97,7 +107,7 @@ h2 {
 }
 
 div.tablenotes h3 {
-    font-size: 140%;
+    font-size: 120%;
     font-weight: normal;
     line-height: 1.5em;
     margin-bottom: 0.5em;
@@ -124,7 +134,7 @@ dl.note-list dd {
     margin: 8px 0;
     text-align: left;
 }
-.rtable th {
+.rtable th{
     color: #6699CC;
     font-weight: 700;
     padding: 4px;
@@ -148,7 +158,8 @@ div.tablenotes {
     background: none repeat scroll 0 0 #EEEEFF;
     border: 1px solid #CCCCCC;
     margin-bottom: 10px;
-    padding: 20px;
+    padding: 1.5em;
+    font-size: 95%;
 }
 #result-page img {
     display: block;

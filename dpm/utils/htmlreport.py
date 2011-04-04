@@ -4,6 +4,8 @@ import os
 import sys
 import numpy
 from dpm.utils import json, misc
+from dpm.autoxds.utils import SPACE_GROUP_NAMES
+
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.ticker import Formatter, FormatStrFormatter, Locator
 from matplotlib.figure import Figure
@@ -77,7 +79,9 @@ class ResLocator(Locator):
 
 def plot_shell_stats(results, filename):
 
-    data = results['details']['shell_statistics']
+    data = results['details'].get('shell_statistics')
+    if data is None:
+        return
     shell = numpy.array(data['shell'])**-2
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(211)
@@ -128,8 +132,133 @@ def plot_shell_stats(results, filename):
     canvas.print_png(filename)
     return os.path.basename(filename)
 
+def plot_pred_quality(results, filename):
+
+    data = results['details'].get('predicted_quality')
+    if data is None:
+        return
+    shell = numpy.array(data['shell'])**-2
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
+    ax1 = fig.add_subplot(211)
+    ax1.plot(shell, data['completeness'], 'r-')
+    ax1.set_ylabel('completeness (%)', color='r')
+    ax11 = ax1.twinx()
+    ax11.plot(shell, data['r_factor'], 'g-')
+    ax11.legend(loc='center left')
+    ax1.grid(True)
+    ax11.set_ylabel('R-factor (%)', color='g')
+    for tl in ax11.get_yticklabels():
+        tl.set_color('g')
+    for tl in ax1.get_yticklabels():
+        tl.set_color('r')
+    ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
+    ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
+    ax1.set_ylim((0, 105))
+    ax11.set_ylim((0,  max(data['r_factor'])+10))
+
+    ax2 = fig.add_subplot(212, sharex=ax1)
+    ax2.plot(shell, data['i_sigma'], 'm-')
+    ax2.set_xlabel('Resolution Shell')
+    ax2.set_ylabel('I/SigmaI', color='m')
+    ax21 = ax2.twinx()
+    ax21.plot(shell, data['multiplicity'], 'b-')
+    ax2.grid(True)
+    ax21.set_ylabel('Multiplicity', color='b')
+    for tl in ax21.get_yticklabels():
+        tl.set_color('b')
+    for tl in ax2.get_yticklabels():
+        tl.set_color('m')
+    ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
+    ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    ax2.set_ylim((-1, max(data['i_sigma'])+1))
+    ax21.set_ylim((0, max(data['multiplicity'])+0.5))
+
+    ax1.xaxis.set_major_formatter(ResFormatter())
+    ax1.xaxis.set_minor_formatter(ResFormatter())
+    ax1.xaxis.set_major_locator(ResLocator())
+    ax2.xaxis.set_major_formatter(ResFormatter())
+    ax2.xaxis.set_minor_formatter(ResFormatter())
+    ax2.xaxis.set_major_locator(ResLocator())
+
+    canvas = FigureCanvas(fig)
+    #response = HttpResponse(content_type='image/png')
+    #canvas.print_png(response)
+    canvas.print_png(filename)
+    return os.path.basename(filename)
+
+def plot_overlap_analysis(results, filename):
+    
+    data = results['details'].get('overlap_analysis')
+    if data is None:
+        return
+    angle = data.pop('angle')
+    
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.7), dpi=PLOT_DPI)
+    ax1 = fig.add_subplot(111)
+    keys = [(float(k),k) for k in data.keys()]
+    for _,k in sorted(keys):       
+        ax1.plot(angle, data[k], label=k)
+    ax1.set_ylabel('Maximum delta (deg)')
+    ax1.grid(True)
+    ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
+
+    ax1.set_xlabel('Oscillation angle (deg)')
+    ax1.legend()
+
+    canvas = FigureCanvas(fig)
+    canvas.print_png(filename)
+    return os.path.basename(filename)
+
+
+def plot_wedge_analysis(results, filename):
+    
+    data = results['details'].get('wedge_analysis')
+    if data is None:
+        return
+    start_angle = data.pop('start_angle')
+    
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
+    ax1 = fig.add_subplot(111)
+    keys = [(float(k),k) for k in data.keys()]
+    for _,k in sorted(keys):       
+        ax1.plot(start_angle, data[k], label="%s%%" % k)
+    ax1.set_ylabel('Total Oscillation Angle (deg)')
+    ax1.grid(True)
+    ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
+
+    ax1.set_xlabel('Starting angle (deg)')
+    ax1.legend()
+
+    canvas = FigureCanvas(fig)
+    canvas.print_png(filename)
+    return os.path.basename(filename)
+
+def plot_exposure_analysis(results, filename):
+    
+    data = results['details'].get('exposure_analysis')
+    if data is None:
+        return
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.7), dpi=PLOT_DPI)
+    ax1 = fig.add_subplot(111)
+    ax1.plot(data['exposure_time'], data['resolution'])
+    ax1.set_ylabel('Resolution')
+    ax1.grid(True)
+    ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
+
+    exposure_time = results['details']['strategy'].get('exposure_time')
+    if exposure_time is not None:
+        ax1.axvline(x=exposure_time, color='r', label='optimal')
+    ax1.set_xlabel('Exposure time (s)')
+    ax1.legend()
+
+    canvas = FigureCanvas(fig)
+    canvas.print_png(filename)
+    return os.path.basename(filename)
+
 def plot_error_stats(results, filename):
-    data = results['details']['standard_errors']
+    data = results['details'].get('standard_errors')
+    if data is None:
+        return    
     shell = numpy.array(data['shell'])**-2
     
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
@@ -176,8 +305,10 @@ def plot_error_stats(results, filename):
 
 def plot_diff_stats(results, filename):
     
-    data = results['details']['diff_statistics']
-    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.6), dpi=PLOT_DPI)
+    data = results['details'].get('diff_statistics')
+    if data is None:
+        return
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.7), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(111)
     ax1.plot(data['frame_diff'], data['rd'], 'r-', label="all")
     ax1.set_ylabel('R-d')
@@ -195,9 +326,11 @@ def plot_diff_stats(results, filename):
 
 def plot_wilson_stats(results, filename):
     
-    data = results['details']['wilson_plot']
+    data = results['details'].get('wilson_plot')
+    if data is None:
+        return
 
-    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.6), dpi=PLOT_DPI)
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.7), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(111)
     plot_data = zip(data['inv_res_sq'], data['log_i_sigma'])
     plot_data.sort()
@@ -231,9 +364,11 @@ def plot_wilson_stats(results, filename):
 
 def plot_twinning_stats(results, filename):
     
-    data = results['details']['twinning_l_test']
+    data = results['details'].get('twinning_l_test')
+    if data is None:
+        return
 
-    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.6), dpi=PLOT_DPI)
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.7), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(111)
     ax1.plot(data['abs_l'], data['observed'], 'b-+', label='observed')
     ax1.plot(data['abs_l'], data['untwinned'], 'r-+', label='untwinned')
@@ -262,14 +397,10 @@ def plot_twinning_stats(results, filename):
 
 
 def plot_frame_stats(results, filename):
-    
-    #try:
-    #    project = request.user.get_profile()
-    #    result = project.result_set.get(pk=id)
-    #except:
-    #    raise Http404
-    # extract shell statistics to plot
-    data = results['details']['frame_statistics']
+
+    data = results['details'].get('frame_statistics')
+    if data is None:
+        return
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(311)
     ax1.plot(data['frame'], data['scale'], 'r-')
@@ -325,36 +456,6 @@ def plot_frame_stats(results, filename):
     canvas.print_png(filename)
     return os.path.basename(filename)
 
-def plot_profiles(results, filename):
-    from mpl_toolkits.axes_grid import AxesGrid
-    profiles = results['details'].get('integration_profiles')
-    if profiles is None:
-        return ''
-    fig = Figure(figsize=(PLOT_WIDTH, PLOT_WIDTH), dpi=PLOT_DPI)
-    cmap = cm.get_cmap('gray_r')
-    norm = Normalize(None, 100, clip=True)
-    grid = AxesGrid(fig, 111,
-                    nrows_ncols = (9,10),
-                    share_all=True,
-                    axes_pad = 0,
-                    label_mode = '1',
-                    cbar_mode=None,
-                    )
-    for i, profile in enumerate(profiles):
-        grid[i*10].plot([profile['x']],[profile['y']], 'cs', markersize=15)
-        for loc in ['left','top','bottom','right']:
-            grid[i*10].axis[loc].toggle(ticklabels=False, ticks=False)
-        for j,spot in enumerate(profile['spots']):
-            idx = i*10 + j+1
-            _a = numpy.array(spot).reshape((9,9))
-            intpl = 'nearest' #'mitchell'
-            grid[idx].imshow(_a, cmap=cmap, norm=norm, interpolation=intpl)
-            for loc in ['left','top','bottom','right']:
-                grid[idx].axis[loc].toggle(ticklabels=False, ticks=False)
-    canvas = FigureCanvas(fig)
-    canvas.print_png(filename, bbox_inches='tight')
-    return os.path.basename(filename)
-
 
 def create_full_report(data, directory):
 
@@ -363,8 +464,17 @@ def create_full_report(data, directory):
 
     try:
         results = data['result']
+        results['space_group_name'] = SPACE_GROUP_NAMES[results['space_group_id']]
     except KeyError:
         sys.exit(1)
+
+    t = loader.get_template("report.html")    
+    c = Context({
+            'object': results,
+            })
+    
+    html.write(t.render(c))
+    html.close()
 
     # create plots
     plot_shell_stats(results, os.path.join(directory, 'shell.png'))
@@ -374,17 +484,35 @@ def create_full_report(data, directory):
     plot_wilson_stats(results, os.path.join(directory, 'wilson.png'))
     plot_twinning_stats(results, os.path.join(directory, 'twinning.png'))
 
-    t = loader.get_template("report.html")    
+
+    return os.path.basename(report_file)
+
+def create_screening_report(data, directory):
+
+    report_file = os.path.join(directory,'index.html')
+    html=open(report_file, 'w')
+
+    try:
+        results = data['result']
+        results['space_group_name'] = SPACE_GROUP_NAMES[results['space_group_id']]
+    except KeyError:
+        sys.exit(1)
+
+    t = loader.get_template("screening-report.html")
     c = Context({
             'object': results,
             })
     
     html.write(t.render(c))
     html.close()
+    # create plots
+    plot_pred_quality(results, os.path.join(directory, 'quality.png'))
+    plot_exposure_analysis(results, os.path.join(directory, 'exposure.png'))
+    plot_overlap_analysis(results, os.path.join(directory, 'overlap.png'))
+    plot_wedge_analysis(results, os.path.join(directory, 'wedge.png'))
+
     return os.path.basename(report_file)
 
-# Currently the same
-create_screening_report = create_full_report
 
 if __name__ == '__main__':
     json_file = sys.argv[1]
@@ -401,5 +529,8 @@ if __name__ == '__main__':
             report_directory = os.path.join(report['result']['url'],'report')
             if not os.path.exists(report_directory):
                 os.makedirs(report_directory)
-            create_full_report(report, report_directory)
+            if report['result']['kind'] == 1:
+                create_full_report(report, report_directory)
+            else:
+                create_screening_report(report, report_directory)
                 

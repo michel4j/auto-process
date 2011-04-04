@@ -479,34 +479,10 @@ class AutoXDS:
                 ]
             _dataset_info['result'] = dict(zip(_sum_keys, _sum_values))
             _dataset_info['result']['details'] = {}
-            if dset['files']['output'] is not None:
+            if dset['files'].get('output') is not None:
                 _dataset_info['result']['details']['output_files'] = dset['files']['output']
             
-            # Print out strategy information
-            if dset.get('strategy', None) is not None and dset['strategy'].get('runs', None) is not None:
-                _strategy_keys = ['name', 'attenuation', 'distance',    'start_angle',
-                    'delta_angle', 'total_angle', 'exposure_time',
-                    'exp_resolution', 'exp_completeness', 'exp_multiplicity',
-                    'exp_i_sigma', 'exp_r_factor', 'energy',
-                    ]
-                run = dset['strategy']['runs'][0]
-                _strategy_vals = [
-                  dataset_name,
-                  dset['strategy']['attenuation'], 
-                  run['distance'], run['phi_start'], run['phi_width'], 
-                  run['phi_width'] * run['number_of_images'], run['exposure_time'],
-                  dset['strategy']['resolution'], dset['strategy']['completeness'],
-                  dset['strategy']['redundancy'], dset['strategy']['prediction_all']['average_i_over_sigma'],
-                  dset['strategy']['prediction_all']['R_factor'],
-                  ]
-                _dataset_info['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
-                _t = Table(dset['indexing']['oscillation_ranges'])
-               
-                _section = {}
-                for k in ['resolution','delta_angle']:
-                    _section[k] = _t[k]
-                _dataset_info['result']['details']['overlap_analysis'] = _section          
-            
+            # compatible lattices and space group selection
             _section = {}
             _t = Table(dset['correction']['symmetry']['lattices'])
             _id = SortedDict(_t['id'])
@@ -524,79 +500,148 @@ class AutoXDS:
             _section['name'] = [utils.SPACE_GROUP_NAMES[n] for n in  _section['space_group']]
             _section['probability'] = _t['probability']            
             _dataset_info['result']['details']['spacegroup_selection'] = _section 
-            
-            # Print out integration results
-            _section = {}
-            _t = Table(dset['integration']['scale_factors'])
-            for k in ['frame','scale','overloads','reflections','mosaicity','unexpected','divergence']:
-                _section[k] = _t[k]
-                
-            if dset.get('scaling') is not None:
-                if dset['scaling'].get('frame_statistics') is not None:                     
-                    _t = Table(dset['scaling']['frame_statistics'])
-                    _section['frame_no'] = _t['frame']
-                    for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
-                        _section[k] = _t[k]
-                if dset['scaling'].get('diff_statistics') is not None:
-                    _t = Table(dset['scaling']['diff_statistics'])
-                    _dataset_info['result']['details']['diff_statistics'] = {}
-                    for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
-                        _dataset_info['result']['details']['diff_statistics'][k] = _t[k]
-            _dataset_info['result']['details']['frame_statistics'] = _section
-            _dataset_info['result']['details']['integration_profiles'] = dset['integration'].get('profiles')
-                
-            # Print out correction results
-            _section = {}
-            if dset.get('scaling') is not None and dset['scaling'].get('statistics') is not None:
-                _t = Table(dset['scaling']['statistics'])
-            else:
-                _t = Table(dset['correction']['statistics'])
-            for k in ['completeness','r_meas','r_mrgdf','i_sigma','sig_ano','cor_ano']:
-                _section[k] = _t[k][:-1] # don't get 'total' row
-            _section['shell'] = [float(v) for v in _t['shell'][:-1]]
-            _dataset_info['result']['details']['shell_statistics'] = _section
-            
-            # Print out standard errors
-            if dset['correction'].get('standard_errors') is not None:
-                _section = {}
-                _t = Table(dset['correction']['standard_errors'])
-                _section['shell'] = [sum(v)/2.0 for v in _t['resol_range'][:-1]] # don't get 'total' row
-                for k in ['chi_sq', 'i_sigma', 'r_obs', 'r_exp','n_obs', 'n_accept', 'n_reject']:
-                    _section[k] = _t[k][:-1]
-                _dataset_info['result']['details']['standard_errors'] = _section
-            
-            # Print out wilson_plot, cum int dist, twinning test
-            if dset.get('data_quality') is not None:
-                if dset['data_quality'].get('wilson_plot') is not None:
-                    _section = {}
-                    _t = Table(dset['data_quality']['wilson_plot'])
-                    for k in ['inv_res_sq', 'log_i_sigma']:
-                        _section[k] = _t[k]
-                    _dataset_info['result']['details']['wilson_plot'] = _section
-                if dset['data_quality'].get('cum_int_dist') is not None:
-                    _section = {}
-                    _t = Table(dset['data_quality']['cum_int_dist'])
-                    for k in ['z', 'exp_acentric', 'exp_centric', 'obs_acentric', 'obs_centric', 'twin_acentric']:
-                        _section[k] = _t[k]
-                    _dataset_info['result']['details']['cum_int_dist'] = _section
-                if dset['data_quality'].get('twinning') is not None:
-                    _section = {}
-                    _t = Table(dset['data_quality']['twinning'])
-                    for k in ['abs_l', 'observed', 'twinned', 'untwinned']:
-                        _section[k] = _t[k]
-                    _dataset_info['result']['details']['twinning_l_test'] = _section
-                if dset['data_quality'].get('wilson_line') is not None:
-                    _dataset_info['result']['details']['wilson_line'] = dset['data_quality']['wilson_line']
-                if dset['data_quality'].get('wilson_scale') is not None:
-                    _dataset_info['result']['details']['wilson_scale'] = dset['data_quality']['wilson_scale']
-                if dset['data_quality'].get('twinning_l_statistic') is not None:
-                    _dataset_info['result']['details']['twinning_l_statistic'] = dset['data_quality']['twinning_l_statistic']
-            
-            
+
+            # Harvest screening details
             if self.options.get('command', None) == 'screen':
                 _dataset_info['result']['kind'] = AUTOXDS_SCREENING
-            else:
+                if dset.get('strategy') is not None and dset['strategy'].get('runs') is not None:
+                    _strategy = dset['strategy']
+                    # harvest old strategy
+                    _strategy_keys = ['name', 'attenuation', 'distance',    'start_angle',
+                        'delta_angle', 'total_angle', 'exposure_time',
+                        'exp_resolution', 'exp_completeness', 'exp_multiplicity',
+                        'exp_i_sigma', 'exp_r_factor', 'energy',
+                        ]
+                    run = dset['strategy']['runs'][0]
+                    _strategy_vals = [
+                      dataset_name,
+                      _strategy['attenuation'], 
+                      run['distance'], run['phi_start'], run['phi_width'], 
+                      run['phi_width'] * run['number_of_images'], run['exposure_time'],
+                      _strategy['resolution'], _strategy['completeness'],
+                      _strategy['redundancy'], _strategy['prediction_all']['average_i_over_sigma'],
+                      _strategy['prediction_all']['R_factor'],
+                      ]
+                    _dataset_info['strategy'] = dict(zip(_strategy_keys,_strategy_vals))
+                    
+                    # harvest new strategy
+                    _section = {
+                        'name': dataset_name,
+                        'attenuation': _strategy['attenuation'], 
+                        'resolution': _strategy['resolution'],
+                        'distance': run['distance'],
+                        'start_angle': run['phi_start'],
+                        'delta_angle': run['phi_width'],
+                        'total_angle': run['phi_width'] * run['number_of_images'],
+                        'exposure_time': run['exposure_time'],
+                        'resolution_reasoning': _strategy['resolution_reasoning'],                  
+                        'completeness':    _strategy['completeness'],
+                        'r_factor':  _strategy['prediction_all']['R_factor'],
+                        'i_sigma': _strategy['prediction_all']['average_i_over_sigma'],
+                        'multiplicity': _strategy['redundancy'],
+                        'frac_overload': _strategy['prediction_all']['fract_overload'],
+                        }
+                    _dataset_info['result']['details']['strategy'] = _section
+                    
+                    # overlap_analysis and wedge analysis
+                    _st_details =_strategy.get('details', {})
+                    _dataset_info['result']['details']['overlap_analysis'] = _st_details.get('delta_statistics')
+                    _dataset_info['result']['details']['wedge_analysis'] = _st_details.get('completeness_statistics')
+                    
+                    # shell_statistics
+                    _st_shell = _st_details.get('shell_statistics', {})
+                    _res_shells = [(x+y)/2.0 for x,y in zip(_st_shell.get('min_resolution',[]), _st_shell.get('max_resolution',[]))]
+                    if len(_res_shells) > 1:
+                        _section = {
+                            'shell': _res_shells[:-1],
+                            'completeness': [x*100 for x in _st_shell['completeness'][:-1]],
+                            'r_factor': _st_shell['R_factor'][:-1],
+                            'i_sigma': _st_shell['average_i_over_sigma'][:-1],
+                            'multiplicity': _st_shell['redundancy'][:-1],
+                            'frac_overload': _st_shell['fract_overload'][:-1],
+                            }
+                        _dataset_info['result']['details']['predicted_quality'] = _section
+ 
+                    # exposure time statistics
+                    _st_time = _st_details.get('time_statistics', {})
+                    _res_shells = _st_time.get('resolution_max',[])
+                    if len(_res_shells) > 0:
+                        _section = {
+                            'resolution': _res_shells,
+                            'exposure_time': _st_time.get('ex_time'),
+                            }
+                        _dataset_info['result']['details']['exposure_analysis'] = _section
+                   
+                        
+            else:  
                 _dataset_info['result']['kind'] = AUTOXDS_PROCESSING
+                # Print out integration results
+                _section = {}
+                _t = Table(dset['integration']['scale_factors'])
+                for k in ['frame','scale','overloads','reflections','mosaicity','unexpected','divergence']:
+                    _section[k] = _t[k]
+                    
+                if dset.get('scaling') is not None:
+                    if dset['scaling'].get('frame_statistics') is not None:                     
+                        _t = Table(dset['scaling']['frame_statistics'])
+                        _section['frame_no'] = _t['frame']
+                        for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
+                            _section[k] = _t[k]
+                    if dset['scaling'].get('diff_statistics') is not None:
+                        _t = Table(dset['scaling']['diff_statistics'])
+                        _dataset_info['result']['details']['diff_statistics'] = {}
+                        for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
+                            _dataset_info['result']['details']['diff_statistics'][k] = _t[k]
+                _dataset_info['result']['details']['frame_statistics'] = _section
+                #_dataset_info['result']['details']['integration_profiles'] = dset['integration'].get('profiles')
+                    
+                # Print out correction results
+                _section = {}
+                if dset.get('scaling') is not None and dset['scaling'].get('statistics') is not None:
+                    _t = Table(dset['scaling']['statistics'])
+                else:
+                    _t = Table(dset['correction']['statistics'])
+                for k in ['completeness','r_meas','r_mrgdf','i_sigma','sig_ano','cor_ano']:
+                    _section[k] = _t[k][:-1] # don't get 'total' row
+                _section['shell'] = [float(v) for v in _t['shell'][:-1]]
+                _dataset_info['result']['details']['shell_statistics'] = _section
+                
+                # Print out standard errors
+                if dset['correction'].get('standard_errors') is not None:
+                    _section = {}
+                    _t = Table(dset['correction']['standard_errors'])
+                    _section['shell'] = [sum(v)/2.0 for v in _t['resol_range'][:-1]] # don't get 'total' row
+                    for k in ['chi_sq', 'i_sigma', 'r_obs', 'r_exp','n_obs', 'n_accept', 'n_reject']:
+                        _section[k] = _t[k][:-1]
+                    _dataset_info['result']['details']['standard_errors'] = _section
+                
+                # Print out wilson_plot, cum int dist, twinning test
+                if dset.get('data_quality') is not None:
+                    if dset['data_quality'].get('wilson_plot') is not None:
+                        _section = {}
+                        _t = Table(dset['data_quality']['wilson_plot'])
+                        for k in ['inv_res_sq', 'log_i_sigma']:
+                            _section[k] = _t[k]
+                        _dataset_info['result']['details']['wilson_plot'] = _section
+                    if dset['data_quality'].get('cum_int_dist') is not None:
+                        _section = {}
+                        _t = Table(dset['data_quality']['cum_int_dist'])
+                        for k in ['z', 'exp_acentric', 'exp_centric', 'obs_acentric', 'obs_centric', 'twin_acentric']:
+                            _section[k] = _t[k]
+                        _dataset_info['result']['details']['cum_int_dist'] = _section
+                    if dset['data_quality'].get('twinning') is not None:
+                        _section = {}
+                        _t = Table(dset['data_quality']['twinning'])
+                        for k in ['abs_l', 'observed', 'twinned', 'untwinned']:
+                            _section[k] = _t[k]
+                        _dataset_info['result']['details']['twinning_l_test'] = _section
+                    if dset['data_quality'].get('wilson_line') is not None:
+                        _dataset_info['result']['details']['wilson_line'] = dset['data_quality']['wilson_line']
+                    if dset['data_quality'].get('wilson_scale') is not None:
+                        _dataset_info['result']['details']['wilson_scale'] = dset['data_quality']['wilson_scale']
+                    if dset['data_quality'].get('twinning_l_statistic') is not None:
+                        _dataset_info['result']['details']['twinning_l_statistic'] = dset['data_quality']['twinning_l_statistic']
+                       
             info.append(_dataset_info)
         return info
     

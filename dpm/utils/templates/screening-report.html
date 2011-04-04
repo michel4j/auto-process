@@ -1,10 +1,6 @@
 {% extends "base.html" %}
 {% block headline %}
-    {% ifequal object.kind object.RESULT_TYPES.SCREENING %}
-        <h2 class="screen"> Crystal Screening Report - &ldquo;{{object.name}}&rdquo;</h2>
-    {% else %}
-        <h2 class="process"> Data Processing Report - &ldquo;{{object.name}}&rdquo;</h2>
-    {% endifequal %}
+<h2 class="screen"> Crystal Screening Report - &ldquo;{{object.name}}&rdquo;</h2>
 {% endblock %}
 
 {% block content-override %}
@@ -12,37 +8,59 @@
 <div id="content" class="col-12">
 
 <div id="result-page">   
-    <h3>Summary</h3>
+    <h3>Predicted Quality and Suggested Strategy</h3>
     <div id="result-summary">
         <table id="result-table">
             <colgroup>
                 <col class="result-labels"/>
             </colgroup>
             <tbody>
+                <tr><th colspan=2>Observed Parameters</th></tr>
                 <tr><td>Score<sup class="footnote">[1]</sup></td><td>{{object.score|floatformat:"-2"}}</td></tr>
                 <tr><td>Wavelength (A)</td><td>{{object.wavelength}}</td></tr>
                 <tr><td>Space Group<sup class="footnote">[2]</sup></td><td>{{object.space_group_name}} </td></tr>
                 <tr><td>Unit Cell (A)</td><td>{{object.cell_a|floatformat:"-2"}} {{object.cell_b|floatformat:"-2"}} {{object.cell_c|floatformat:"-2"}}<br/>
                 {{object.cell_alpha|floatformat:"-1"}} {{object.cell_beta|floatformat:"-1"}} {{object.cell_gamma|floatformat:"-1"}}</td></tr>
-                <tr><td>Resolution (A)<sup class="footnote">[3]</sup></td><td>{{object.resolution|floatformat:"-2"}}</td></tr>
-                <tr><td>All Reflections</td><td>{{object.reflections}}</td></tr>
-                <tr><td>Unique Reflections</td><td>{{object.unique}}</td></tr>
-                <tr><td>Multiplicity</td><td>{{object.multiplicity|floatformat:"-1"}}</td></tr>
-                <tr><td>Completeness</td><td>{{object.completeness|floatformat:"-2"}} %</td></tr>
                 <tr><td>Mosaicity</td><td>{{object.mosaicity}}</td></tr>
-                <tr><td>I/Sigma(I)</td><td>{{object.i_sigma}}</td></tr>
-                <tr><td>R-meas<sup class="footnote">[4]</sup></td><td>{{object.r_meas}}</td></tr>
-                <tr><td>R-mrgd-F<sup class="footnote">[5]</sup></td><td>{{object.r_mrgd}}</td></tr>
                 <tr><td>Spot deviation</td><td>{{object.sigma_spot}}</td></tr>
                 <tr><td>Spindle deviation</td><td>{{object.sigma_angle}}</td></tr>
                 {% ifnotequal object.ice_rings -1 %}
-                    <tr><td>Ice Rings</td><td>{{object.ice_rings}}</td></tr>
+                <tr><td>Ice Rings</td><td>{{object.ice_rings}}</td></tr>
                 {% endifnotequal %}
+                <tr><th colspan=2>Expected Quality<sup class="footnote">[3]</sup></th></tr>
+                <tr><td>Resolution (A)<sup class="footnote">[4]</sup></td><td>{{object.details.strategy.resolution|floatformat:"-2"}}</td></tr>
+                <tr><td>Multiplicity</td><td>{{object.details.strategy.multiplicity|floatformat:"-1"}}</td></tr>
+                <tr><td>Completeness</td><td>{{object.details.strategy.completeness|floatformat:"-2"}} %</td></tr>
+                <tr><td>I/Sigma(I)</td><td>{{object.details.strategy.i_sigma}}</td></tr>
+                <tr><td>R-factor</td><td>{{object.details.strategy.r_factor}}</td></tr>
+                <tr><td>Fraction overloaded</td><td>{{object.details.strategy.frac_overload}}</td></tr>
+                <tr><th colspan=2>Data Collection Strategy<sup class="footnote">[3]</sup></th></tr>
+                <tr><td>Attenuation (%)</td><td>{{object.details.strategy.attenuation}}</td></tr>
+                <tr><td>Exposure time (s)</td><td>{{object.details.strategy.exposure_time}}</td></tr>
+                <tr><td>Detector distance (mm)</td><td>{{object.details.strategy.distance}}</td></tr>
+                <tr><td>Start Angle</td><td>{{object.details.strategy.start_angle}}</td></tr>
+                <tr><td>Delta Angle</td><td>{{object.details.strategy.delta_angle}}</td></tr>
+                <tr><td>Total Oscillation Angle</td><td>{{object.details.strategy.total_angle}}</td></tr>
             </tbody>
         </table>
     </div>
 
     <div id="summary-notes">
+        <table id="result-table">
+            <colgroup>
+                <col class="result-labels"/>
+            </colgroup>
+            <tbody>
+                <tr><th colspan=2>Data Collection Strategy<sup class="footnote">[3]</sup></th></tr>
+                <tr><td>Attenuation (%)</td><td>{{object.details.strategy.attenuation}}</td></tr>
+                <tr><td>Exposure time (s)</td><td>{{object.details.strategy.exposure_time}}</td></tr>
+                <tr><td>Detector distance (mm)</td><td>{{object.details.strategy.distance}}</td></tr>
+                <tr><td>Start Angle</td><td>{{object.details.strategy.start_angle}}</td></tr>
+                <tr><td>Delta Angle</td><td>{{object.details.strategy.delta_angle}}</td></tr>
+                <tr><td>Total Oscillation Angle</td><td>{{object.details.strategy.total_angle}}</td></tr>
+            </tbody>
+        </table>
+        <div class="clear spacer"></div>
         <div class="tablenotes">
         <h3>Notes</h3>
             <dl class="note-list">
@@ -60,13 +78,13 @@
             </dd>
             <dt>[3] -<dt>
             <dd>
-                Resolution selected based on a cut-off of I/sigma(I) > 1.0. Statistics presented
-                reflect this resolution.
+                Data collection strategy and predicted quality was calculated using BEST. See 
+            A.N. Popov and G.P. Bourenkov Acta Cryst. (2003). D59, 1145-1153, G.P. Bourenkov and A.N. Popov Acta Cryst. (2006). D62, 58-64.
             </dd>
             <dt>[4] -<dt>
-            <dd>Redundancy independent R-factor. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)</dd>
-            <dt>[5] -<dt>
-            <dd>Quality of amplitudes. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)</dd>
+            <dd>
+                {{object.details.strategy.resolution_reasoning}}.
+            </dd>
         </dl>
         </div>
     </div>
@@ -138,36 +156,23 @@
         <p>Indistinguishable space groups will have similar probabilities. If two or more of the top candidates have the same probability, the one with the fewest symmetry assumptions is chosen. This usually corresponds to the point group,  trying out higher symmetry space groups within the top tier does not require re-indexing the data as they are already in the same setting.</p>
         <p>For more detailed results, please inspect the output file 'pointless.log'.</p>
     </div><div class="clear spacer pagebreak"></div>
-    
-    <h3>Standard errors of reflection intensities by resolution</h3>
-    <img src="stderr.png" />
-    <div class="tablenotes">
-        <h3>Notes</h3>
-        <dl class="note-list">
-        <dt>I/Sigma    - </dt><dd>Mean intensity/Sigma of a reflection in shell</dd>
-        <dt>&chi;&sup2;  - </dt><dd>Goodness of fit between sample variances of symmetry-related intensities and their errors (&chi;&sup2; = 1 for perfect agreement).</dd>
-        <dt>R-observed - </dt><dd>&Sigma;|I(h,i)-I(h)| / &Sigma;[I(h,i)]</dd>
-        <dt>R-expected - </dt><dd>Expected R-FACTOR derived from Sigma(I)</dd>
-        </dl>
-    </div>
-    <div class="clear spacer pagebreak"></div>
-    
-    <h3>Statistics of final reflections by shell</h3>
-    <img src="shell.png" />
+        
+    <h3>Predicted statistics for suggested strategy by resolution</h3>
+    <img src="quality.png" />
     <table class="rtable full">
         <thead>
             <tr>
                 <th scope="col">Shell</th>
                 <th scope="col">Completeness</th>
-                <th scope="col">R<sub>meas</sub></th>
-                <th scope="col">R<sub>mrgd-F</sub></th>
-                <th scope="col">I/sigma(I)<sup class="footnote">[1]</sup></th>
-                <th scope="col">Sig<sub>ano</sub><sup class="footnote">[2]</sup></th>
+                <th scope="col">R<sub>factor</sub></th>
+                <th scope="col">I/sigma(I)</th>
+                <th scope="col">Multiplicity</sup></th>
+                <th scope="col">Overload fraction</sup></th>
             </tr>
         </thead>
         <tbody>
-        {% with object.details.shell_statistics as stats %}
-        {% zip stats.shell  stats.completeness  stats.r_meas stats.r_mrgdf stats.i_sigma stats.sig_ano as tbl %}
+        {% with object.details.predicted_quality as stats %}
+        {% zip stats.shell  stats.completeness  stats.r_factor stats.i_sigma stats.multiplicity stats.frac_overload as tbl %}
         {% for rows in tbl %}
             <tr>
             {% for col in rows %}
@@ -178,57 +183,48 @@
         {% endwith %}
         </tbody>
         <tfoot>
-        <tr><td colspan=4></td></tr>
+        <tr><td colspan=6></td></tr>
         </tfoot>
     </table>
     <div class="tablenotes">
         <h3>Notes</h3>
+        <p>The above plot was calculated by BEST. See 
+        A.N. Popov and G.P. Bourenkov Acta Cryst. (2003). D59, 1145-1153, G.P. Bourenkov and A.N. Popov Acta Cryst. (2006). D62, 58-64
+        </p>
         <dl class="note-list">
-            <dt>[1] -<dt>
-            <dd>
-                Mean of intensity/Sigma(I) of unique reflections
-                (after merging symmetry-related observations). Where Sigma(I) is
-                the standard deviation of reflection intensity I estimated from sample statistics.
-            </dd>
-            <dt>[2] -<dt>
-            <dd>
-                mean anomalous difference in units of its estimated standard
-                deviation (|F(+)-F(-)|/Sigma). F(+), F(-) are structure factor estimates
-                obtained from the merged intensity observations in each parity class.
-            </dd>
+        <dt>I/Sigma    - </dt><dd>Mean intensity/Sigma of a reflection in shell</dd>
+        <dt>R-factor - </dt><dd>&Sigma;|I(h,i)-I(h)| / &Sigma;[I(h,i)]</dd>
         </dl>
     </div>
 
     <div class="clear spacer"></div>
-    <h3>Statistics of final reflections by frame number and frame number difference</h3>
-    <img src="frame.png" />
-    <img src="diff.png" />
+    <h3>Maximal Oscillation width to avoid overlapped spots at different resolutions</h3>
+    <img src="overlap.png" />
     <div class="tablenotes">
-    <h3>Notes</h3>
-        <p>The above plot was calculated by XDSSTAT. See See Diederichs K. (2006) Acta Cryst D62, 96-101.</p>
-        <dl class="note-list">
-        <dt>Divergence - </dt><dd>Estimated Standard Deviation of Beam divergence</dd>
-        <dt>R<sub>d</sub> - </dt><dd>R-factors as a function of frame difference. An increase in R-d with frame difference is suggestive of radiation damage.</dd>
-        </dl>
+        <h3>Notes</h3>
+        <p>The above plot was calculated by BEST. See 
+        A.N. Popov and G.P. Bourenkov Acta Cryst. (2003). D59, 1145-1153, G.P. Bourenkov and A.N. Popov Acta Cryst. (2006). D62, 58-64
+        </p>
     </div>
 
 
-    <h3>Wilson Plot</h3>
-    <img src="wilson.png" />
+    <h3>Minimal oscillation ranges for different percentages of data completeness</h3>
+    <img src="wedge.png" />
     <div class="tablenotes">
         <h3>Notes</h3>
-        <p>The above clipper-style wilson plot was calculated by CTRUNCATE which is part of the CCP4 Package.</p>
-        <p>See S. French and K. Wilson, Acta Cryst. A34, 517-525 (1978).</p>
+        <p>The above plot was calculated by BEST. See 
+        A.N. Popov and G.P. Bourenkov Acta Cryst. (2003). D59, 1145-1153, G.P. Bourenkov and A.N. Popov Acta Cryst. (2006). D62, 58-64
+        </p>
     </div>
     <div class="clear spacer"></div>
 
-    <h3>L Test for twinning</h3>
-    <img src="twinning.png" />
+    <h3>Analysis of exposure time required versus resolution attained</h3>
+    <img src="exposure.png" />
     <div class="tablenotes">
         <h3>Notes</h3>
-        <p>The above plot was calculated by CTRUNCATE which is part of the CCP4 Package.</p>
-        <p>All data regardless of I/sigma(I) has been included in the L test. Anisotropy correction has been applied before calculating L.</p>
-        <p>See J. E. Padilla and T. O. Yeates, Acta Cryst. D59, 1124-1130 (2003)</p>
+        <p>The above plot was calculated by BEST. See 
+        A.N. Popov and G.P. Bourenkov Acta Cryst. (2003). D59, 1145-1153, G.P. Bourenkov and A.N. Popov Acta Cryst. (2006). D62, 58-64
+        </p>
     </div>
 
 </div>

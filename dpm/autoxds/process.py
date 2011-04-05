@@ -1129,11 +1129,9 @@ class AutoXDS:
                 i_sigma = rres['correction']['summary']['i_sigma']
                 r_meas = rres['correction']['summary']['r_meas']          
                 completeness = rres['correction']['summary']['completeness']
-            st_table = rres['indexing']['subtrees']            
-            st_array = [i['population'] for i in st_table]
-            subtree_skew = sum(st_array[1:]) / float(sum(st_array))
+
             if rres.get('image_analysis') is not None:
-                ice_rings = rres['image_analysis']['summary']['ice_rings']
+                ice_rings = rres['image_analysis'].get('summary', {}).get('ice_rings', 0)
             else:
                 ice_rings = 0
             #use predicted values for resolution, r_meas, i_sigma if we are screening

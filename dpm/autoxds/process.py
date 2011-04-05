@@ -1065,9 +1065,10 @@ class AutoXDS:
                 utils.execute_f2mtz()
                 
                 # run truncate on mtz files and parse output
-                truncate_input = os.path.join(os.path.dirname(infile), 'unmerged.mtz')
+                # working directories
+                truncate_input = os.path.join(rres['parameters']['working_directory'], 'unmerged.mtz')
                 truncate_output = '%s.log' % truncate_input
-                res = utils.execute_ctruncate(truncate_input, self.options.get('anomalous', False))
+                utils.execute_ctruncate(truncate_input, self.options.get('anomalous', False))
                 truncate_info[name] = parse_ctruncate(truncate_output)
                 
             _logger.info('Output Files: %s' % ( ', '.join(out_files)))

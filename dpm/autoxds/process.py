@@ -978,7 +978,8 @@ class AutoXDS:
             # Select resolution
             resol = utils.select_resolution(info['statistics'])
             info['resolution'] = resol
-            self.results.values()[-1]['scaling'] = info
+            for rres in self.results.values():
+                rres['scaling'] = info
         else:
             for name, info in raw_info.items():
                 # Select resolution

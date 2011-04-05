@@ -8,10 +8,16 @@ Created on Apr 5, 2011
 import numpy
 from scipy.ndimage import measurements
 from scipy.ndimage import filters
-from scipy.misc import imread
+
+from bcm.utils.imageio import read_image
+
 
 def detect_beam_peak(filename):
-    img_array = imread(filename, flatten=True)
+    img_info =read_image(filename)
+    img = img_info.image
+    img_array = numpy.fromstring(img.tostring(), numpy.uint32)
+    img_array.shape = img.size[1], img.size[0]
+    print img_array.shape
       
     # filter the array so that features less than 8 pixels wide are blurred out
     # assumes that beam center is at least 8 pixels wide

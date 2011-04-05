@@ -16,6 +16,7 @@ from bcm.utils.imageio import read_header
 from dpm.parser.utils import Table
 from dpm.utils import magic
 from dpm.utils import fitting
+from dpm.utils import peaks
 import numpy
 from dpm.utils.prettytable import PrettyTable
 from dpm.utils.odict import SortedDict
@@ -166,20 +167,22 @@ def get_dataset_params(img_file, screen=False):
     first_frame = int (fm.group('num'))
     _dataset_name = fm.group('base')
     if _dataset_name[-1] in ['_', '.', '-']:
-        _dataset_name = _dataset_name[:-1]
+        _dataset_name = _dataset_name[:-1]    
     
-    reference_image = os.path.join(directory, file_list[0])
-    if not ( os.path.isfile(reference_image) and os.access(reference_image, os.R_OK) ):
-        print "ERROR: File '%s' does not exist, or is not readable." % reference_image
-        sys.exit(1)
-    
-
-    if first_frame == 0: first_frame = 1
-    frame_count = len(file_list)
-    #if frame_count < 4:
-    #    print 'AutoXDS ERROR: You need at least 4 frames in the set! Only %d found' % frame_count
-    #    #sys.exit(1)
+    _overwrite_beam = False
+    if first_frame == 0: 
+        first_frame = 1
+        _ow_beam_x, _ow_beam_y, _overwrite_beam = peaks.detect_beam_peak(os.path.join(directory, file_list[0]))
+        if _overwrite_beam:
+            _logger.info('%s: direct beam file found. New beam center [%d, %d].' % (_dataset_name, _ow_beam_x, _ow_beam_y))
+        file_list = file_list[1:]
         
+    frame_count = len(file_list)
+    reference_image = os.path.join(directory, file_list[0])
+    if not (os.path.isfile(reference_image) and os.access(reference_image, os.R_OK)):
+        _logger.info("File '%s' does not exist, or is not readable." % reference_image)
+        sys.exit(1)
+                
     info = read_header(reference_image)
     info['energy'] = wavelength_to_energy(info['wavelength'])
     info['first_frame'] = first_frame
@@ -187,6 +190,8 @@ def get_dataset_params(img_file, screen=False):
     info['dataset_name'] = _dataset_name
     info['file_template'] = os.path.join(directory, xds_template)        
     info['file_format'] = magic.from_file(reference_image)
+    if _overwrite_beam:
+        info['beam_center'] = (_ow_beam_x, _ow_beam_y)
     
     # Generate a list of wedges. each wedge is a tuple. The first value is the
     # first frame number and the second is the number of frames in the wedge

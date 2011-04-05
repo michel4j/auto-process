@@ -1038,7 +1038,7 @@ class AutoXDS:
                     'format': 'SHELX',
                     'anomalous': self.options.get('anomalous', False),
                     'input_file': infile,
-                    'output_file': out_file_root + ".shelx",
+                    'output_file': out_file_root + "-shelx.hkl",
                     'freeR_fraction': 0,
                 }
                 io.write_xdsconv_input(xdsconv_options)

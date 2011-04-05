@@ -1039,7 +1039,7 @@ class AutoXDS:
                     'anomalous': self.options.get('anomalous', False),
                     'input_file': infile,
                     'output_file': out_file_root + ".shelx",
-                    'freeR_fraction': 0.05,
+                    'freeR_fraction': 0,
                 }
                 io.write_xdsconv_input(xdsconv_options)
                 utils.execute_xdsconv()

@@ -17,7 +17,6 @@ def detect_beam_peak(filename):
     img = img_info.image
     img_array = numpy.fromstring(img.tostring(), numpy.uint32)
     img_array.shape = img.size[1], img.size[0]
-    print img_array.shape
       
     # filter the array so that features less than 8 pixels wide are blurred out
     # assumes that beam center is at least 8 pixels wide

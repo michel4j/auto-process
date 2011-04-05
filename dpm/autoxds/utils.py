@@ -165,7 +165,7 @@ def get_dataset_params(img_file, screen=False):
     fm = file_pattern.search(file_list[0])
     first_frame = int (fm.group('num'))
     _dataset_name = fm.group('base')
-    if _dataset_name[-1] == '_':
+    if _dataset_name[-1] in ['_', '.', '-']:
         _dataset_name = _dataset_name[:-1]
     
     reference_image = os.path.join(directory, file_list[0])

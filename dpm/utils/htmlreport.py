@@ -55,6 +55,8 @@ template.builtins.append(register)
 
 # Adjust Legend parameters
 os.environ['HOME'] = misc.get_home_dir()
+os.environ['MPLCONFIGDIR'] = os.path.join(os.environ['HOME'], '.matplotlibrc')
+
 from matplotlib import rcParams
 rcParams['legend.loc'] = 'best'
 rcParams['legend.fontsize'] = 10

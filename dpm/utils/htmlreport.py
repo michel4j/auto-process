@@ -6,6 +6,7 @@ import numpy
 from dpm.utils import json, misc
 from dpm.autoxds.utils import SPACE_GROUP_NAMES
 
+
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.ticker import Formatter, FormatStrFormatter, Locator
 from matplotlib.figure import Figure
@@ -53,6 +54,7 @@ template.builtins.append(register)
 
 
 # Adjust Legend parameters
+os.environ['HOME'] = misc.get_home_dir()
 from matplotlib import rcParams
 rcParams['legend.loc'] = 'best'
 rcParams['legend.fontsize'] = 10

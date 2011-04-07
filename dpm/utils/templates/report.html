@@ -1,10 +1,6 @@
 {% extends "base.html" %}
 {% block headline %}
-    {% ifequal object.kind object.RESULT_TYPES.SCREENING %}
-        <h2 class="screen"> Crystal Screening Report - &ldquo;{{object.name}}&rdquo;</h2>
-    {% else %}
-        <h2 class="process"> Data Processing Report - &ldquo;{{object.name}}&rdquo;</h2>
-    {% endifequal %}
+<h2 class="process"> Data Processing Report - &ldquo;{{object.name}}&rdquo;</h2>
 {% endblock %}
 
 {% block content-override %}

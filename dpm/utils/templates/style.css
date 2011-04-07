@@ -7,11 +7,6 @@ html, body, div, dl, dt, dd, ul, ol, li, h1, h2, h3, h4, h5, h7 h6, pre, form, f
     margin: 0 auto;
     width: 600px;
 }
-#result-page h1, #result-page h2, #result-page h3, #result-page h4 {
-    display: block;
-    font-weight: 400;
-    page-break-after: avoid;
-}
 body {
  font-size: 9.5pt; font-family: Ubuntu, sans-serif; line-height: 1.3em; height: 100%;
 }
@@ -31,6 +26,11 @@ h2 {
     letter-spacing: -1px;
     margin: 0;
     padding: 0;
+}
+#result-page h1, #result-page h2, #result-page h3, #result-page h4 {
+    display: block;
+    font-weight: 400;
+    page-break-after: avoid;
 }
 #content-title h2 {
     color: #555555;
@@ -74,13 +74,18 @@ h2 {
     text-align: left;
     width: 100%;
 }
+#result-links {
+    font-weight: bold;
+    border-bottom: 0.5em solid #ccc;
+    padding-bottom: 1em;
+}
 
 #result-table td, #result-table th {
     padding: 5px 8px;
 }
 
 #result-table tr + tr {
-    border-top: 1px dotted #ccc;
+    border-top: 1px dotted #ccc
 }
 
 #result-table th{
@@ -158,8 +163,8 @@ div.tablenotes {
     background: none repeat scroll 0 0 #EEEEFF;
     border: 1px solid #CCCCCC;
     margin-bottom: 10px;
-    padding: 1.5em;
-    font-size: 95%;
+    padding: 1.2em;
+    font-size: 90%;
 }
 #result-page img {
     display: block;

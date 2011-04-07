@@ -24,6 +24,8 @@ logfile='/var/log/dpmserver.log'
 appfile=$DPM_PATH/dpm/service/dpm_server.py
 umask=022
 
+export MPLCONFIGDIR=/tmp
+
 # Sanity checks.
 [ -x /usr/bin/twistd ] || exit 0
 [ -f $appfile ] || exit 0

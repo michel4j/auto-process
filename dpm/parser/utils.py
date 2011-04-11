@@ -14,10 +14,10 @@ import os
 
 INI_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
-DEBUG = False
+DEBUG = True
 
 # Cache formats
-SCANF_CACHE_SIZE = 1000
+SCANF_CACHE_SIZE = 3000
 scanf_cache = {}
 
 
@@ -80,7 +80,7 @@ def _scanf_compile(format):
             i += 1
     if DEBUG:
         print "DEBUG: %r -> '%s'" % (format, format_pat)
-    format_re = re.compile(format_pat)
+    format_re = re.compile(format_pat, re.DOTALL)
     if len(scanf_cache) > SCANF_CACHE_SIZE:
         scanf_cache.clear()
     scanf_cache[format] = (format_re, cast_list)
@@ -118,7 +118,7 @@ def scanf(format, s, position=0):
     if hasattr(s, "readlines"): s = ''.join(s.readlines())
 
     format_re, casts = _scanf_compile(format)
-    found= format_re.search(s, position)
+    found = format_re.search(s, position)
     if found:
         groups = found.groups()
         try:
@@ -184,12 +184,15 @@ def cast_params(param_list, values):
     example: cast_params( [('name',1),('date',3')], ('michel', 10,10,2008) )
     will return {'name': 'michel', 'date': (10,10,2008)}
     
+    if a key is called '_ignore_', do not add it and it's values to the returned list
     """
     pos = 0
     params = {}
     for key, length in param_list:
         length = int(length)
-        if length == 1:
+        if key == '_ignore_':
+            pos += length
+        elif length == 1:
             params[key] = values[pos]
             pos += 1
         else:
@@ -231,7 +234,7 @@ def _process_sections(data, conf):
             if not isinstance(end, list):
                 end = [ end ]
                 
-            # extract chunks included nested chunks
+            # extract chunks including nested chunks
             chunk = data
             for _s, _e in zip(start, end):
                 chunk, pos = cut_section(_s, _e, chunk)

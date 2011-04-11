@@ -593,7 +593,12 @@ class AutoXDS:
                         for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
                             _dataset_info['result']['details']['diff_statistics'][k] = _t[k]
                 _dataset_info['result']['details']['frame_statistics'] = _section
-                #_dataset_info['result']['details']['integration_profiles'] = dset['integration'].get('profiles')
+                
+                _section = {}
+                _t = Table(dset['integration']['batches'])
+                for k in ['range','unit_cell','stdev_spot','stdev_spindle','mosaicity','distance','beam_center']:
+                    _section[k] = _t[k]
+                _dataset_info['result']['details']['integration_batches'] = _section
                     
                 # Print out correction results
                 _section = {}

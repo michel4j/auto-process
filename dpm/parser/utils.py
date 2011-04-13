@@ -14,7 +14,7 @@ import os
 
 INI_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
-DEBUG = True
+DEBUG = False
 
 # Cache formats
 SCANF_CACHE_SIZE = 3000

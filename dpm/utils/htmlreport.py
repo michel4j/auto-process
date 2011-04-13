@@ -461,6 +461,76 @@ def plot_frame_stats(results, filename):
     return os.path.basename(filename)
 
 
+def plot_batch_stats(results, filename):
+
+    
+    data = results['details'].get('integration_batches')
+    if data is None:
+        return
+    
+    frames = map(numpy.mean, data['range'])
+    beam_x, beam_y = zip(*data['beam_center'])
+    cell_a, cell_b, cell_c, cell_alpha, cell_beta, cell_gamma = zip(*data['unit_cell'])
+    
+    fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT*1.2), dpi=PLOT_DPI)
+    ax1 = fig.add_subplot(411)
+    ax1.plot(frames, data['mosaicity'], 'r-')
+    ax1.set_ylabel('Mosaicity', color='r')
+    ax11 = ax1.twinx()
+    ax11.plot(frames, data['distance'], 'g-')
+    ax1.grid(True)
+    ax11.set_ylabel('Distance', color='g')
+    for tl in ax11.get_yticklabels():
+        tl.set_color('g')
+    for tl in ax1.get_yticklabels():
+        tl.set_color('r')
+    ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    ax11.set_ylim((min(data['distance'])-3, max(data['distance'])+3))
+    ax1.set_ylim((min(data['mosaicity'])-0.01, max(data['mosaicity'])+0.01))
+
+    ax2 = fig.add_subplot(412, sharex=ax1)
+    ax2.plot(frames, data['stdev_spot'], 'm-')
+    ax2.set_ylabel('spot dev.', color='m')
+    ax2.set_ylim((min(data['stdev_spot'])-0.1, max(data['stdev_spot'])+0.1))
+    ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
+    ax2.grid(True)
+    ax21 = ax2.twinx()
+    ax21.plot(frames, data['stdev_spindle'], 'b-')
+    ax21.set_ylabel('spindle dev.', color='b')
+    for tl in ax21.get_yticklabels():
+        tl.set_color('b')
+    for tl in ax2.get_yticklabels():
+        tl.set_color('m')
+
+    ax3 = fig.add_subplot(413, sharex=ax1)
+    ax3.plot(frames, cell_a, label='a')
+    ax3.plot(frames, cell_b, label='b')
+    ax3.plot(frames, cell_c, label='c')
+    
+    ax3.set_xlabel('Frame Number')
+    ax3.set_ylabel('Unit Cell', color='k')
+    ax31 = ax3.twinx()
+    ax31.plot(frames, beam_x, label='beam-x')
+    ax31.plot(frames, beam_y, label='beam-y')
+    ax3.grid(True)
+    ax31.set_ylabel('Beam dev. (pix)', color='c')
+    for tl in ax31.get_yticklabels():
+        tl.set_color('c')
+    for tl in ax3.get_yticklabels():
+        tl.set_color('k')
+    ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    ax3.yaxis.set_major_formatter(FormatStrFormatter('%0.3f'))
+    ax31.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
+
+    canvas = FigureCanvas(fig)
+    #response = HttpResponse(content_type='image/png')
+    #canvas.print_png(response)
+    canvas.print_png(filename)
+    return os.path.basename(filename)
+
+
+
 def create_full_report(data, directory):
 
     report_file = os.path.join(directory,'index.html')
@@ -487,6 +557,7 @@ def create_full_report(data, directory):
     plot_diff_stats(results, os.path.join(directory, 'diff.png'))
     plot_wilson_stats(results, os.path.join(directory, 'wilson.png'))
     plot_twinning_stats(results, os.path.join(directory, 'twinning.png'))
+    #plot_batch_stats(results, os.path.join(directory, 'batch.png'))
 
 
     return os.path.basename(report_file)

@@ -74,7 +74,7 @@ def write_xds_input(jobs, params):
         detector = 'CCDCHESS'
     
     #determine number of CPUS based on default DELPHI of 5 degrees and cpu_count
-    _num_cpus = int(round(DEFAULT_DELPHI / params['delta_angle']))
+    _num_cpus = int(round(DEFAULT_DELPHI / params['delta_angle'])) + 1
     _num_cpus = min(_num_cpus, params['cpu_count'])
     
     #determine max number of jobs cores available and _num_cpus

@@ -38,7 +38,8 @@ def main():
     min_batch_size = int(sys.argv[4])
     max_cpu = int(sys.argv[5])
     cur_dir = os.getcwd()
-    
+    # Print parameters
+    print " INITIALIZING JOBS: %3s %3s %3s %3s %3s" % tuple(sys.argv[1:])
     # Prepare jobs
     NODES = len(HOST_NAMES)
     task_list = []

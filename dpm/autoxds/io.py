@@ -80,7 +80,7 @@ def write_xds_input(jobs, params):
     #determine max number of jobs cores available and _num_cpus
     _total_cores = int(os.environ.get('DPM_CORES', 2))
     _frames = params['data_range'][1] - params['data_range'][0] + 1
-    _stride = int(math.ceil(_frames/float(_total_cores)))
+    _stride = max(1, int(math.ceil(_frames/float(_total_cores))))
     _jobs = (_frames // _min_cpus) // _stride
     _num_cpus = 1 + (_frames //  _jobs) // _stride
     

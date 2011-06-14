@@ -548,6 +548,7 @@ class AutoXDS:
                     _dataset_info['result']['details']['overlap_analysis'] = _st_details.get('delta_statistics')
                     _dataset_info['result']['details']['wedge_analysis'] = _st_details.get('completeness_statistics')
                     
+                    
                     # shell_statistics
                     _st_shell = _st_details.get('shell_statistics', {})
                     _res_shells = [(x+y)/2.0 for x,y in zip(_st_shell.get('min_resolution',[]), _st_shell.get('max_resolution',[]))]
@@ -619,7 +620,10 @@ class AutoXDS:
                     for k in ['chi_sq', 'i_sigma', 'r_obs', 'r_exp','n_obs', 'n_accept', 'n_reject']:
                         _section[k] = _t[k][:-1]
                     _dataset_info['result']['details']['standard_errors'] = _section
-                
+                    
+                #correction factors
+                _dataset_info['result']['details']['correction_factors'] = dset['correction'].get('correction_factors')
+
                 # Print out wilson_plot, cum int dist, twinning test
                 if dset.get('data_quality') is not None:
                     if dset['data_quality'].get('wilson_plot') is not None:
@@ -889,15 +893,16 @@ class AutoXDS:
         info = xds.parse_correct()
 
         # enable correction factors if anomalous data and repeat correction
+        
         if info.get('correction_factors') is not None and self.options.get('anomalous', False):
-            for f in info.get('correction_factors'):
-                if abs(f['chi_sq_fit']-1.0) > 0.3:
+            for f in info['correction_factors'].get('factors', []):
+                if abs(f['chi_sq_fit']-1.0) > 0.25:
                     run_info.update({'strict_absorption': True})
                     io.write_xds_input(jobs, run_info)
                     utils.execute_xds_par()
                     info = xds.parse_correct()
                     info['strict_absorption'] = True
-                    break
+                    break # only run once
                               
         if info.get('statistics') is not None:
             if len(info['statistics']) > 1 and info.get('summary') is not None:

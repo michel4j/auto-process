@@ -119,6 +119,7 @@ def scanf(format, s, position=0):
 
     format_re, casts = _scanf_compile(format)
     found = format_re.search(s, position)
+
     if found:
         groups = found.groups()
         try:

@@ -700,9 +700,15 @@ class AutoXDS:
             if not os.path.exists(report_directory):
                 os.makedirs(report_directory)
             if self.options.get('command', None) == 'screen':
-                htmlreport.create_screening_report(report, report_directory)
+                try:
+                    htmlreport.create_screening_report(report, report_directory)
+                except:
+                    pass
             else:
-                htmlreport.create_full_report(report, report_directory)            
+                try:
+                    htmlreport.create_full_report(report, report_directory)
+                except:
+                    pass         
 
     def find_spots(self, run_info):
         os.chdir(run_info['working_directory'])

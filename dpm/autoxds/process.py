@@ -31,7 +31,7 @@ class AutoXDS:
     def __init__(self, options):
         self.options = options
         self.results = {}
-        is_screening = (self.options.get('command', None) == 'screen')
+        is_screening = (self.options.get('mode', None) == 'screen')
         self.dataset_info = {}
         self.cpu_count = utils.get_cpu_count()
         self.dataset_names = []
@@ -502,7 +502,7 @@ class AutoXDS:
             _dataset_info['result']['details']['spacegroup_selection'] = _section 
 
             # Harvest screening details
-            if self.options.get('command', None) == 'screen':
+            if self.options.get('mode', None) == 'screen':
                 _dataset_info['result']['kind'] = AUTOXDS_SCREENING
                 if dset.get('strategy') is not None and dset['strategy'].get('runs') is not None:
                     _strategy = dset['strategy']
@@ -699,7 +699,7 @@ class AutoXDS:
             _logger.info('Generating report in %s ...' % (report_directory))
             if not os.path.exists(report_directory):
                 os.makedirs(report_directory)
-            if self.options.get('command', None) == 'screen':
+            if self.options.get('mode', None) == 'screen':
                 try:
                     htmlreport.create_screening_report(report, report_directory)
                 except:
@@ -937,7 +937,7 @@ class AutoXDS:
     def scale_datasets(self):
         os.chdir(self.top_directory)
         _logger.info("Scaling ...")
-        command = self.options.get('command', None)
+        command = self.options.get('mode', None)
         output_file_list = []
         if command == 'mad':
             sections = []
@@ -1153,7 +1153,7 @@ class AutoXDS:
             else:
                 ice_rings = 0
             #use predicted values for resolution, r_meas, i_sigma if we are screening
-            if self.options.get('command',None) == 'screen':
+            if self.options.get('mode',None) == 'screen':
                 resolution = rres['strategy']['resolution']
                 if rres['strategy'].get('prediction_all') is not None:
                     r_meas = rres['strategy']['prediction_all']['R_factor']
@@ -1173,11 +1173,11 @@ class AutoXDS:
         
         t1 = time.time()
         adj = 'NATIVE'
-        if self.options.get('command',None) == 'screen':
+        if self.options.get('mode',None) == 'screen':
             description = 'CHARACTERIZING'
         else:
             description = 'PROCESSING'
-        if self.options.get('command',None) == 'mad':
+        if self.options.get('mode',None) == 'mad':
             adj = 'MAD'
         elif self.options.get('anomalous', False):
             adj = 'ANOMALOUS'
@@ -1225,7 +1225,7 @@ class AutoXDS:
             run_result['indexing'] = _out.get('data')
             
 #            #Integration
-#            if self.options.get('command', None) == 'screen':
+#            if self.options.get('mode', None) == 'screen':
 #                run_info['data_range'] = run_info['spot_range'][0]
 
             _out = self.integrate(run_info)
@@ -1317,7 +1317,7 @@ class AutoXDS:
         
         # Calculate Strategy if screening
         for name, run_info in self.dataset_info.items():
-            if self.options.get('command', None) == 'screen':
+            if self.options.get('mode', None) == 'screen':
                 _out = self.calc_strategy(run_info, self.results[name]['scaling']['resolution'][0])
                 if not _out['success']:
                     _logger.error('Strategy failed! %s' % _out.get('reason'))
@@ -1327,7 +1327,7 @@ class AutoXDS:
         # Score dataset
         self.score_datasets()
         
-        if self.options.get('command', None) != 'screen':       
+        if self.options.get('mode', None) != 'screen':       
             self.convert_files()
                       
         #self.save_xml(self.results, 'debug.xml')

@@ -1,99 +1,24 @@
 #!/usr/bin/env python
 
-"""
-autoprocess [options] /path/to/set1.img /path/to/set2.img ... /path/to/setn.img
-
-options:
-    --mad, -m : Process each set, scale together and generate separate reflection files.
-    --screen, -s : Process a few frames from characterize crystal from each set.
-    --anom, -a : Process with Friedel's law False
-    --backup, -b : Backup previous output directory if it exists
-    --prefix=p1,p2,p3 : comma separated list of prefixes to use for output files. 
-            Default is first part of image name
-            prefix order should correspond to the order of the data sets
-              for example for MAD data, use --prefix=peak,infl,remo
-    --dir=/path : Directory to store processed results. Default is to create a  new one in the current directory.
-    --inputs, -i: generate XDS.INP only and quit
-    --help, -h : display this message
-    Default (no option): Process each set, scale together and merge into one reflection file.
-    
- data sets:
-    Each data set can be represented by any frame from that set.
-"""
 
 import sys
 import os
-import getopt
 import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
-
-dpm_path = os.environ.get('DPM_PATH',None)
-if dpm_path is None:
-    print 'ERROR: DPM_PATH environment variable not set.'
-    sys.exit(1)
-else:
-    sys.path.append(dpm_path)
     
-from dpm.autoxds.process import AutoXDS
+from dpm.engine.process import Manager
 from dpm.utils.log import log_to_console, log_to_file
+from dpm.utils.options import process_options
 
-def usage():
-    print __doc__
-    
-    
 def main():
-    try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], "msahbi", ["help", "dir=", "mad","screen","anom", "backup", "prefix=", "inputs"])
-    except getopt.error, msg:
-        print "ERROR: ", msg
-        usage()
-        sys.exit(1)            
-            
     # Parse options
-    options = {}
-
-    for o, a in opts:
-        if o in ("-h","--help"):
-            usage()
-            sys.exit(0)
-        if o in ("-m", "--mad"):
-            options['command'] = 'mad'
-            options['anomalous'] = True
-        if o in ("-a","--anom"):
-            options['anomalous'] = True
-        if o in ('-s','--screen'):
-            options['command'] = 'screen'
-        if o in ('--dir'):
-            options['directory'] = a
-        if o in ('-b', '--backup'):
-            options['backup'] = True
-        if o in ('-i', '--inputs'):
-            options['inputs_only'] = True
-        if o in ('--prefix'):
-            options['prefix'] = a.split(',')
-            if len(options['prefix']) < len(args):
-                del options['prefix']
-    if len(args) == 0:
-        print "ERROR: no image sets provided."
-        usage()
-        sys.exit(1)
-    if len(args) == 1 and options.get('command',None) == 'mad':
-        del options['command']
-    
-    # Check that images from arguments actually exist on disk
-    for img in args:
-        if not ( os.path.isfile(img) and os.access(img, os.R_OK) ):
-            print "ERROR: File '%s' does not exist, or is not readable." % img            
-        
-    options['images'] = args
-           
-    app = AutoXDS( options )
+    options = process_options(sys.argv[1:])        
+    app = Manager(options)
     app.run()      
        
 if __name__ == "__main__":
     try:
         log_to_console()
-        #log_to_file('/tmp/autoprocess.log')
         main()
     except KeyboardInterrupt:
         sys.exit(1)

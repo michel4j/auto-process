@@ -255,9 +255,9 @@ class Manager(object):
                         # update parameters with reference after correction
                         if self.run_position > 0 and self.options.get('mode', 'simple') in ['merge', 'mad']:
                             _ref_file = os.path.join('..', 
-                                        self.datasets.values()[-1].results['correction']['output_file'])
+                                        self.datasets.values()[i-1].results['correction']['output_file'])
                             dset.parameters.update({'reference_data': _ref_file,
-                                                    'reference_sginfo': self.datasets.values()[-1].results['symmetry'],
+                                                    'reference_sginfo': self.datasets.values()[i-1].results['symmetry'],
                                                     })
                     elif step == 'symmetry':
                         self.run_step('correction', dset, overwrite=overwrite) #final correction after symmetry

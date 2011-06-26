@@ -3,7 +3,7 @@ import time
 
 from dpm.parser import xds
 from dpm.xds import io
-from dpm.utils import log, misc, programs, xtal
+from dpm.utils import log, misc, programs
 import dpm.errors
 
 _logger = log.get_module_logger(__name__)

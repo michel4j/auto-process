@@ -1,7 +1,7 @@
 import numpy
 import math
 
-DEBUG = True
+DEBUG = False
 
 # each rule is a list of 9 boolean values representing
 # a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120

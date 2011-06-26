@@ -5,7 +5,7 @@ import getopt
 import dpm.errors
 
 PROCESS_USAGE = """
-autoprocess [options] /path/to/set1.img /path/to/set2.img ... /path/to/setn.img
+auto.process [options] /path/to/set1.img /path/to/set2.img ... /path/to/setn.img
 
 options:
     --mad, -m : Process each set, scale together and generate separate reflection files.
@@ -25,6 +25,19 @@ options:
     Each data set can be represented by any frame from that set.
 """
 
+
+SCALE_USAGE = """
+auto.scale [options]
+
+options:
+    --res=<res>, -r <res> : Manually set the high resolution limit for scaling.
+    --anom, -a : Scale with Friedel's law False
+    --backup, -b : Backup previous output if it exists
+    --help, -h : display this message
+    Default (no option): Resume previous processing from scaling step.
+    
+"""
+
 def _uniquify(seq): 
     # order preserving
     seen = {}
@@ -41,7 +54,6 @@ def process_options(params):
         assert len(args) >= 1
     except:
         print PROCESS_USAGE
-        raise dpm.errors.InvalidOptions('Incorrect command line parameters')
             
     # Parse options
     options = {
@@ -68,9 +80,6 @@ def process_options(params):
             if len(options['images']) > 1:
                 options['mode'] = 'mad'
             options['anomalous'] = True
-        elif len(args) > 1:
-            options['mode'] = 'merge'
-
 
         if o in ('--dir'):
             options['directory'] = os.path.abspath(a)
@@ -79,5 +88,33 @@ def process_options(params):
         if o in ('--prefix'):
             options['prefix'] = a.split(',')
             if len(options['prefix']) != len(options['images']):
-                del options['prefix']                
+                del options['prefix']       
+    if options['mode'] == 'simple' and len(options['images']) > 1:
+        options['mode'] = 'merge'
+
+    return options
+
+def scale_options(params):
+    try:
+        opts, args = getopt.gnu_getopt(params, "r:abih", ["res=", "anom", "backup", "inputs","help"])
+    except:
+        print SCALE_USAGE
+            
+    # Parse options
+    options = {}    
+    for o, a in opts:
+        if o in ("-h","--help"):
+            print SCALE_USAGE
+            sys.exit(0)
+            
+        if o in ("-a","--anom"):
+            options['anomalous'] = True
+        if o in ('-b', '--backup'):
+            options['backup'] = True
+        if o in ('-r', '--res'):
+            try:
+                options['resolution'] = float(a)
+            except:
+                print SCALE_USAGE
+                sys.exit(0)
     return options

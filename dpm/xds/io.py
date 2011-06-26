@@ -9,12 +9,14 @@ import os
 
 DEFAULT_DELPHI = 5.0
 
+def _get_cpu_count():
+    return os.sysconf('SC_NPROCESSORS_ONLN')
+
 def write_xds_input(jobs, params):
     """
     Create XDS.INP file using parameters in the dictionary params
     jobs = XYCORR INIT COLSPOT IDXREF DEFPIX INTEGRATE CORRECT
     params = {
-        'cpu_count' int
         'wavelength': float
         'distance': float
         'start_angle': float
@@ -30,6 +32,7 @@ def write_xds_input(jobs, params):
         'detector_size': tuple of 2 ints
         'pixel_size' : float
         'two_theta': float
+        'saturated_value': float
         'beam_center': tuple of 2 floats
         'min_spot_size': int or None
         'min_spot_seperation': int or None
@@ -56,16 +59,7 @@ def write_xds_input(jobs, params):
             _file_template = os.path.join(rel_dir, xds_template)
         except:
             pass
-        
-    # if template is still longer create symlink in tmp/xds:
-#    tmp_top = os.path.join(tempfile.gettempdir(), 'xds')
-#    if not os.path.exists(tmp_top):
-#        os.makedirs(tmp_top)
-#    if len(_file_template) > 50:
-#        tmp_dir = tempfile.mktemp(prefix='', dir=tmp_top)
-#        os.symlink(directory, tmp_dir)            
-#        _file_template = os.path.join(tmp_dir, xds_template)
-    
+            
     if params.get('detector_type') in ['q4', 'q210','q4-2x','q210-2x','q315','q315-2x']:
         detector = 'ADSC'
     elif params.get('detector_type') in ['mar165','mx300','mx300he','mar225','mar325']:
@@ -75,7 +69,7 @@ def write_xds_input(jobs, params):
     
     #determine number of CPUS based on default DELPHI of 5 degrees and cpu_count
     _min_cpus = int(round(DEFAULT_DELPHI / params['delta_angle']))
-    _min_cpus = min(_min_cpus, params['cpu_count'])
+    _min_cpus = min(_min_cpus, _get_cpu_count())
     
     #determine max number of jobs cores available and _num_cpus
     _total_cores = int(os.environ.get('DPM_CORES', 2))
@@ -94,11 +88,11 @@ def write_xds_input(jobs, params):
     file_text += "STARTING_ANGLE=%5.1f \n" % (params['start_angle'])
     file_text += "STARTING_FRAME=%5d \n" % (params['first_frame'])
     file_text += "OSCILLATION_RANGE=%3.2f \n" % (params['delta_angle'])
-    file_text += "SPACE_GROUP_NUMBER=%d \n" % (params['space_group'])
-    file_text += "UNIT_CELL_CONSTANTS=%6.2f %6.2f %6.2f %4.2f %4.2f %4.2f \n" % params['unit_cell']
+    file_text += "SPACE_GROUP_NUMBER=%d \n" % (params.get('space_group', 0))
+    file_text += "UNIT_CELL_CONSTANTS=%6.2f %6.2f %6.2f %4.2f %4.2f %4.2f \n" % tuple(params.get('unit_cell', (0,0,0,0,0,0)))
     
-    if params['reindex_matrix'] is not None:
-        file_text += "REIDX=%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d\n" % (params['reindex_matrix'])
+    if params.get('reindex_matrix') is not None:
+        file_text += "REIDX=%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d\n" % tuple(params['reindex_matrix'])
         
     file_text += "NAME_TEMPLATE_OF_DATA_FRAMES=%s\n" % (_file_template)
     file_text += "DATA_RANGE=%d %d \n" % (params['data_range'][0], params['data_range'][1])
@@ -106,8 +100,7 @@ def write_xds_input(jobs, params):
     for r_s, r_e in params['spot_range']:
         file_text += "SPOT_RANGE=%d %d \n" % (r_s, r_e)
 
-    reference = params.get('reference_data')
-    if reference:
+    if params.get('reference_data') is not None:
         file_text += "REFERENCE_DATA_SET=%s \n" %(params['reference_data'])
                 
     file_text += "!-------------------Beamline parameters-----  \n"
@@ -119,7 +112,7 @@ def write_xds_input(jobs, params):
     MINIMUM_VALID_PIXEL_VALUE= 1
     MIN_RFL_Rmeas= 30
     STRONG_PIXEL= %0.1f
-    OVERLOAD=65500
+    OVERLOAD=%d
     MINIMUM_ZETA= 0.05
     TRUSTED_REGION=0.00 1.25
     MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT=3
@@ -132,11 +125,10 @@ def write_xds_input(jobs, params):
     FRACTION_OF_POLARIZATION=0.95
     POLARIZATION_PLANE_NORMAL= 1.0 0.0 0.0
     DIRECTION_OF_DETECTOR_X-AXIS= 1.000 0.000 0.000
-    DIRECTION_OF_DETECTOR_Y-AXIS= 0.000 %0.3f %0.3f
-    !AIR=%0.5f \n""" % (detector, params.get('sigma', 6),
+    DIRECTION_OF_DETECTOR_Y-AXIS= 0.000 %0.3f %0.3f\n""" % (detector, params.get('sigma', 6),
+                        params.get('saturated_value', 65535),
                        math.cos(params['two_theta']), 
-                       -1 * math.sin(params['two_theta']), 
-                       utils.air(params['wavelength']) )
+                       -1 * math.sin(params['two_theta']))
     if params.get('min_spot_separation') is not None:
         file_text +='    SEPMIN= %d \n' % params['min_spot_separation']
     if params.get('min_spot_size') is not None:
@@ -150,7 +142,7 @@ def write_xds_input(jobs, params):
         file_text +='    STRICT_ABSORPTION_CORRECTION= %s\n' % (friedel[ params.get('strict_absorption', False) ])
         
     file_text += "    FRIEDEL'S_LAW=%s\n" % (friedel[ params.get('anomalous', False) ])
-    file_text += "!-------------------File generated by autoprocess \n"
+    file_text += "!-------------------File generated by auto.process \n"
     try:
         outfile = open('XDS.INP','w')
     except IOError, eStr:
@@ -164,7 +156,6 @@ def write_xscale_input(params):
     Create XSCALE.INP file using parameters in the dictionary params
     
     params = {
-        'cpu_count': int
         'space_group': int
         'unit_cell': tuple of 6 floats
         'strict_absorption': True or False default False
@@ -183,11 +174,8 @@ def write_xscale_input(params):
         False: 'TRUE'
         }
         
-    file_text  = "!-XSCALE.INP--------File generated by autoxds \n"
-    file_text += "MAXIMUM_NUMBER_OF_PROCESSORS=%d \n" % params['cpu_count']
-#    if params.get('space_group') is not None and params.get('unit_cell') is not None:
-#        file_text += "SPACE_GROUP_NUMBER=%d \n" % ( params['space_group'])
-#        file_text += "UNIT_CELL_CONSTANTS=%5.2f %5.2f %5.2f %4.2f %4.2f %4.2f \n" % params['unit_cell']
+    file_text  = "!-XSCALE.INP--------File generated by auto.process \n"
+    file_text += "MAXIMUM_NUMBER_OF_PROCESSORS=%d \n" % _get_cpu_count()
    
     for section in params['sections']:
         file_text += "OUTPUT_FILE=%s\n" % section['output_file']
@@ -198,7 +186,7 @@ def write_xscale_input(params):
             file_text += "INCLUDE_RESOLUTION_RANGE= 50 %5.2f\n" % input['resolution']
             if section.get('crystal'):
                 file_text += "CRYSTAL_NAME=%s\n" % (section['crystal'])
-    file_text += "!-------------------File generated by autoxds \n"
+    file_text += "!-------------------File generated by auto.process \n"
     try:
         outfile = open('XSCALE.INP','w')
     except IOError, eStr:
@@ -225,17 +213,14 @@ def write_xdsconv_input(params):
        
     friedel = {True: 'FALSE', False: 'TRUE'}
 
-    file_text  = "!-XDSCONV.INP--------File generated by autoxds \n"
+    file_text  = "!-XDSCONV.INP--------File generated by auto.process \n"
     file_text += "INPUT_FILE= %s  XDS_ASCII\n" % params['input_file']
-    #file_text += "INCLUDE_RESOLUTION_RANGE= 40 %5.2f\n" % (params['resolution'])
-    #file_text += "SPACE_GROUP_NUMBER=%d \n" % (params['space_group'])
-    #file_text += "UNIT_CELL_CONSTANTS=%5.2f %5.2f %5.2f %4.2f %4.2f %4.2f \n" % params['unit_cell']
     file_text += "OUTPUT_FILE=%s %s\n" % (params['output_file'], params['format'])
     file_text += "FRIEDEL'S_LAW=%s\n" % (friedel[ params['anomalous'] ])
     file_text += "MERGE=TRUE\n"
     if params['freeR_fraction'] > 0.0:
         file_text += "GENERATE_FRACTION_OF_TEST_REFLECTIONS=%0.2f\n" % params['freeR_fraction']
-    file_text += "!-------------------File generated by autoxds \n"
+    file_text += "!-------------------File generated by auto.process \n"
     try:
         outfile = open('XDSCONV.INP','w')
     except IOError, eStr:

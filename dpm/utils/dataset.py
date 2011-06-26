@@ -2,12 +2,10 @@
 import os
 import sys
 import fnmatch
-import shutil
 import re
 
-from dpm.utils import units
-from dpm.utils import peaks
-from bcm.utils.imageio import read_header
+from dpm.utils import units, peaks
+from dpm.utils.imageio import read_header
 from dpm.utils.log import get_module_logger
 import dpm.errors
 
@@ -46,7 +44,7 @@ def get_parameters(img_file):
         filler = '?' * len(fm.group('num'))
         xds_template = "%s%s%s" % (fm.group('base'), filler, extension)
     else:
-        _logger.error("File `%s` is not recognized as a standard dataset filename." % filename)
+        _logger.error("Filename `%s` not recognized as dataset." % filename)
         raise dpm.errors.DatasetError('Filename not recognized')
         
     file_list = list( _all_files(directory, xds_template) )
@@ -66,13 +64,13 @@ def get_parameters(img_file):
         first_frame = 1
         _ow_beam_x, _ow_beam_y, _overwrite_beam = peaks.detect_beam_peak(os.path.join(directory, file_list[0]))
         if _overwrite_beam:
-            _logger.info('%s: direct beam file found. New beam center [%d, %d].' % (_dataset_name, _ow_beam_x, _ow_beam_y))
+            _logger.info('%s: New beam origin from frame 000 [%d, %d].' % (_dataset_name, _ow_beam_x, _ow_beam_y))
         file_list = file_list[1:]
         frame_count = len(file_list) 
         
     reference_image = os.path.join(directory, file_list[0])
     if not (os.path.isfile(reference_image) and os.access(reference_image, os.R_OK)):
-        _logger.info("File '%s' does not exist, or is not readable." % reference_image)
+        _logger.info("File '%s' not found, or unreadable." % reference_image)
         sys.exit(1)
                 
     info = read_header(reference_image)
@@ -126,24 +124,4 @@ def get_parameters(img_file):
     info['reference_image'] = reference_image
             
     return info
-
-
-def prepare_dir(workdir, backup=False):
-    """ 
-    Creates a work dir for autoprocess to run. Increments run number if 
-    directory already exists.
-    
-    """
-    
-    exists = os.path.isdir(workdir)
-    if not exists:
-        os.makedirs(workdir)
-    elif backup:
-        count = 0
-        while exists:
-            count += 1
-            bkdir = "%s.%02d" % (workdir, count)
-            exists = os.path.isdir(bkdir)
-        shutil.move(workdir, bkdir)
-        os.makedirs(workdir)
 

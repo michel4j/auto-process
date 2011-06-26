@@ -5,9 +5,14 @@ class InvalidOptions(Exception):
     pass
     
 class DatasetError(Exception):
-    """Problem initializing a Dataset"""
+    """Problem initializing a Dataset(s)"""
     pass
+
 
 class FilesystemError(Exception):
     """Can not write to filesystem"""
+    pass
+
+class ProcessError(Exception):
+    """External program exit status is not 0"""
     pass

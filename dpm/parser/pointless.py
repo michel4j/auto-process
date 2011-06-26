@@ -3,9 +3,9 @@ Parsers for POINTLESS output xml files
 
 """
 import xml.dom.minidom
-import dpm.autoxds.utils
+from dpm.utils import xtal
 
-def parse_pointless(filename):
+def parse_pointless(filename="pointless.xml"):
     """
     read Pointless XML output and return  a dictionay
     
@@ -101,7 +101,7 @@ def parse_pointless(filename):
     #    break
     
         
-    summary['character'] = dpm.autoxds.utils.get_character( summary['sg_number'] )
+    summary['character'] = xtal.get_character( summary['sg_number'] )
     summary['candidates'] = sg_candidates
     
     return summary

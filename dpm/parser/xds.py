@@ -12,16 +12,18 @@ INSUFFICIENT_INDEXED_SPOTS,
 INSUFFICIENT_SPOTS,
 POOR_SOLUTION,
 REFINE_ERROR,
-INDEX_ERROR ) = range(7)
+INDEX_ERROR,
+PROGRAM_ERROR ) = range(8)
 
 _IDXREF_FAILURES = {
     0: None,
-    1: 'Spot list not three dimensional!',
-    2: 'Less than 70% of reflections indexed!',
-    3: 'Insufficient number of spots!',
-    4: 'Solution is not good enough!',
-    5: 'Could not refine solution!',
-    6: 'Could not index reflections!'
+    1: 'Spot list not three dimensional',
+    2: 'Less than 70% of reflections indexed',
+    3: 'Insufficient number of spots',
+    4: 'Solution is not good enough',
+    5: 'Could not refine solution',
+    6: 'Could not index reflections',
+    7: 'Program died prematurely'
 }
 def parse_idxref(filename='IDXREF.LP'):
     info = utils.parse_file(filename, config='idxref.ini')

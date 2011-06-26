@@ -1,9 +1,9 @@
 
 import os
 import sys
-import json
 import time
 import dpm.errors
+from dpm.utils.misc import json
 from dpm.utils import odict, dataset, misc, log, xtal
 from dpm.engine import indexing, spots, integration, scaling, symmetry, strategy
 

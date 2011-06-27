@@ -15,9 +15,10 @@ def convert_formats(dset, options={}):
 
     infile = dset.results['scaling'].get('output_file')
     out_file_dir = os.path.dirname(infile)
-    out_file_root = os.path.splitext(out_file_dir)[0]
+    out_file_root = os.path.join(out_file_dir, dset.name)
     output_files = []
     
+
     # Create convertion options
     conv_options = []
     conv_options.append({
@@ -41,7 +42,7 @@ def convert_formats(dset, options={}):
         'input_file': infile,
         'output_file': out_file_root + ".ccp4f",
         'freeR_fraction': 0.05,}) # CCP4F for MTZ
-
+    
     for opt in conv_options:
         try:
             io.write_xdsconv_input(opt)

@@ -22,6 +22,11 @@ def main():
         _logger.error('This command must be run within a data processing directory.')
         sys.exit(1)
     app = Manager(checkpoint=chkpt)
+    
+    # update app options
+    for opt in ['anomalous', 'backup']:
+        if options.get(opt) is not None:
+            app.options[opt] = options.get(opt)
     app.run( resume_from=(0,'scaling'), overwrite=options)      
      
 if __name__ == "__main__":

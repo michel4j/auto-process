@@ -45,7 +45,20 @@ def xdsconv():
     _execute_command('xdsconv')
 
 
-def f2mtz():
+def f2mtz(filename):
+    file_text = "#!/bin/csh \n"
+    file_text += "f2mtz HKLOUT temp.mtz < F2MTZ.INP\n"
+    file_text += "cad HKLIN1 temp.mtz HKLOUT %s <<EOF\n" % filename
+    file_text += "LABIN FILE 1 ALL\n"
+    file_text += "END\n"
+    file_text += "EOF\n"
+    file_text += "/bin/rm temp.mtz\n"
+    try:
+        outfile = open('f2mtz.com','w')
+        outfile.write(file_text)
+    except IOError:
+        raise dpm.errors.ProcessError('Could not create command file')
+    outfile.close()
     _execute_command(["sh", "f2mtz.com"])
 
 def xdsstat(filename):
@@ -123,4 +136,4 @@ def ctruncate(filename):
         f.close()
     except IOError:
         raise dpm.errors.ProcessError('Could not create command file')  
-    _execute_command(["sh", "ctruncate.com"], out_file="%s.log" % filename)
+    _execute_command(["sh", "ctruncate.com"], out_file="ctruncate.log")

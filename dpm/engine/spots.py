@@ -1,8 +1,7 @@
 import os
 
 from dpm.parser import distl
-from dpm.xds import io
-from dpm.utils import log, misc, programs
+from dpm.utils import log, misc, programs, io
 import dpm.errors
 
 _logger = log.get_module_logger(__name__)

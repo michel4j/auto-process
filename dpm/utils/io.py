@@ -3,8 +3,6 @@ Input/Output routines for XDS and file conversion utilities
 
 """
 import math
-import utils
-import tempfile
 import os
 
 DEFAULT_DELPHI = 5.0
@@ -225,30 +223,6 @@ def write_xdsconv_input(params):
         outfile = open('XDSCONV.INP','w')
     except IOError, eStr:
         print "ERROR: Cannot open XDSCONV.INP for writing: ", eStr
-
-    outfile.write(file_text)
-    outfile.close()
-
-def write_f2mtz_input(params):
-    """
-    Create F2MTZ.INP file using parameters in the dictionary params
-    
-    params = {
-        'output_file' : str
-    }
-    """
-    
-    file_text = "#!/bin/csh \n"
-    file_text += "f2mtz HKLOUT temp.mtz < F2MTZ.INP\n"
-    file_text += "cad HKLIN1 temp.mtz HKLOUT %s <<EOF\n" % params['output_file']
-    file_text += "LABIN FILE 1 ALL\n"
-    file_text += "END\n"
-    file_text += "EOF\n"
-    file_text += "/bin/rm temp.mtz\n"
-    try:
-        outfile = open('f2mtz.com','w')
-    except IOError, eStr:
-        print "ERROR: Cannot open f2mtz.com for writing: ", eStr
 
     outfile.write(file_text)
     outfile.close()

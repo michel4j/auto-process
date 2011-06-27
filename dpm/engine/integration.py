@@ -1,9 +1,8 @@
 import os
 
 from dpm.parser import xds
-from dpm.xds import io
 from dpm.utils.progress import ProgDisplay, ProgChecker
-from dpm.utils import log, misc, programs, xtal
+from dpm.utils import log, misc, programs, xtal, io
 import dpm.errors
 
 _logger = log.get_module_logger(__name__)
@@ -14,7 +13,8 @@ def integrate(data_info, options={}):
     _logger.info('Integrating ...')
     run_info = {}
     run_info.update(data_info)
-    misc.backup_files('INTEGRATE.LP', 'INTEGRATE.HKL')
+    if options.get('backup', False):
+        misc.backup_files('INTEGRATE.LP', 'INTEGRATE.HKL')
     io.write_xds_input("DEFPIX INTEGRATE", run_info)
     if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS'):
         return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
@@ -48,7 +48,8 @@ def correct(data_info, options={}):
 
     if not misc.file_requirements('INTEGRATE.HKL','X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf'):
         return {'step': 'correction', 'success': False, 'reason': 'Required files missing'}
-    misc.backup_files('CORRECT.LP', 'XDS_ASCII.HKL')
+    if options.get('backup', False):
+        misc.backup_files('CORRECT.LP', 'XDS_ASCII.HKL')
     io.write_xds_input("CORRECT", run_info)
     
     try:

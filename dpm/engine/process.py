@@ -5,7 +5,7 @@ import time
 import dpm.errors
 from dpm.utils.misc import json
 from dpm.utils import odict, dataset, misc, log, xtal
-from dpm.engine import indexing, spots, integration, scaling, symmetry, strategy
+from dpm.engine import indexing, spots, integration, scaling, symmetry, strategy, conversion
 
 
 _logger = log.get_module_logger(__name__)
@@ -19,6 +19,7 @@ _STEP_FUNCTIONS = {
     'indexing': indexing.auto_index,
     'integration': integration.integrate,
     'symmetry': symmetry.determine_sg,
+    'data_quality': scaling.data_quality,
     'correction': integration.correct,
     'scaling': scaling.scale_datasets,
     'strategy': strategy.calc_strategy,
@@ -273,16 +274,37 @@ class Manager(object):
             if not _out['success']:
                 _logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
                 sys.exit()
-            if self.options.get('mode') == 'screen':
-                next_step = 'reporting'
-            else:
-                next_step = 'conversion'
-        for dset in self.datasets.values():
+        
+        # Final steps run for all datasets       
+        for i, dset in enumerate(self.datasets.values()):
+            if i < cur_pos: continue  # skip all datasets earlier than specified one
+            self.run_position = i 
+            
+            # Scoring and experiment setup check
             ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
             _logger.info('(%s) Asymptotic I/Sigma(I) for experiment: %0.1f' % (dset.name, ISa))
             _score = dset.score(self.options.get('mode')=='screening')
             _logger.info('(%s) Dataset Score: %0.1f' % (dset.name, _score))
 
+            # Run Data Quality Step:
+            _out = scaling.data_quality(dset.parameters, self.options)
+            self.save_checkpoint()
+            if not _out['success']:
+                _logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
+                sys.exit()
+            else:
+                dset.results['data_quality'] = _out.get('data')
+            
+            # file format conversions
+            if self.options.get('mode') != 'screen':
+                _out = conversion.convert_formats(dset, self.options)
+                if not _out['success']:
+                    _logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
+                else:
+                    dset.results['output_files'] = _out.get('data')
+                    _logger.info('(%s) Output Files: %s' % (dset.name, ', '.join(_out['data'])))
+
+            # reporting
 
         
         

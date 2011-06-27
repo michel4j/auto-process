@@ -3,8 +3,7 @@ import numpy
 
 from dpm.parser.utils import Table
 from dpm.parser import xds
-from dpm.xds import io
-from dpm.utils import log, misc, programs
+from dpm.utils import log, misc, programs, io
 import dpm.errors
 
 _logger = log.get_module_logger(__name__)
@@ -170,7 +169,8 @@ def auto_index(data_info, options={}):
             else:
                 _all_images = False
             _retries += 1
-            misc.backup_files('SPOT.XDS', 'IDXREF.LP')
+            if options.get('backup', False):
+                misc.backup_files('SPOT.XDS', 'IDXREF.LP')
     
             if info.get('failure_code') == xds.POOR_SOLUTION:
                 if not _aliens_tried:

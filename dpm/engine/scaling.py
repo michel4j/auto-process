@@ -1,7 +1,7 @@
 import os
 import time
 
-from dpm.parser import xds
+from dpm.parser import xds, ccp4
 from dpm.xds import io
 from dpm.utils import log, misc, programs
 import dpm.errors
@@ -129,3 +129,21 @@ def scale_datasets(dsets, options={}):
     return {'step': 'scaling', 'success': True}
 
 
+def data_quality(data_info, options={}):
+    os.chdir(data_info['working_directory'])
+    _logger.info('Checking data quality ...')
+        
+    # Check Requirements
+    if not misc.file_requirements('unmerged.mtz'):
+        return {'step': 'data_quality', 'success': False, 'reason': 'Required files missing'}
+
+    try:
+        programs.ctruncate('unmerged.mtz')
+        info = ccp4.parse_ctruncate()
+    except dpm.errors.ProcessError, e:
+        return {'step': 'data_quality', 'success':False, 'reason': e.value}
+
+    return {'step': 'data_quality','success': True, 'data': info}
+
+
+    

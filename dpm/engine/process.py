@@ -282,7 +282,7 @@ class Manager(object):
             
             # Scoring and experiment setup check
             ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-            _logger.info('(%s) Asymptotic I/Sigma(I) for experiment: %0.1f' % (dset.name, ISa))
+            _logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
             _score = dset.score(self.options.get('mode')=='screening')
             _logger.info('(%s) Dataset Score: %0.1f' % (dset.name, _score))
 

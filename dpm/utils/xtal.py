@@ -156,7 +156,7 @@ def select_resolution(table, method=1):
         elif 'resol_range' in shell:
             res = shell['resol_range'][1]
         i_sigma = shell['i_sigma']
-        r_mgdf = shell['r_mrgdf']
+        r_mgdf = shell.get('r_mrgdf', -99)
         resol_i = res
         if (method == 1) and i_sigma < 1.0:
             _rmet = method

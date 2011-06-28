@@ -77,24 +77,13 @@ def xdsstat(filename):
        
 def pointless(retry=False):
     f = open('pointless.com', 'w')
-    if retry:
-        txt = """pointless << eof
-xdsin INTEGRATE.HKL
-xmlout pointless.xml
-resol 4.0
-hklout unmerged.mtz
-choose solution 1
-eof
-"""
-    else:
-        txt = """pointless << eof
+    txt = """pointless << eof
 xdsin INTEGRATE.HKL
 xmlout pointless.xml
 resol 3.0
-hklout unmerged.mtz
+choose solution 1
 eof
-"""
-     
+"""  
     try:
         f.write(txt)
         f.close()
@@ -128,12 +117,18 @@ def best(data_info, options={}):
 def distl(filename):
     _execute_command(["labelit.distl", filename], out_file="distl.log")
 
-def ctruncate(filename):
-    command = "ctruncate -hklin %s -colin '/*/*/[I,SIGI]'" % (filename)
+def ccp4check(filename):
+    command  = "#!/bin/csh \n"
+    command += "pointless -c xdsin %s hklout UNMERGED.mtz > unmerged.log \n" % (filename)
+    command += "ctruncate -hklin UNMERGED.mtz -colin '/*/*/[I,SIGI]' > ctruncate.log \n"
+    command += "sfcheck -f UNMERGED.mtz > sfcheck.log \n"
+    
     try:
-        f = open('ctruncate.com', 'w')
+        f = open('ccp4check.com', 'w')
         f.write(command)
         f.close()
     except IOError:
         raise dpm.errors.ProcessError('Could not create command file')  
-    _execute_command(["sh", "ctruncate.com"], out_file="ctruncate.log")
+    _execute_command(["sh", "ccp4check.com"])
+
+

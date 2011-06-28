@@ -133,15 +133,16 @@ def data_quality(data_info, options={}):
     _logger.info('Checking data quality ...')
         
     # Check Requirements
-    if not misc.file_requirements('unmerged.mtz'):
+    if not misc.file_requirements('XSCALE.HKL'):
         return {'step': 'data_quality', 'success': False, 'reason': 'Required files missing'}
 
     try:
-        programs.ctruncate('unmerged.mtz')
+        programs.ccp4check('XSCALE.HKL')
         info = ccp4.parse_ctruncate()
+        sf_info = ccp4.parse_sfcheck()
+        info.update(sf_info)
     except dpm.errors.ProcessError, e:
         return {'step': 'data_quality', 'success':False, 'reason': e.value}
-
     return {'step': 'data_quality','success': True, 'data': info}
 
 

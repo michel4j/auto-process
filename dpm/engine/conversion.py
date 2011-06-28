@@ -47,7 +47,6 @@ def convert_formats(dset, options={}):
         try:
             io.write_xdsconv_input(opt)
             programs.xdsconv()
-            output_files.append(opt['output_file'])
             
             # Special formatting for MTZ
             if opt['format'] == 'CCP4_F':     

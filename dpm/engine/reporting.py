@@ -79,7 +79,7 @@ def format_section(section, level=1, invert=False, fields=[], show_title=True):
     file_text += '\n'
     return file_text
 
-def get_log_dict(datasets, options):
+def get_log_data(datasets, options):
     if options.get('anomalous', False):
         adj = 'Anomalous'
     else:
@@ -97,35 +97,36 @@ def get_log_dict(datasets, options):
                   ]
     _section['table'] = []
     resol_method = {
-        0: 'Based on detector edge, or limitted by input parameters.',
-        1: 'Based on I/sigma(I) > 1 cut-off.',
-        2: 'Based on  R-mrgd-F < 40% cut-off.',
-        3: 'Calculated by DISTL (see Zang et al, J. Appl. Cryst. (2006). 39, 112-119'
+        0: 'Based on detector edge',
+        1: 'Based on I/sigma(I) > 1 ',
+        2: 'Based on R-mrgd-F < 40% cut-off.',
+        3: 'Calculated by DISTL (see Zang et al, J. Appl. Cryst. (2006). 39, 112-119',
+        4: 'Manualy chosen',
     }
     
     for dataset_name, dset in datasets.items():
         dres= dset.results
-        if dset.get('image_analysis', None) is not None:
+        if dres.get('image_analysis', None) is not None:
             _ice_rings = dres['image_analysis']['summary']['ice_rings']
         else:
             _ice_rings = 'N/C'
-        if dset.get('scaling', None) is not None:
-            _summary = dset['scaling']
+        if dres.get('scaling', None) is not None:
+            _summary = dres['scaling']
         else:
             _summary= dres['correction']
         _sum_values = [ dataset_name,
             '%0.2f' % (dres['crystal_score'],),
             '%7.4f' % (dset.parameters['wavelength'],),
             xtal.SPACE_GROUP_NAMES[ dres['correction']['symmetry']['space_group']['sg_number'] ],
-            '%0.1f %0.1f %0.1f' % dres['correction']['symmetry']['space_group']['unit_cell'][:3],
-            '%0.1f %0.1f %0.1f' % dres['correction']['symmetry']['space_group']['unit_cell'][3:],
+            '%0.1f %0.1f %0.1f' % tuple(dres['correction']['symmetry']['space_group']['unit_cell'][:3]),
+            '%0.1f %0.1f %0.1f' % tuple(dres['correction']['symmetry']['space_group']['unit_cell'][3:]),
             '%0.0f' % (xtal.cell_volume(dres['correction']['symmetry']['space_group']['unit_cell']),),
-            '%0.2f' % _summary['resolution'][0],
+            '%0.2f' % _summary['summary']['resolution'][0],
             _summary['summary']['observed'],
             _summary['summary']['unique'],
             '%0.1f' % (float(_summary['summary']['observed'])/_summary['summary']['unique'],),
             '%0.1f%%' % (_summary['summary']['completeness'],),
-            '%0.2f' % (dset['correction']['summary']['mosaicity'],),
+            '%0.2f' % (dres['correction']['summary']['mosaicity'],),
             '%0.1f' % (_summary['summary']['i_sigma'],),
             '%0.1f%%' % (_summary['summary']['r_mrgdf'],),
             '%0.1f%%' % (_summary['summary']['r_meas'],),
@@ -139,7 +140,7 @@ def get_log_dict(datasets, options):
 [c] Resolution selection method: %s
 [d] Average I/sigma(I) for all data.
 [e] Redundancy independent R-factor. Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.
-[f] Quality of amplitudes. see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.""" % resol_method[_summary['resolution'][1]]
+[f] Quality of amplitudes. see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.""" % resol_method[_summary['summary']['resolution'][1]]
     info['summary'] = _section
     
     info['details'] = {}
@@ -154,7 +155,7 @@ def get_log_dict(datasets, options):
         _keys = ['Description', 'Detector Distance (mm)','Exposure Time (sec)', 'No. Frames', 'Starting Angle (deg)',
                  'Delta (deg)', 'Two Theta (deg)', 'Detector Origin (pix)', 'Detector Size (pix)',
                  'Pixel Size (um)', 'File Template','Data Directory', 'Output Directory']
-        _data_dir = os.path.dirname(dset['parameters']['file_template'])
+        _data_dir = os.path.dirname(dset.parameters['file_template'])
         _out_dir = dset.parameters['working_directory']
         _rows = ['Parameters', dset.parameters['distance'],
                 dset.parameters['exposure_time'],
@@ -162,8 +163,8 @@ def get_log_dict(datasets, options):
                 dset.parameters['start_angle'],
                 dset.parameters['delta_angle'], 
                 dset.parameters['two_theta'], 
-                '%0.0f x %0.0f' %  dset.parameters['beam_center'],
-                '%d x %d' %  dset.parameters['detector_size'], 
+                '%0.0f x %0.0f' %  tuple(dset.parameters['beam_center']),
+                '%d x %d' %  tuple(dset.parameters['detector_size']), 
                 '%0.5f x %0.5f' %  (dset.parameters['pixel_size'],dset.parameters['pixel_size']) ,
                  os.path.basename(dset.parameters['file_template']),
                  _data_dir,
@@ -238,8 +239,8 @@ def get_log_dict(datasets, options):
             row = [id, 
                 '%6s %3d %2s' % (sg_name, sg, lat_type), 
                 '%5.1f %5.1f %5.1f %5.1f %5.1f %5.1f' % xtal.tidy_cell(l['unit_cell'], lat_type),
-                l['quality'], xtal.cell_volume( l['unit_cell'] ),
-                '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % l['reindex_matrix'] ]
+                l['quality'], "%0.1f" % xtal.cell_volume( l['unit_cell'] ),
+                '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % tuple(l['reindex_matrix']) ]
             _section['lattices']['table'].append(zip(_sec_keys, row))
         
         _section['space_groups'] = {}
@@ -258,10 +259,10 @@ def get_log_dict(datasets, options):
         u_cell = xtal.tidy_cell(dres['symmetry']['unit_cell'], dres['symmetry']['character'])
         sg_name = xtal.SPACE_GROUP_NAMES[ dres['symmetry']['sg_number'] ]
         _section['space_groups']['notes'] = "[*] Selected:  %s,  #%s. " % ( 
-            sg_name, dset['space_group']['sg_number'] )
+            sg_name, dres['symmetry']['sg_number'] )
         _section['space_groups']['notes'] += " Unit Cell: %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f." % u_cell 
         _section['space_groups']['notes'] += " NOTE: Detailed statistics reported below use this selection. "    
-        if dset['space_group']['type'] == 'PointGroup':
+        if dres['symmetry']['type'] == 'PointGroup':
             _section['space_groups']['notes'] += """
 [!] Space Group is ambiguous. The lowest symmetry group of the high probability candidates has been chosen to permit reindexing in the future without loss of data!"""
         
@@ -298,8 +299,8 @@ def get_log_dict(datasets, options):
             for k,t in [('Resolution','shell'),('Completeness', 'completeness'),('R_meas','r_meas'), ('R_mrgd-F','r_mrgdf'), ('I/Sigma','i_sigma'), ('SigAno','sig_ano'), ('AnoCorr','cor_ano')]:
                 n_row[k] = row[t]
             _section[_data_key].append(n_row.items())
-        resol = dres['correction']['resolution']
-        _section['notes'] = "Preliminary resolution cut-off (%s):  %5.2f" % (resol_method[resol[1]], resol[0])    
+        resol = dres['correction']['summary']['resolution']
+        _section['notes'] = "Resolution cut-off (%s): %5.2f" % (resol_method[resol[1]], resol[0])    
         info['details'][dataset_name]['correction'] = _section
         
         # Print out scaling results
@@ -366,7 +367,7 @@ def get_reports(datasets, options={}):
             exp_id = dataset_info.get('experiment_id')
         
         if dres.get('image_analysis', None) is not None:
-            _ice_rings = dset['image_analysis']['summary']['ice_rings']
+            _ice_rings = dres['image_analysis']['summary']['ice_rings']
         else:
             _ice_rings = -1
         
@@ -390,7 +391,7 @@ def get_reports(datasets, options={}):
             dres['correction']['symmetry']['space_group']['unit_cell'][3],
             dres['correction']['symmetry']['space_group']['unit_cell'][4],
             dres['correction']['symmetry']['space_group']['unit_cell'][5],
-            _summary['resolution'][0],
+            _summary['summary']['resolution'][0],
             _summary['summary']['observed'],
             _summary['summary']['unique'],
             float(_summary['summary']['observed'])/_summary['summary']['unique'],

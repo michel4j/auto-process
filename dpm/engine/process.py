@@ -5,7 +5,8 @@ import time
 import dpm.errors
 from dpm.utils.misc import json
 from dpm.utils import odict, dataset, misc, log, xtal
-from dpm.engine import indexing, spots, integration, scaling, symmetry, strategy, conversion
+from dpm.engine import indexing, spots, integration, scaling
+from dpm.engine import reporting, symmetry, strategy, conversion
 
 
 _logger = log.get_module_logger(__name__)
@@ -238,7 +239,7 @@ class Manager(object):
         else:
             cur_pos, next_step = (0, 'initialize')
         
-        if next_step not in ['scaling', 'conversion']:
+        if next_step not in ['scaling', 'conversion', 'data_quality', 'reporting']:
             for i, dset in enumerate(self.datasets.values()):
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
                 self.run_position = i 
@@ -284,28 +285,45 @@ class Manager(object):
             ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
             _logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
             _score = dset.score(self.options.get('mode')=='screening')
-            _logger.info('(%s) Dataset Score: %0.1f' % (dset.name, _score))
+            _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
 
-            # Run Data Quality Step:
-            _out = scaling.data_quality(dset.parameters, self.options)
-            self.save_checkpoint()
-            if not _out['success']:
-                _logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
-                sys.exit()
-            else:
-                dset.results['data_quality'] = _out.get('data')
             
             # file format conversions
             if self.options.get('mode') != 'screen':
                 _out = conversion.convert_formats(dset, self.options)
+                dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
                 if not _out['success']:
+                    dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
                     _logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
                 else:
                     dset.results['output_files'] = _out.get('data')
                     _logger.info('(%s) Output Files: %s' % (dset.name, ', '.join(_out['data'])))
 
-            # reporting
+            # Run Data Quality Step:
+            quality_info = {}
+            quality_info.update(dset.parameters)
+        
+            for ofile in dset.results['output_files']:
+                if os.path.splitext(ofile)[0] == '.mtz':
+                    quality_info.update(sfcheck_file=ofile)
+                    break               
+            _out = scaling.data_quality(quality_info, self.options)
+            dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
+            if not _out['success']:
+                _logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
+                sys.exit()
+            else:
+                dset.results['data_quality'] = _out.get('data')
+            self.save_checkpoint()
 
+
+        # reporting
+        os.chdir(self.options['directory'])
+        _logger.info('Saving summaries ...')
+        log_data = reporting.get_log_data(self.datasets, self.options)
+        reporting.save_log(log_data, 'process.log')
+        #import pprint
+        #pprint.pprint(reports, indent=4, depth=3)   
         
         
             

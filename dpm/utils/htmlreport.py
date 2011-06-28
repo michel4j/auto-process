@@ -3,8 +3,9 @@ warnings.simplefilter("ignore") # ignore deprecation warnings
 import os
 import sys
 import numpy
-from dpm.utils import json, misc
-from dpm.autoxds.utils import SPACE_GROUP_NAMES
+from dpm.utils import misc
+from dpm.utils.misc import json
+from dpm.utils.xtal import SPACE_GROUP_NAMES
 
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas

@@ -127,7 +127,7 @@ def cell_volume(unit_cell):
     return v 
 
 
-def select_resolution(table):
+def select_resolution(table, method=1):
     """
     Takes a table of statistics and determines the optimal resolutions
     The table is a list of dictionaries each with at least the following fields
@@ -149,17 +149,23 @@ def select_resolution(table):
     """
 
     shells = table[:-1]
+    _rmet = 0
     for shell in shells:
         if 'shell' in shell:
             res = float(shell['shell'])
         elif 'resol_range' in shell:
             res = shell['resol_range'][1]
         i_sigma = shell['i_sigma']
+        r_mgdf = shell['r_mrgdf']
         resol_i = res
-        if i_sigma < 1.0:
+        if (method == 1) and i_sigma < 1.0:
+            _rmet = method
+            break
+        elif (method == 2) and r_mgdf > 40.0:
+            _rmet = method
             break
             
-    return (resol_i, 1)
+    return (resol_i, _rmet)
 
 
 def select_lattices(table):

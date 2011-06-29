@@ -6,7 +6,7 @@ from dpm.utils import programs, misc, log, io
 _logger = log.get_module_logger(__name__)
 
 def convert_formats(dset, options={}):
-    os.chdir(dset.parameters['working_directory'])
+    os.chdir(options['directory'])
     
     # GENERATE MTZ and CNS output files    
     _logger.info('Generating MTZ, SHELX & CNS files ...')

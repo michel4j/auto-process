@@ -295,7 +295,7 @@ class AutoXDS:
         total_frames = 0
         for info in self.dataset_info.values():
             total_frames += info['data_range'][1]-info['data_range'][0]
-        frame_rate = total_frames/elapsed
+        frame_rate = total_frames/(time.time() - self._start_time)
         used_time = time.strftime('%H:%M:%S', time.gmtime(elapsed))
         _logger.info("Done in: %s [ %0.1f frames/sec ]"  % (used_time, frame_rate))
         

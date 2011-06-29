@@ -2,7 +2,7 @@ import os
 import time
 
 from dpm.parser import xds, ccp4
-from dpm.utils import log, misc, programs, io
+from dpm.utils import log, misc, programs, io, xtal
 import dpm.errors
 
 _logger = log.get_module_logger(__name__)
@@ -59,7 +59,6 @@ def scale_datasets(dsets, options={}):
             resol = options.get('resolution', dres['correction']['summary']['resolution'][0])
             in_file = dres['correction']['output_file']
             inputs.append({'input_file': in_file, 'resolution': resol})
-            dset.results['scaling'] = {} 
         sections = [{
             'anomalous': options.get('anomalous', False),
             'strict_absorption': _check_chisq(dres['correction']),
@@ -81,29 +80,29 @@ def scale_datasets(dsets, options={}):
         for dset in dsets.values():
             dset.log.append((time.time(), 'scaling', False, e.value))
         return {'step': 'scaling', 'success': False, 'reason': e.value}
-      
+
     if len(raw_info.keys()) == 1:
         info = raw_info.values()[0]
         info['output_file'] = 'XSCALE.HKL'
-        try:
-            _logger.info("Calculating frame statistics ...")
-            programs.xdsstat(info['output_file'])
-            stat_info = xds.parse_xdsstat()
-            info.update(stat_info)            
-        except dpm.errors.ProcessError, e:
-            for dset in dsets.values():
-                dset.log.append((time.time(), 'scaling', False, e.value))
-            return {'step': 'scaling', 'success': False, 'reason': e.value}
-        
-        for dset in dsets.values():
-            # Set resolution
-            if options.get('resolution'):
-                resol = (options.get('resolution'), 4)
-            else:
-                resol = dset.results['correction']['summary']['resolution']
-            info['summary']['resolution'] = resol
-            dset.results['scaling'].update(info)
-            dset.log.append((time.time(), 'scaling', True, None))
+        for i, dset in enumerate(dsets.values()):           
+            try:
+                _logger.info("(%s) Calculating extra statistics ..." % dset.name)
+                programs.xdsstat(dset.results['correction']['output_file'])
+                stat_info = xds.parse_xdsstat()
+                dset.results['correction'].update(stat_info)           
+            except dpm.errors.ProcessError, e:
+                dset.log.append((time.time(), 'frame_statistics', False, e.value))
+                return {'step': 'scaling', 'success': False, 'reason': e.value}
+
+            if i == 0:
+                # Set resolution
+                if options.get('resolution'):
+                    resol = (options.get('resolution'), 4)
+                else:
+                    resol = xtal.select_resolution(info['statistics'])
+                info['summary']['resolution'] = resol
+                dset.results['scaling'] = info
+                dset.log.append((time.time(), 'scaling', True, None))
     else:
         for name, info in raw_info.items():
             dset = dsets[name]
@@ -111,15 +110,15 @@ def scale_datasets(dsets, options={}):
             if options.get('resolution'):
                 resol = (options.get('resolution'), 4)
             else:
-                resol = dset.results['correction']['summary']['resolution']
+                resol = xtal.select_resolution(info['statistics'])
             info['summary']['resolution'] = resol
             try:
-                _logger.info("(%s) Calculating statistics ..." % (name))
-                programs.xdsstat(dset.results['scaling']['output_file'])
+                _logger.info("(%s) Calculating extra statistics ..." % (name))
+                programs.xdsstat(dset.results['correction']['output_file'])
                 stat_info = xds.parse_xdsstat()
-                info.update(stat_info)           
+                dset.results['correction'].update(stat_info)
             except dpm.errors.ProcessError, e:
-                dset.log.append((time.time(), 'scaling', False, e.value))
+                dset.log.append((time.time(), 'frame_statistics', False, e.value))
                 return {'step': 'scaling', 'success': False, 'reason': e.value}
             
             dsets[name].results['scaling'].update(info)
@@ -128,16 +127,16 @@ def scale_datasets(dsets, options={}):
     return {'step': 'scaling', 'success': True}
 
 
-def data_quality(data_info, options={}):
-    os.chdir(data_info['working_directory'])
+def data_quality(filename, options={}):
+    os.chdir(options['directory'])
     _logger.info('Checking data quality ...')
         
     # Check Requirements
-    if not misc.file_requirements('XSCALE.HKL'):
+    if not misc.file_requirements(filename):
         return {'step': 'data_quality', 'success': False, 'reason': 'Required files missing'}
-
+    
     try:
-        programs.ccp4check('XSCALE.HKL')
+        programs.ccp4check(filename)
         info = ccp4.parse_ctruncate()
         sf_info = ccp4.parse_sfcheck()
         info.update(sf_info)

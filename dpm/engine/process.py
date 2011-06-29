@@ -2,6 +2,8 @@
 import os
 import sys
 import time
+import pprint
+
 import dpm.errors
 from dpm.utils.misc import json
 from dpm.utils import odict, dataset, misc, log, xtal
@@ -71,20 +73,23 @@ class DataSet(object):
         self.log = info.get('log', [])
         self.results = info.get('results',{})            
 
-    def score(self, strategy=False):
+    def score(self, strategy=False, scaled=False):
         
+        if scaled:
+            _summary = self.results['scaling']['summary']
+        else:
+            _summary = self.results['correction']['summary']
+            
         mosaicity = self.results['correction']['summary']['mosaicity']
         std_spot = self.results['correction']['summary']['stdev_spot']
         std_spindle= self.results['correction']['summary']['stdev_spindle']
-        if self.results.get('scaling') is not None:
-            resolution = self.results['scaling']['summary']['resolution'][0]
-            i_sigma = self.results['scaling']['summary']['i_sigma']
-            r_meas = self.results['scaling']['summary']['r_meas']
-            completeness = self.results['scaling']['summary']['completeness']
-        else:
-            resolution = self.results['correction']['summary']['resolution'][0]
-            i_sigma = self.results['correction']['summary']['i_sigma']
-            r_meas = self.results['correction']['summary']['r_meas']          
+        resolution = _summary['resolution'][0]
+        i_sigma = _summary['i_sigma']
+        r_meas = _summary['r_meas']
+        
+        if scaled:
+            completeness = self.results['data_quality']['sf_check']['data_compl']
+        else:         
             completeness = self.results['correction']['summary']['completeness']
 
         if self.results.get('image_analysis') is not None:
@@ -227,6 +232,7 @@ class Manager(object):
             (dataset_index, 'step')
         """
         
+        self._start_time = time.time()
         run_steps = ['initialize', 'image_analysis', 'spot_search', 
                      'indexing', 'integration','correction', 'symmetry',
                      'strategy',
@@ -288,26 +294,11 @@ class Manager(object):
             _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
 
             
-            # file format conversions
-            if self.options.get('mode') != 'screen':
-                _out = conversion.convert_formats(dset, self.options)
-                dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-                if not _out['success']:
-                    dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-                    _logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
-                else:
-                    dset.results['output_files'] = _out.get('data')
-                    _logger.info('(%s) Output Files: %s' % (dset.name, ', '.join(_out['data'])))
-
             # Run Data Quality Step:
-            quality_info = {}
-            quality_info.update(dset.parameters)
-        
-            for ofile in dset.results['output_files']:
-                if os.path.splitext(ofile)[0] == '.mtz':
-                    quality_info.update(sfcheck_file=ofile)
-                    break               
-            _out = scaling.data_quality(quality_info, self.options)
+            if self.options['mode'] == 'merge' and i > 0:
+                _out = scaling.data_quality(dset.results['correction']['output_file'], self.options)
+            else:
+                _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
             dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
             if not _out['success']:
                 _logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
@@ -316,15 +307,33 @@ class Manager(object):
                 dset.results['data_quality'] = _out.get('data')
             self.save_checkpoint()
 
+            # file format conversions
+            if self.options.get('mode') != 'screen':
+                
+                if self.options.get('mode') == 'merge' and i > 0:
+                    pass
+                else:
+                    _out = conversion.convert_formats(dset, self.options)
+                    dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
+                    if not _out['success']:
+                        dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
+                        _logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
+                    else:
+                        dset.results['output_files'] = _out.get('data')
+                        _logger.info('(%s) Output Files: %s' % (dset.name, ', '.join(_out['data'])))
 
         # reporting
         os.chdir(self.options['directory'])
         _logger.info('Saving summaries ...')
         log_data = reporting.get_log_data(self.datasets, self.options)
         reporting.save_log(log_data, 'process.log')
-        #import pprint
-        #pprint.pprint(reports, indent=4, depth=3)   
         
+        reports = reporting.get_reports(self.datasets, self.options)
+        pprint.pprint(reports, indent=4, depth=3) 
+
+        used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
+        _logger.info("Done in: %s"  % (used_time))
+  
         
             
                 

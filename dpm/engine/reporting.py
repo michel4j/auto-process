@@ -3,7 +3,7 @@ import textwrap
 
 from dpm.utils.prettytable import PrettyTable
 from dpm.utils.odict import SortedDict
-from dpm.utils import xtal
+from dpm.utils import xtal, misc
 from dpm.utils.misc import json
 from dpm.utils import htmlreport
 from dpm.parser.utils import Table
@@ -79,7 +79,7 @@ def format_section(section, level=1, invert=False, fields=[], show_title=True):
     file_text += '\n'
     return file_text
 
-def get_log_data(datasets, options):
+def get_log_data(datasets, options={}):
     if options.get('anomalous', False):
         adj = 'Anomalous'
     else:
@@ -92,8 +92,8 @@ def get_log_data(datasets, options):
                   'Unit Cell (A)', '        (deg)', 
                   'Cell Volume (A^3)', 'Resolution (A)[c]', 'All Reflections',
                   'Unique Reflections', 'Multiplicity', 'Completeness',
-                  'Mosaicity', 'I/sigma(I) [d]', 'R-mrgd-F [e]',
-                  'R-meas [f]', 'sigma(spot) (pix)', 'sigma(angle) (deg)','No. Ice rings',
+                  'I/sigma(I) [d]', 'R-mrgd-F [e]',
+                  'R-meas [f]', 'Mosaicity', 'sigma(spot) (pix)', 'sigma(angle) (deg)','No. Ice rings',
                   ]
     _section['table'] = []
     resol_method = {
@@ -103,19 +103,38 @@ def get_log_data(datasets, options):
         3: 'Calculated by DISTL (see Zang et al, J. Appl. Cryst. (2006). 39, 112-119',
         4: 'Manualy chosen',
     }
-    
-    for dataset_name, dset in datasets.items():
+    data_items = datasets.items()
+    if options.get('mode') == 'merge':
+        data_items.append( ('*combined*', data_items[0][1]) )
+    for dataset_name, dset in data_items:
         dres= dset.results
-        if dres.get('image_analysis', None) is not None:
+        if dres.get('image_analysis') is not None:
             _ice_rings = dres['image_analysis']['summary']['ice_rings']
         else:
             _ice_rings = 'N/C'
-        if dres.get('scaling', None) is not None:
+        
+        _mos = '%0.2f' % dres['correction']['summary']['mosaicity']
+        _std_pix = '%0.1f' % (dres['correction']['summary']['stdev_spot'],)
+        _std_deg = '%0.1f' % (dres['correction']['summary']['stdev_spindle'],)
+        if options.get('mode') != 'merge':
             _summary = dres['scaling']
-        else:
-            _summary= dres['correction']
+            _score = dres['crystal_score']            
+            _compl = _summary['summary']['completeness']
+        elif dataset_name == "*combined*":
+            _ice_rings = 'N/A'
+            _summary = dres['scaling']
+            _score = dset.score(scaled=True)
+            _std_pix = "N/A"
+            _std_deg = "N/A"
+            _mos = "N/A"
+            _compl = dres['data_quality']['sf_check']['data_compl']
+        else: 
+            _summary = dres['correction']
+            _score = dset.score(scaled=False)
+            _compl = _summary['summary']['completeness']
+
         _sum_values = [ dataset_name,
-            '%0.2f' % (dres['crystal_score'],),
+            '%0.2f' % _score,
             '%7.4f' % (dset.parameters['wavelength'],),
             xtal.SPACE_GROUP_NAMES[ dres['correction']['symmetry']['space_group']['sg_number'] ],
             '%0.1f %0.1f %0.1f' % tuple(dres['correction']['symmetry']['space_group']['unit_cell'][:3]),
@@ -125,13 +144,13 @@ def get_log_data(datasets, options):
             _summary['summary']['observed'],
             _summary['summary']['unique'],
             '%0.1f' % (float(_summary['summary']['observed'])/_summary['summary']['unique'],),
-            '%0.1f%%' % (_summary['summary']['completeness'],),
-            '%0.2f' % (dres['correction']['summary']['mosaicity'],),
+            '%0.1f%%' % (_compl,),
             '%0.1f' % (_summary['summary']['i_sigma'],),
             '%0.1f%%' % (_summary['summary']['r_mrgdf'],),
             '%0.1f%%' % (_summary['summary']['r_meas'],),
-            '%0.1f' % (dres['correction']['summary']['stdev_spot'],),
-            '%0.1f' % (dres['correction']['summary']['stdev_spindle'],),
+            _mos,
+            _std_pix,
+            _std_deg,
             _ice_rings,
             ]
         _section['table'].append(zip(_sum_keys, _sum_values))
@@ -143,35 +162,40 @@ def get_log_data(datasets, options):
 [f] Quality of amplitudes. see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.""" % resol_method[_summary['summary']['resolution'][1]]
     info['summary'] = _section
     
-    info['details'] = {}
-    for dataset_name, dset in datasets.items():
-        info['details'][dataset_name] = {}
+    # print data collection parameters
+    _section = {}
+    _section['title'] = '%s Data Collection Parameters' % adj
+    _section['table'] = []
+    _keys = ['Description', 'Detector Distance (mm)','Exposure Time (sec)', 'No. Frames', 'Starting Angle (deg)',
+             'Delta (deg)', 'Two Theta (deg)', 'Detector Origin (pix)', 'Detector Size (pix)',
+             'Pixel Size (um)', 'File Template','Output Directory']
+    for dataset_name, dset in data_items:
+        if dataset_name == "*combined*": continue
+        
         dres = dset.results
         # print out data collection parameters
         
-        _section = {}
-        _section['title'] = 'Data Collection and Processing Parameters'
-        _section['table'] = []
-        _keys = ['Description', 'Detector Distance (mm)','Exposure Time (sec)', 'No. Frames', 'Starting Angle (deg)',
-                 'Delta (deg)', 'Two Theta (deg)', 'Detector Origin (pix)', 'Detector Size (pix)',
-                 'Pixel Size (um)', 'File Template','Data Directory', 'Output Directory']
-        _data_dir = os.path.dirname(dset.parameters['file_template'])
-        _out_dir = dset.parameters['working_directory']
-        _rows = ['Parameters', dset.parameters['distance'],
+        _out_dir = misc.relpath(dset.parameters['working_directory'])
+        _rows = [dataset_name, dset.parameters['distance'],
                 dset.parameters['exposure_time'],
                 dset.parameters['frame_count'],
                 dset.parameters['start_angle'],
                 dset.parameters['delta_angle'], 
-                dset.parameters['two_theta'], 
+                '%0.1f' % dset.parameters['two_theta'], 
                 '%0.0f x %0.0f' %  tuple(dset.parameters['beam_center']),
                 '%d x %d' %  tuple(dset.parameters['detector_size']), 
                 '%0.5f x %0.5f' %  (dset.parameters['pixel_size'],dset.parameters['pixel_size']) ,
                  os.path.basename(dset.parameters['file_template']),
-                 _data_dir,
                  _out_dir]
         _section['table'].append(zip(_keys, _rows))
-        _section['notes'] = ''
-        info['details'][dataset_name]['parameters'] = _section
+    info['parameters'] =  _section
+    
+    
+    info['details'] = {}
+    for dataset_name, dset in data_items:
+
+        info['details'][dataset_name] = {}
+        dres = dset.results
         
         # Print out strategy information
         if dres.get('strategy', None) and dres['strategy'].get('runs', None) is not None:
@@ -212,8 +236,7 @@ def get_log_data(datasets, options):
 
             _strategy['summary']['notes'] = """[a] NOTE: Recommended exposure time does not take into account overloads at low resolution!
 [b] Values in parenthesis represent the high resolution shell.
-[c] %s
-"""  %  dres['strategy']['resolution_reasoning']
+[c] %s \n"""  %  dres['strategy']['resolution_reasoning']
                         
             _section = {}
             _section['title'] = 'Maximum Delta Angle to Prevent Angular Overlap'
@@ -223,90 +246,91 @@ def get_log_data(datasets, options):
                 for k,t in [('High Resolution Limit','resolution'),('Max. Angle Delta [a]', 'delta_angle')]:
                     n_row[k] = row[t]
                 _section['table'].append(n_row.items())
-            _section['notes'] ='[a] NOTE: Assumes a mosaicity of zero!'
+            _section['notes'] ='[a] NOTE: Only a rough estimate. Assumes a mosaicity of zero!'
             _strategy['overlap'] = _section
             info['details'][dataset_name]['strategy'] = _strategy
-         
-        _section = {}
-        _section['lattices'] = {}
-        _section['lattices']['title'] = 'Compatible Lattice Character and Bravais Lattices'
-        _section['lattices']['table'] = []
-        _sec_keys = ['No.', 'Character', 'Cell Parameters', 'Quality', 'Cell Volume', 'Reindexing Matrix']
-        for l in dres['correction']['symmetry']['lattices']:
-            id, lat_type = l['id']
-            sg = xtal.POINT_GROUPS[ lat_type ][0]
-            sg_name = xtal.SPACE_GROUP_NAMES[ sg ]
-            row = [id, 
-                '%6s %3d %2s' % (sg_name, sg, lat_type), 
-                '%5.1f %5.1f %5.1f %5.1f %5.1f %5.1f' % xtal.tidy_cell(l['unit_cell'], lat_type),
-                l['quality'], "%0.1f" % xtal.cell_volume( l['unit_cell'] ),
-                '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % tuple(l['reindex_matrix']) ]
-            _section['lattices']['table'].append(zip(_sec_keys, row))
         
-        _section['space_groups'] = {}
-        _section['space_groups']['title'] = 'Likely Space Groups and their probabilities'
-        _section['space_groups']['table'] = []
-        _sec_keys = ['Space Group','No.', 'Probability']
-        sg_num = dres['correction']['symmetry']['space_group']['sg_number']
-        sg_name = xtal.SPACE_GROUP_NAMES[ sg_num ]
-        for i, sol in enumerate(dres['symmetry']['candidates']):
-            if sg_num == sol['number'] and i== 0:
-                sg_name = '* %s' % (xtal.SPACE_GROUP_NAMES[ sol['number'] ])
+        if dataset_name != "*combined*": 
+            _section = {}
+            _section['lattices'] = {}
+            _section['lattices']['title'] = 'Compatible Lattice Character and Bravais Lattices'
+            _section['lattices']['table'] = []
+            _sec_keys = ['No.', 'Character', 'Cell Parameters', 'Quality', 'Cell Volume', 'Reindexing Matrix']
+            for l in dres['correction']['symmetry']['lattices']:
+                id, lat_type = l['id']
+                sg = xtal.POINT_GROUPS[ lat_type ][0]
+                sg_name = xtal.SPACE_GROUP_NAMES[ sg ]
+                row = [id, 
+                    '%6s %3d %2s' % (sg_name, sg, lat_type), 
+                    '%5.1f %5.1f %5.1f %5.1f %5.1f %5.1f' % xtal.tidy_cell(l['unit_cell'], lat_type),
+                    l['quality'], "%0.1f" % xtal.cell_volume( l['unit_cell'] ),
+                    '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % tuple(l['reindex_matrix']) ]
+                _section['lattices']['table'].append(zip(_sec_keys, row))
+            
+            _section['space_groups'] = {}
+            _section['space_groups']['title'] = 'Likely Space Groups and their probabilities'
+            _section['space_groups']['table'] = []
+            _sec_keys = ['Space Group','No.', 'Probability']
+            sg_num = dres['correction']['symmetry']['space_group']['sg_number']
+            sg_name = xtal.SPACE_GROUP_NAMES[ sg_num ]
+            for i, sol in enumerate(dres['symmetry']['candidates']):
+                if sg_num == sol['number'] and i== 0:
+                    sg_name = '* %s' % (xtal.SPACE_GROUP_NAMES[ sol['number'] ])
+                else:
+                    sg_name = '  %s' % (xtal.SPACE_GROUP_NAMES[ sol['number'] ])
+                row = [ sg_name,   sol['number'],    sol['probability']]
+                _section['space_groups']['table'].append(zip(_sec_keys, row))
+            u_cell = xtal.tidy_cell(dres['symmetry']['unit_cell'], dres['symmetry']['character'])
+            sg_name = xtal.SPACE_GROUP_NAMES[ dres['symmetry']['sg_number'] ]
+            _section['space_groups']['notes'] = "[*] Selected:  %s,  #%s. " % ( 
+                sg_name, dres['symmetry']['sg_number'] )
+            _section['space_groups']['notes'] += " Unit Cell: %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f." % u_cell 
+            _section['space_groups']['notes'] += " NOTE: Detailed statistics reported below use this selection. "    
+            if dres['symmetry']['type'] == 'PointGroup':
+                _section['space_groups']['notes'] += """
+    [!] Space Group is ambiguous. The lowest symmetry group of the high probability candidates has been chosen to permit reindexing in the future without loss of data!"""
+            
+            info['details'][dataset_name]['symmetry'] = _section
+            
+            # Print out integration results
+            _section = {}
+            _section['title'] = "Integration Statistics"
+            _section['plot'] = []
+            _keymap = [('Frame No.','frame'),('Scale Factor', 'scale'),('Overloads','overloads'), 
+                       ('Reflections','reflections'), ('Mosaicity', 'mosaicity'),
+                       ('Unexpected Spots','unexpected'), ('Divergence','divergence')]
+            for row in dres['integration']['scale_factors']:
+                n_row = SortedDict()
+                for k,t in _keymap:
+                    n_row[k] = row[t]
+                _section['plot'].append(n_row.items())
+            _section['plot_axes'] = [('Frame No.',['Scale Factor']), ('Frame No.', ['Mosaicity']),('Frame No.',['Divergence'])]   
+            info['details'][dataset_name]['integration'] = _section
+    
+            # Print out correction results
+            _section = {}
+            _section['title'] = "Correction Statistics"
+            if dres.get('scaling', None) is not None:
+                _data_key = 'table'
             else:
-                sg_name = '  %s' % (xtal.SPACE_GROUP_NAMES[ sol['number'] ])
-            row = [ sg_name,   sol['number'],    sol['probability']]
-            _section['space_groups']['table'].append(zip(_sec_keys, row))
-        u_cell = xtal.tidy_cell(dres['symmetry']['unit_cell'], dres['symmetry']['character'])
-        sg_name = xtal.SPACE_GROUP_NAMES[ dres['symmetry']['sg_number'] ]
-        _section['space_groups']['notes'] = "[*] Selected:  %s,  #%s. " % ( 
-            sg_name, dres['symmetry']['sg_number'] )
-        _section['space_groups']['notes'] += " Unit Cell: %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f." % u_cell 
-        _section['space_groups']['notes'] += " NOTE: Detailed statistics reported below use this selection. "    
-        if dres['symmetry']['type'] == 'PointGroup':
-            _section['space_groups']['notes'] += """
-[!] Space Group is ambiguous. The lowest symmetry group of the high probability candidates has been chosen to permit reindexing in the future without loss of data!"""
-        
-        info['details'][dataset_name]['symmetry'] = _section
-        
-        # Print out integration results
-        _section = {}
-        _section['title'] = "Integration Statistics"
-        _section['plot'] = []
-        _keymap = [('Frame No.','frame'),('Scale Factor', 'scale'),('Overloads','overloads'), 
-                   ('Reflections','reflections'), ('Mosaicity', 'mosaicity'),
-                   ('Unexpected Spots','unexpected'), ('Divergence','divergence')]
-        for row in dres['integration']['scale_factors']:
-            n_row = SortedDict()
-            for k,t in _keymap:
-                n_row[k] = row[t]
-            _section['plot'].append(n_row.items())
-        _section['plot_axes'] = [('Frame No.',['Scale Factor']), ('Frame No.', ['Mosaicity']),('Frame No.',['Divergence'])]   
-        info['details'][dataset_name]['integration'] = _section
-
-        # Print out correction results
-        _section = {}
-        _section['title'] = "Correction Statistics"
-        if dres.get('scaling', None) is not None:
-            _data_key = 'table'
-        else:
-            _data_key = 'table+plot'
-            _section['plot_axes'] = [('Resolution',['R_meas', 'R_mrgd-F', 'Completeness']),('Resolution', ['I/Sigma'])]
-            if options.get('anomalous') == True:
-                _section['plot_axes'].append(('Resolution', ['SigAno']))
-        _section[_data_key] = []
-        for row in dres['correction']['statistics']:
-            n_row = SortedDict()
-            for k,t in [('Resolution','shell'),('Completeness', 'completeness'),('R_meas','r_meas'), ('R_mrgd-F','r_mrgdf'), ('I/Sigma','i_sigma'), ('SigAno','sig_ano'), ('AnoCorr','cor_ano')]:
-                n_row[k] = row[t]
-            _section[_data_key].append(n_row.items())
-        resol = dres['correction']['summary']['resolution']
-        _section['notes'] = "Resolution cut-off (%s): %5.2f" % (resol_method[resol[1]], resol[0])    
-        info['details'][dataset_name]['correction'] = _section
+                _data_key = 'table+plot'
+                _section['plot_axes'] = [('Resolution',['R_meas', 'R_mrgd-F', 'Completeness']),('Resolution', ['I/Sigma'])]
+                if options.get('anomalous') == True:
+                    _section['plot_axes'].append(('Resolution', ['SigAno']))
+            _section[_data_key] = []
+            for row in dres['correction']['statistics']:
+                n_row = SortedDict()
+                for k,t in [('Resolution','shell'),('Completeness', 'completeness'),('R_meas','r_meas'), ('R_mrgd-F','r_mrgdf'), ('I/Sigma','i_sigma'), ('SigAno','sig_ano'), ('AnoCorr','cor_ano')]:
+                    n_row[k] = row[t]
+                _section[_data_key].append(n_row.items())
+            resol = dres['correction']['summary']['resolution']
+            _section['notes'] = "Resolution cut-off (%s): %5.2f" % (resol_method[resol[1]], resol[0])    
+            info['details'][dataset_name]['correction'] = _section
         
         # Print out scaling results
         if dres.get('scaling', None) is not None:
             _section = {}
-            _section['title'] = "Scaling Statistics"
+            _section['title'] = "Statistics of scaled output files"
             _section['shells'] = {}
             _section['shells']['title'] = "Statistics presented by resolution shell"
             _data_key = 'table+plot' 
@@ -320,27 +344,7 @@ def get_log_data(datasets, options):
             _section['shells']['plot_axes'] = [('Resolution', ['R_meas', 'R_mrgd-F', 'Completeness']), ('Resolution', ['I/Sigma'])]
             if options.get('anomalous', False):
                 _section['shells']['plot_axes'].append(('Resolution', ['SigAno']))
-                  
-            _section['frames'] = {}
-            _section['frames']['title'] = "Statistics presented by frame"
-            _section['frames']['plot'] = []
-            for row in dres['scaling']['frame_statistics']:
-                n_row = SortedDict()
-                for k, t in [('Frame No', 'frame'), ('Intensity', 'i_obs'), ('No. Misfits', 'n_misfit'), ('R_meas', 'r_meas'), ('I/Sigma', 'i_sigma'), ('Unique', 'unique'), ('Corr', 'corr')]:
-                    n_row[k] = row[t]
-                _section['frames']['plot'].append(n_row.items())
-            _section['frames']['plot_axes'] = [('Frame No.', ['R_meas']), ('Frame No.', ['I/Sigma', 'Corr']), ('Frame No.', ['No. Misfits', 'Unique'])]
-           
-            _section['frame_difference'] = {}
-            _section['frame_difference']['title'] = "Statistics presented by frame difference"
-            _section['frame_difference']['plot'] = []
-            for row in dres['scaling']['diff_statistics']:
-                n_row = SortedDict()
-                for k, t in [('Frame difference', 'frame_diff'), ('R_d', 'rd'), ('R_d (friedel)', 'rd_friedel'), ('R_d (non-friedel)', 'rd_non_friedel'), ('No. Reflections', 'n_refl'), ('Friedel Reflections', 'n_friedel'), ('Non-Friedel Reflections', 'n_non_friedel')]:
-                    n_row[k] = row[t]
-                _section['frame_difference']['plot'].append(n_row.items())
-            _section['frame_difference']['plot_axes'] = [('Frame difference.', ['R_d', 'R_d (friedel)', 'R_d (non-friedel)']), ('Frame difference', ['No. Reflections', 'Friedel Reflections', 'Non-Friedel Reflections'])]
-        
+                          
             info['details'][dataset_name]['scaling'] = _section   
 
     return info
@@ -356,8 +360,7 @@ def get_reports(datasets, options={}):
         data_id = None
         crystal_id = None
         exp_id = None
-        dataset_file = os.path.join(
-                          os.path.dirname(dset.parameters['file_template']),
+        dataset_file = os.path.join(os.path.dirname(dset.parameters['file_template']),
                           '%s.SUMMARY' % (dataset_name))
 
         if os.path.exists(dataset_file):
@@ -371,7 +374,7 @@ def get_reports(datasets, options={}):
         else:
             _ice_rings = -1
         
-        if dres.get('scaling', None) is not None:
+        if dres.get('scaling') is not None and options.get('mode') != 'merge':
             _summary = dres['scaling']
         else:
             _summary= dres['correction']
@@ -509,17 +512,16 @@ def get_reports(datasets, options={}):
             for k in ['frame','scale','overloads','reflections','mosaicity','unexpected','divergence']:
                 _section[k] = _t[k]
                 
-            if dres.get('scaling') is not None:
-                if dres['scaling'].get('frame_statistics') is not None:                     
-                    _t = Table(dres['scaling']['frame_statistics'])
-                    _section['frame_no'] = _t['frame']
-                    for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
-                        _section[k] = _t[k]
-                if dres['scaling'].get('diff_statistics') is not None:
-                    _t = Table(dres['scaling']['diff_statistics'])
-                    _dataset_info['result']['details']['diff_statistics'] = {}
-                    for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
-                        _dataset_info['result']['details']['diff_statistics'][k] = _t[k]
+            if dres['correction'].get('frame_statistics') is not None:                     
+                _t = Table(dres['correction']['frame_statistics'])
+                _section['frame_no'] = _t['frame']
+                for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
+                    _section[k] = _t[k]
+            if dres['scaling'].get('diff_statistics') is not None:
+                _t = Table(dres['correction']['diff_statistics'])
+                _dataset_info['result']['details']['diff_statistics'] = {}
+                for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
+                    _dataset_info['result']['details']['diff_statistics'][k] = _t[k]
             _dataset_info['result']['details']['frame_statistics'] = _section
             
             _section = {}
@@ -548,7 +550,7 @@ def get_reports(datasets, options={}):
                     _section[k] = _t[k][:-1]
                 _dataset_info['result']['details']['standard_errors'] = _section
                 
-            #correction factors
+            # correction factors
             _dataset_info['result']['details']['correction_factors'] = dres['correction'].get('correction_factors')
 
             # Print out wilson_plot, cum int dist, twinning test
@@ -635,9 +637,9 @@ def save_log(info, filename):
 
     # print summary
     file_text = format_section(info['summary'], level=1)
+    file_text += format_section(info['parameters'], level=1)
     for name, dset in info['details'].items():
         file_text += text_heading("DETAILED RESULTS FOR DATASET: '%s'" % (name), level=1)
-        file_text += format_section(dset['parameters'], level=2)
         if dset.get('strategy', None) is not None: 
             file_text += text_heading("Data Collection Strategy", level=2)
             for key in ['summary','oscillation', 'overlap']:
@@ -646,13 +648,14 @@ def save_log(info, filename):
                 else:
                     invert = False
                 file_text += format_section(dset['strategy'][key], level=3, invert=invert)
-        file_text += text_heading("Lattice Character and Space Group Determination", level=2)
-        file_text += format_section(dset['symmetry']['lattices'], level=3, 
-                        invert=True, fields=['No.','Character', 'Cell Parameters', 'Quality'])
-        file_text += format_section(dset['symmetry']['lattices'], level=3, 
-                        invert=True, fields=['No.', 'Cell Volume','Reindexing Matrix'], show_title=False)
-        file_text += format_section(dset['symmetry']['space_groups'], level=3, invert=True)
-        file_text += format_section(dset['correction'], level=2, invert=True)
+        if dset.get('symmetry') is not None:
+            file_text += text_heading("Lattice Character and Space Group Determination", level=2)
+            file_text += format_section(dset['symmetry']['lattices'], level=3, 
+                            invert=True, fields=['No.','Character', 'Cell Parameters', 'Quality'])
+            file_text += format_section(dset['symmetry']['lattices'], level=3, 
+                            invert=True, fields=['No.', 'Cell Volume','Reindexing Matrix'], show_title=False)
+            file_text += format_section(dset['symmetry']['space_groups'], level=3, invert=True)
+            file_text += format_section(dset['correction'], level=2, invert=True)
         if dset.get('scaling',None) is not None:
             file_text += text_heading(dset['scaling']['title'], level=2)
             for key in ['shells','frames','frame_difference']:

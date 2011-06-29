@@ -24,10 +24,10 @@ def main():
     app = Manager(checkpoint=chkpt)
     
     # update app options
-    for opt in ['anomalous', 'backup']:
-        if options.get(opt) is not None:
-            app.options[opt] = options.get(opt)
-    app.run( resume_from=(0,'scaling'), overwrite=options)      
+    if options.get('anomalous') is not None:
+        app.options['anomalous'] = options.get('anomalous')
+    app.options['backup'] = options.get('backup', False)
+    app.run(resume_from=(0,'scaling'), overwrite=options)
      
 if __name__ == "__main__":
     try:

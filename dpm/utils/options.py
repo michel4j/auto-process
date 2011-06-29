@@ -38,6 +38,19 @@ options:
     
 """
 
+
+STRATEGY_USAGE = """
+auto.strategy [options]
+
+options:
+    --res=<res>, -r <res> : Manually set the high resolution limit for scaling.
+    --anom, -a : Scale with Friedel's law False
+    --backup, -b : Backup previous output if it exists
+    --help, -h : display this message
+    Default (no option): Resume previous processing from strategy step.
+    
+"""
+
 def _uniquify(seq): 
     # order preserving
     seen = {}
@@ -96,7 +109,7 @@ def process_options(params):
 
 def scale_options(params):
     try:
-        opts, args = getopt.gnu_getopt(params, "r:abih", ["res=", "anom", "backup", "inputs","help"])
+        opts, _ = getopt.gnu_getopt(params, "r:abih", ["res=", "anom", "backup", "inputs","help"])
     except:
         print SCALE_USAGE
             
@@ -116,5 +129,30 @@ def scale_options(params):
                 options['resolution'] = float(a)
             except:
                 print SCALE_USAGE
+                sys.exit(0)
+    return options
+
+def strategy_options(params):
+    try:
+        opts, _ = getopt.gnu_getopt(params, "r:abih", ["res=", "anom", "backup", "inputs","help"])
+    except:
+        print STRATEGY_USAGE
+            
+    # Parse options
+    options = {}    
+    for o, a in opts:
+        if o in ("-h","--help"):
+            print STRATEGY_USAGE
+            sys.exit(0)
+            
+        if o in ("-a","--anom"):
+            options['anomalous'] = True
+        if o in ('-b', '--backup'):
+            options['backup'] = True
+        if o in ('-r', '--res'):
+            try:
+                options['resolution'] = float(a)
+            except:
+                print STRATEGY_USAGE
                 sys.exit(0)
     return options

@@ -128,7 +128,7 @@ class Manager(object):
                 dset = DataSet(info=dset_info, overwrites=overwrites)
                 self.datasets[dset.name] = dset
         elif options is not None:   
-            self.run_position = 0
+            self.run_position = (0, 'initialize')
             self.options = options      
             for img in options.get('images', []):
                 dset = DataSet(filename=img, overwrites=overwrites)
@@ -248,11 +248,11 @@ class Manager(object):
         if next_step not in ['scaling', 'conversion', 'data_quality', 'reporting']:
             for i, dset in enumerate(self.datasets.values()):
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
-                self.run_position = i 
                     
                 _logger.info('Processing `%s` in %s' % (dset.name, 
                              misc.relpath(dset.parameters['working_directory'], self.command_dir)))                
                 for j, step in enumerate(run_steps):
+                    self.run_position = (i, step)
                     if j < run_steps.index(next_step): continue
                     if self.options.get('mode') != 'screen' and step == 'strategy':
                         continue
@@ -272,6 +272,7 @@ class Manager(object):
             next_step = 'scaling'
         
         if next_step == 'scaling':
+            self.run_position = (0, 'scaling')
             scaling_options = {}
             scaling_options.update(self.options)
             scaling_options.update(overwrite)
@@ -285,7 +286,6 @@ class Manager(object):
         # Final steps run for all datasets       
         for i, dset in enumerate(self.datasets.values()):
             if i < cur_pos: continue  # skip all datasets earlier than specified one
-            self.run_position = i 
             
             # Scoring and experiment setup check
             ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
@@ -295,6 +295,7 @@ class Manager(object):
 
             
             # Run Data Quality Step:
+            self.run_position = (i, 'data_quality')
             if self.options['mode'] == 'merge' and i > 0:
                 _out = scaling.data_quality(dset.results['correction']['output_file'], self.options)
             else:
@@ -308,6 +309,7 @@ class Manager(object):
             self.save_checkpoint()
 
             # file format conversions
+            self.run_position = (i, 'conversion')
             if self.options.get('mode') != 'screen':
                 
                 if self.options.get('mode') == 'merge' and i > 0: 
@@ -331,15 +333,20 @@ class Manager(object):
                     else:
                         dset.results['output_files'] = _out.get('data')
                         _logger.info('(%s) Output Files: %s' % (dset.name, ', '.join(_out['data'])))
+                self.save_checkpoint()
 
         # reporting
+        self.run_position = (0, 'reporting')
         os.chdir(self.options['directory'])
-        _logger.info('Saving summaries ...')
+        self.save_checkpoint()
+
+        _logger.info('Saving summaries ... "process.log", "process.json"')
         log_data = reporting.get_log_data(self.datasets, self.options)
-        reporting.save_log(log_data, 'process.log')
-        
+        reporting.save_log(log_data, 'process.log')     
         reports = reporting.get_reports(self.datasets, self.options)
-        pprint.pprint(reports, indent=4, depth=3) 
+        reporting.save_json(reports, 'process.json', self.options)
+        _logger.info('Generating HTML reports ...')
+        reporting.save_html(reports, self.options)      
 
         used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
         _logger.info("Done in: %s"  % (used_time))

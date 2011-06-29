@@ -22,7 +22,7 @@ def main():
         _logger.error('This command must be run within a data processing directory.')
         sys.exit(1)
     app = Manager(checkpoint=chkpt)
-    app.run( resume_from=(0,'symmetry'), overwrite=options)      
+    app.run(resume_from=(chkpt['run_position'][0],'symmetry'), overwrite=options)      
      
 if __name__ == "__main__":
     try:

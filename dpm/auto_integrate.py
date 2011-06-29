@@ -8,14 +8,14 @@ warnings.simplefilter("ignore") # ignore deprecation warnings
     
 from dpm.engine.process import Manager
 from dpm.utils import log
-from dpm.utils.options import strategy_options
+from dpm.utils.options import integrate_options
 from dpm.utils import misc
 
-_logger = log.get_module_logger('auto.strategy')
+_logger = log.get_module_logger('auto.integrate')
 
 def main():
     # Parse options
-    options = strategy_options(sys.argv[1:])
+    options = integrate_options(sys.argv[1:])
     try:
         chkpt = misc.json.loads(file('checkpoint.json').read())
     except IOError:
@@ -27,7 +27,7 @@ def main():
     if options.get('anomalous') is not None:
         app.options['anomalous'] = options.get('anomalous')
     app.options['backup'] = options.get('backup', False)
-    app.run( resume_from=(chkpt['run_position'][0],'strategy'), overwrite=options)
+    app.run(resume_from=(chkpt['run_position'][0],'integration'), overwrite=options)
      
 if __name__ == "__main__":
     try:

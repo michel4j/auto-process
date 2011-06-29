@@ -27,7 +27,7 @@ def main():
     if options.get('anomalous') is not None:
         app.options['anomalous'] = options.get('anomalous')
     app.options['backup'] = options.get('backup', False)
-    app.run(resume_from=(0,'scaling'), overwrite=options)
+    app.run(resume_from=(chkpt['run_position'][0],'scaling'), overwrite=options)
      
 if __name__ == "__main__":
     try:

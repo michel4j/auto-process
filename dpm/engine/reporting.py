@@ -3,10 +3,12 @@ import textwrap
 
 from dpm.utils.prettytable import PrettyTable
 from dpm.utils.odict import SortedDict
-from dpm.utils import xtal, misc
+from dpm.utils import xtal, misc, log
 from dpm.utils.misc import json
 from dpm.utils import htmlreport
 from dpm.parser.utils import Table
+
+_logger = log.get_module_logger(__name__)
 
 AUTOXDS_SCREENING, AUTOXDS_PROCESSING = range(2)
 
@@ -583,7 +585,7 @@ def get_reports(datasets, options={}):
         info.append(_dataset_info)
     return info
     
-def export_json(result_list, filename, err=None, traceback=None, code=1):
+def save_json(result_list, filename, options={}):
 
     names = [v['result']['name'] for v in result_list]
     
@@ -598,8 +600,8 @@ def export_json(result_list, filename, err=None, traceback=None, code=1):
                 result_list[pos]['id'] = info['result'].get('id')
                 
     # save json information to file
-    if err is not None:
-        error = {'message': err, "traceback": traceback, "code": code }
+    if options.get('errors') is not None:
+        error = {'message': options.get('errors') }
     else:
         error = None
         
@@ -631,6 +633,7 @@ def save_html(result_list, options={}):
                 htmlreport.create_full_report(report, report_directory)
             except:
                 pass         
+        _logger.info('(%s) HTML report: %s/report/index.html' % (report['result']['name'], misc.relpath(report_directory, options['directory']) ))
 
 def save_log(info, filename):
     fh = open(filename, 'w')

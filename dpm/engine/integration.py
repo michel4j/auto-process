@@ -1,5 +1,5 @@
 import os
-
+import shutil
 from dpm.parser import xds
 from dpm.utils.progress import ProgDisplay, ProgChecker
 from dpm.utils import log, misc, programs, xtal, io
@@ -15,6 +15,12 @@ def integrate(data_info, options={}):
     run_info.update(data_info)
     if options.get('backup', False):
         misc.backup_files('INTEGRATE.LP', 'INTEGRATE.HKL')
+    
+    # if optimizing the integration, copy GXPARM
+    if options.get('optimize', False) and os.path.exists('GXPARM.XDS'):
+        misc.backup_files('XPARM.XDS')
+        shutil.copy('GXPARM.XDS', 'XPARM.XDS')
+
     io.write_xds_input("DEFPIX INTEGRATE", run_info)
     if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS'):
         return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}

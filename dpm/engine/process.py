@@ -321,6 +321,8 @@ class Manager(object):
                         _prefix = os.path.commonprefix(self.datasets.keys())
                         if _prefix == '':
                             _prefix = '_'.join(self.datasets.keys())                       
+                        elif _prefix[-1] == '_':
+                            _prefix = _prefix[:-1]
                         _step_options['file_root'] = _prefix
                     else:
                         _step_options['file_root'] = dset.name

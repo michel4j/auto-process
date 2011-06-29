@@ -12,8 +12,9 @@ from twisted.python.failure import Failure, DefaultException
 from zope.interface import Interface, implements
 
 from dpm.service.interfaces import *
+from dpm.utils.misc import json
 from bcm.service.utils import log_call
-from bcm.utils import mdns, converter, json
+from bcm.utils import mdns, converter
 from bcm.utils.misc import get_short_uuid
 from dpm.service.common import *
 import os, sys

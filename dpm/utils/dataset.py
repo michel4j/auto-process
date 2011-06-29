@@ -3,9 +3,12 @@ import os
 import sys
 import fnmatch
 import re
+import numpy
+from scipy.ndimage import measurements
+from scipy.ndimage import filters
 
-from dpm.utils import units, peaks
-from dpm.utils.imageio import read_header
+from dpm.utils import misc
+from dpm.utils.imageio import read_header, read_image
 from dpm.utils.log import get_module_logger
 import dpm.errors
 
@@ -25,6 +28,29 @@ def _all_files(root, patterns='*'):
                 sfiles.append(name)
     sfiles.sort()
     return sfiles
+
+def detect_beam_peak(filename):
+    img_info =read_image(filename)
+    img = img_info.image
+    img_array = numpy.fromstring(img.tostring(), numpy.uint32)
+    img_array.shape = img.size[1], img.size[0]
+      
+    # filter the array so that features less than 8 pixels wide are blurred out
+    # assumes that beam center is at least 8 pixels wide
+    arr = filters.gaussian_filter(img_array, 8)
+    beam_y, beam_x = measurements.maximum_position(arr)
+    
+    # valid beam centers must be within the center 1/5 region of the detector surface
+    shape = img_array.shape
+    cmin = [2 * v/5 for v in shape]
+    cmax = [3 * v/5 for v in shape]
+    good = False
+    if cmin[0] < beam_y < cmax[0] and cmin[1] < beam_x < cmax[1]:
+        good = True
+        
+    return beam_x, beam_y, good
+    
+
 
 def get_parameters(img_file):
     """ 
@@ -62,7 +88,7 @@ def get_parameters(img_file):
     _overwrite_beam = False
     if first_frame == 0: 
         first_frame = 1
-        _ow_beam_x, _ow_beam_y, _overwrite_beam = peaks.detect_beam_peak(os.path.join(directory, file_list[0]))
+        _ow_beam_x, _ow_beam_y, _overwrite_beam = detect_beam_peak(os.path.join(directory, file_list[0]))
         if _overwrite_beam:
             _logger.info('%s: New beam origin from frame 000 [%d, %d].' % (_dataset_name, _ow_beam_x, _ow_beam_y))
         file_list = file_list[1:]
@@ -74,7 +100,7 @@ def get_parameters(img_file):
         sys.exit(1)
                 
     info = read_header(reference_image)
-    info['energy'] = units.wavelength_to_energy(info['wavelength'])
+    info['energy'] = misc.wavelength_to_energy(info['wavelength'])
     info['first_frame'] = first_frame
     info['frame_count'] = frame_count
     info['name'] = _dataset_name

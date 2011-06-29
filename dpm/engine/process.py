@@ -310,10 +310,20 @@ class Manager(object):
             # file format conversions
             if self.options.get('mode') != 'screen':
                 
-                if self.options.get('mode') == 'merge' and i > 0:
-                    pass
+                if self.options.get('mode') == 'merge' and i > 0: 
+                    pass # do not convert 
                 else:
-                    _out = conversion.convert_formats(dset, self.options)
+                    _step_options = {}
+                    _step_options.update(self.options)
+                    if self.options['mode'] == 'merge':
+                        _prefix = os.path.commonprefix(self.datasets.keys())
+                        if _prefix == '':
+                            _prefix = '_'.join(self.datasets.keys())                       
+                        _step_options['file_root'] = _prefix
+                    else:
+                        _step_options['file_root'] = dset.name
+                    
+                    _out = conversion.convert_formats(dset, _step_options)
                     dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
                     if not _out['success']:
                         dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))

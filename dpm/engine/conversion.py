@@ -15,7 +15,7 @@ def convert_formats(dset, options={}):
 
     infile = dset.results['scaling'].get('output_file')
     out_file_dir = os.path.dirname(infile)
-    out_file_root = os.path.join(out_file_dir, dset.name)
+    out_file_root = os.path.join(out_file_dir, options.get('file_root', dset.name))
     output_files = []
     
 

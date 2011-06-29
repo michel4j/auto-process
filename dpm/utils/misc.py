@@ -84,3 +84,4 @@ def prepare_dir(workdir, backup=False):
             exists = os.path.isdir(bkdir)
         shutil.move(workdir, bkdir)
         os.makedirs(workdir)
+    

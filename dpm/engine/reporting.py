@@ -656,9 +656,9 @@ def save_log(info, filename):
                             invert=True, fields=['No.', 'Cell Volume','Reindexing Matrix'], show_title=False)
             file_text += format_section(dset['symmetry']['space_groups'], level=3, invert=True)
             file_text += format_section(dset['correction'], level=2, invert=True)
-        if dset.get('scaling',None) is not None:
+        if dset.get('scaling') is not None:
             file_text += text_heading(dset['scaling']['title'], level=2)
-            for key in ['shells','frames','frame_difference']:
+            for key in ['shells']:
                 file_text += format_section(dset['scaling'][key], level=3, invert=True)
     
     file_text += '\n\n'

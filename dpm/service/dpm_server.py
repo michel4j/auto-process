@@ -16,7 +16,7 @@ from dpm.utils.misc import json
 from dpm.utils import mdns
 from dpm.service.common import *
 import os, sys
-from which import which
+from dpm.utils.which import which
 import pwd
 from dpm.service.common import *
 

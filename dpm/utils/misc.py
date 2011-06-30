@@ -60,6 +60,23 @@ def file_requirements(*args):
             break
     return all_exist
 
+
+import posixpath
+
+def _relpath2(path, base=os.curdir):
+    """Return a relative version of a path"""
+    if not path:
+        raise ValueError("no path specified")
+    start_list = posixpath.abspath(base).split(posixpath.sep)
+    path_list = posixpath.abspath(path).split(posixpath.sep)
+    # Work out how much of the filepath is shared by start and path.
+    i = len(posixpath.commonprefix([start_list, path_list]))
+    rel_list = [posixpath.pardir] * (len(start_list)-i) + path_list[i:]
+    if not rel_list:
+        return posixpath.curdir
+    return posixpath.join(*rel_list)
+
+
 def _relpath(target, base=os.curdir):
     """
     Return a relative path to the target from either the current dir or an optional base dir.
@@ -89,7 +106,7 @@ def _relpath(target, base=os.curdir):
 try:
     from os.path import relpath
 except:
-    relpath = _relpath
+    relpath = _relpath2
 
 def prepare_dir(workdir, backup=False):
     """ 

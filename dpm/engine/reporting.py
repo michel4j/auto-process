@@ -477,8 +477,7 @@ def get_reports(datasets, options={}):
                 _st_details =_strategy.get('details', {})
                 _dataset_info['result']['details']['overlap_analysis'] = _st_details.get('delta_statistics')
                 _dataset_info['result']['details']['wedge_analysis'] = _st_details.get('completeness_statistics')
-                
-                
+                                
                 # shell_statistics
                 _st_shell = _st_details.get('shell_statistics', {})
                 _res_shells = [(x+y)/2.0 for x,y in zip(_st_shell.get('min_resolution',[]), _st_shell.get('max_resolution',[]))]
@@ -579,7 +578,11 @@ def get_reports(datasets, options={}):
                     _dataset_info['result']['details']['wilson_scale'] = dres['data_quality']['wilson_scale']
                 if dres['data_quality'].get('twinning_l_statistic') is not None:
                     _dataset_info['result']['details']['twinning_l_statistic'] = dres['data_quality']['twinning_l_statistic']
-                   
+            
+            # Save converted output files
+            if dres.get('output_files') is not None and len(dres.get('output_files')) > 0:
+                _dataset_info['result']['details']['output_files'] = dres.get('output_files')
+      
         info.append(_dataset_info)
     return info
     

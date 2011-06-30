@@ -17,6 +17,9 @@ except:
 _h = 4.13566733e-15 # eV.s
 _c = 299792458e10   # A/s
 
+def get_cpu_count():
+    return os.sysconf('SC_NPROCESSORS_ONLN')
+
 
 def energy_to_wavelength(energy): 
     """Convert energy in keV to wavelength in angstroms."""

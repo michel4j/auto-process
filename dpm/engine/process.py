@@ -244,6 +244,12 @@ class Manager(object):
         
         _logger.info('AutoProcess(v%0.1f) - %s [%d dataset(s)]' % (VERSION, 
                               self.options['mode'].upper(), len(self.datasets)))
+        _num_cores = int(os.environ.get('DPM_CORES', misc.get_cpu_count))
+        _env_hosts = os.environ.get('DPM_HOSTS', 'localhost')
+        _num_nodes = len(_env_hosts.split(' '))
+
+        _logger.debug('Computer system: %d cores in %d nodes' % (_num_cores, _num_nodes))
+        _logger.debug('Computer nodes: "%s"' % _env_hosts )
         if resume_from is not None:
             cur_pos, next_step = resume_from
         else:
@@ -253,7 +259,7 @@ class Manager(object):
             for i, dset in enumerate(self.datasets.values()):
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
                     
-                _logger.info('Processing `%s` in %s' % (dset.name, 
+                _logger.info('Processing `%s` in directory "%s"' % (dset.name, 
                              misc.relpath(dset.parameters['working_directory'], self.options['command_dir'])))                
                 for j, step in enumerate(run_steps):
                     self.run_position = (i, step)

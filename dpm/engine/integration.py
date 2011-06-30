@@ -32,7 +32,7 @@ def integrate(data_info, options={}):
         programs.xds_par()
         info = xds.parse_integrate()
     except dpm.errors.ProcessError, e:
-        return {'step': 'integration', 'success':False, 'reason': e.value}
+        return {'step': 'integration', 'success':False, 'reason': str(e)}
     _pd.stop()
     _pc.stop()
     
@@ -73,7 +73,7 @@ def correct(data_info, options={}):
                     info['strict_absorption'] = True
                     break
     except dpm.errors.ProcessError, e:
-        return {'step': 'correction', 'success': False, 'reason': e.value}
+        return {'step': 'correction', 'success': False, 'reason': str(e)}
                           
     if info.get('failure') is None:
         if info.get('statistics') is not None and len(info['statistics']) > 1:

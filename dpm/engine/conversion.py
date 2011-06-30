@@ -56,8 +56,8 @@ def convert_formats(dset, options={}):
             else:
                 output_files.append(opt['output_file'])
                 
-        except dpm.errors.ProcessError:
-            _logger.warning('Error creating %s file' % (opt['format']))
+        except dpm.errors.ProcessError, e:
+            _logger.warning('Error creating %s file: %s' % (opt['format'], e))
    
     if len(output_files) == 0:
         return {'step': 'conversion', 'success': False, 'reason': 'No output files generated'}

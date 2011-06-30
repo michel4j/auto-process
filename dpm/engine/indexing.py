@@ -255,8 +255,8 @@ def auto_index(data_info, options={}):
             else:
                 _logger.critical('...Unable to proceed...')
                 _retries = 999
-    except dpm.errors.ProcessError:
-        return {'step': 'indexing', 'success':False, 'reason': "Program died prematurely"}
+    except dpm.errors.ProcessError, e:
+        return {'step': 'indexing', 'success':False, 'reason': "Program died prematurely: %s" % e}
         
     if info.get('failure_code') == 0:
         return {'step': 'indexing', 'success':True, 'data': info}

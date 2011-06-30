@@ -78,8 +78,8 @@ def scale_datasets(dsets, options={}):
         raw_info = xds.parse_xscale('XSCALE.LP')
     except dpm.errors.ProcessError, e:       
         for dset in dsets.values():
-            dset.log.append((time.time(), 'scaling', False, e.value))
-        return {'step': 'scaling', 'success': False, 'reason': e.value}
+            dset.log.append((time.time(), 'scaling', False, str(e)))
+        return {'step': 'scaling', 'success': False, 'reason': str(e)}
 
     if len(raw_info.keys()) == 1:
         info = raw_info.values()[0]
@@ -91,8 +91,8 @@ def scale_datasets(dsets, options={}):
                 stat_info = xds.parse_xdsstat()
                 dset.results['correction'].update(stat_info)           
             except dpm.errors.ProcessError, e:
-                dset.log.append((time.time(), 'frame_statistics', False, e.value))
-                return {'step': 'scaling', 'success': False, 'reason': e.value}
+                dset.log.append((time.time(), 'frame_statistics', False, str(e)))
+                return {'step': 'scaling', 'success': False, 'reason': str(e)}
 
             if i == 0:
                 # Set resolution
@@ -118,8 +118,8 @@ def scale_datasets(dsets, options={}):
                 stat_info = xds.parse_xdsstat()
                 dset.results['correction'].update(stat_info)
             except dpm.errors.ProcessError, e:
-                dset.log.append((time.time(), 'frame_statistics', False, e.value))
-                return {'step': 'scaling', 'success': False, 'reason': e.value}
+                dset.log.append((time.time(), 'frame_statistics', False, str(e)))
+                return {'step': 'scaling', 'success': False, 'reason': str(e)}
             
             dsets[name].results['scaling'].update(info)
             dsets[name].log.append((time.time(), 'scaling', True, None))
@@ -141,7 +141,7 @@ def data_quality(filename, options={}):
         sf_info = ccp4.parse_sfcheck()
         info.update(sf_info)
     except dpm.errors.ProcessError, e:
-        return {'step': 'data_quality', 'success':False, 'reason': e.value}
+        return {'step': 'data_quality', 'success':False, 'reason': str(e)}
     return {'step': 'data_quality','success': True, 'data': info}
 
 

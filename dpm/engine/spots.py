@@ -34,7 +34,7 @@ def analyse_image(data_info, options={}):
     try:
         programs.distl(data_info['reference_image'])
     except dpm.errors.ProcessError, e:
-        return {'step': 'image_analysis', 'success':False, 'reason': e.value}
+        return {'step': 'image_analysis', 'success':False, 'reason': str(e)}
     
     if not misc.file_requirements('distl.log'):
         return {'step': 'image_analysis', 'success': False, 'reason': 'Could not analyse reference image'}
@@ -53,7 +53,7 @@ def find_spots(data_info, options={}):
     try:
         programs.xds_par()
     except dpm.errors.ProcessError, e:
-        return {'step': 'spot_search','success': False, 'reason': e.value}
+        return {'step': 'spot_search','success': False, 'reason': str(e)}
 
     if misc.file_requirements('SPOT.XDS'):
         return {'step': 'spot_search','success': True}

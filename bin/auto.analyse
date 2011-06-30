@@ -1,4 +1,4 @@
 #!/bin/csh
 
-/usr/bin/env python $DPM_PATH/dpm/analyse_image.py $*
+/usr/bin/env python $DPM_PATH/dpm/auto_analyse.py $*
 exit

@@ -28,6 +28,6 @@ def calc_strategy(data_info, options={}):
         programs.best(data_info, options)
         info = best.parse_best()
     except dpm.errors.ProcessError, e:
-        return {'step': 'strategy', 'success': False, 'reason': e.value}
+        return {'step': 'strategy', 'success': False, 'reason': str(e)}
     
     return {'step': 'strategy', 'success': True, 'data': info}

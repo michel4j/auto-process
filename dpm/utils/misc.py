@@ -81,7 +81,6 @@ def _relpath(path, base=os.curdir):
     return posixpath.join(*rel_list)
 
 
-
 # custom relpath for python < 2.7
 try:
     from os.path import relpath

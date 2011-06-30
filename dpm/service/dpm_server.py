@@ -16,7 +16,7 @@ from dpm.utils.misc import json
 from dpm.utils import mdns
 from dpm.service.common import *
 import os, sys
-import dpm.utils
+from which import which
 import pwd
 from dpm.service.common import *
 
@@ -208,7 +208,7 @@ class CommandProtocol(protocol.ProcessProtocol):
 def run_command(command, args, path='/tmp', uid=0, gid=0):
     prot = CommandProtocol(path, command)
     prot.deferred = defer.Deferred()
-    args = [dpm.utils.which(command)] + args
+    args = [which(command)] + args
     reactor.spawnProcess(
         prot,
         args[0],
@@ -223,7 +223,7 @@ def run_command_output(command, args, path='/tmp', uid=0, gid=0, output=None):
     output = os.path.join(path, output)
     prot = CommandProtocol(path, command, output_file=output)
     prot.deferred = defer.Deferred()
-    args = [dpm.utils.which(command)] + args
+    args = [which(command)] + args
     reactor.spawnProcess(
         prot,
         args[0],

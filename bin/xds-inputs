@@ -1,3 +1,0 @@
-#!/bin/csh
-
-/usr/bin/env python $DPM_PATH/dpm/autoprocess.py --inputs $*

@@ -1,4 +1,4 @@
 #!/bin/csh
 
-/usr/bin/env python $DPM_PATH/dpm/utils/htmlreport.py $*
+/usr/bin/env python $DPM_PATH/dpm/auto_report.py $*
 exit

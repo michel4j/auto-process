@@ -623,7 +623,7 @@ def save_html(result_list, options={}):
         report_directory = os.path.join(report['result']['url'],'report')
         if not os.path.exists(report_directory):
             os.makedirs(report_directory)
-        if options.get('mode', None) == 'screen':
+        if report['kind'] == AUTOXDS_SCREENING:
             try:
                 htmlreport.create_screening_report(report, report_directory)
             except:
@@ -633,7 +633,7 @@ def save_html(result_list, options={}):
                 htmlreport.create_full_report(report, report_directory)
             except:
                 pass         
-        _logger.info('(%s) HTML report: %s/report/index.html' % (report['result']['name'], misc.relpath(report_directory, options['directory']) ))
+        _logger.info('(%s) HTML report: %s/index.html' % (report['result']['name'], misc.relpath(report_directory, options['directory']) ))
 
 def save_log(info, filename):
     fh = open(filename, 'w')
@@ -666,6 +666,6 @@ def save_log(info, filename):
     
     file_text += '\n\n'
     out_text = add_margin(file_text, 1)
-    fh.write(out_text)    
+    fh.write(out_text)   
     fh.close()
     

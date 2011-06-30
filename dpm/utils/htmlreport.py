@@ -588,25 +588,3 @@ def create_screening_report(data, directory):
     plot_wedge_analysis(results, os.path.join(directory, 'wedge.png'))
 
     return os.path.basename(report_file)
-
-
-if __name__ == '__main__':
-    json_file = sys.argv[1]
-    if os.path.exists(json_file):
-        data = json.load(file(json_file))
-
-        report_directory = os.path.join(
-                                os.path.dirname(os.path.abspath(json_file)),
-                                'report')
-        if not os.path.exists(report_directory):
-            os.mkdir(report_directory)
-        
-        for report in data['result']:
-            report_directory = os.path.join(report['result']['url'],'report')
-            if not os.path.exists(report_directory):
-                os.makedirs(report_directory)
-            if report['result']['kind'] == 1:
-                create_full_report(report, report_directory)
-            else:
-                create_screening_report(report, report_directory)
-                

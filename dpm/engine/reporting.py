@@ -631,7 +631,7 @@ def save_html(result_list, options={}):
                 htmlreport.create_full_report(report, report_directory)
             except:
                 pass         
-        _logger.info('(%s) HTML report: %s/index.html' % (report['result']['name'], misc.relpath(report_directory, options['directory']) ))
+        _logger.info('(%s) HTML report: %s/index.html' % (report['result']['name'], misc.relpath(report_directory, options['command_dir']) ))
 
 def save_log(info, filename):
     fh = open(filename, 'w')

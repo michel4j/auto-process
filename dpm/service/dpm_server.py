@@ -13,17 +13,26 @@ from zope.interface import Interface, implements
 
 from dpm.service.interfaces import *
 from dpm.utils.misc import json
-from bcm.service.utils import log_call
-from bcm.utils import mdns, converter
-from bcm.utils.misc import get_short_uuid
+from dpm.utils import mdns
 from dpm.service.common import *
 import os, sys
 import dpm.utils
 import pwd
+from dpm.service.common import *
 
 
 log.FileLogObserver(sys.stdout).start()
 
+
+def log_call(f):
+    def new_f(*args, **kwargs):
+        params = ['%s' % repr(a) for a in args[1:] ]
+        params.extend(['%s=%s' % (p[0], repr(p[1])) for p in kwargs.items()])
+        params = ', '.join(params)
+        log.msg('<%s(%s)>' % (f.__name__, params))
+        return f(*args,**kwargs)
+    new_f.__name__ = f.__name__
+    return new_f
 
 
 def get_user_properties(user_name):
@@ -80,7 +89,7 @@ class DPMService(service.Service):
             gid = self.settings['gid']
         
         return run_command_output(
-            'autoprocess',
+            'auto.process',
             args,
             directory,
             uid,
@@ -102,7 +111,7 @@ class DPMService(service.Service):
             gid = self.settings['gid']
         _output_file = '%s-distl.json' % (os.path.splitext(os.path.basename(img))[0])
         return run_command_output(
-            'analyse_image',
+            'auto.analyse',
             [img, directory, _output_file],
             directory,
             uid,
@@ -134,7 +143,7 @@ class DPMService(service.Service):
             args.append('--mad')
             
         return run_command_output(
-            'autoprocess',
+            'auto.process',
             args,
             directory,
             uid,

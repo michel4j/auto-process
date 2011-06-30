@@ -4,7 +4,7 @@ glib2reactor.install()
 from twisted.spread import pb
 from twisted.internet import reactor
 from twisted.python import log
-from bcm.utils import mdns
+from dpm.utils import mdns
 import sys, os
 from dpm.service.common import InvalidUser, CommandFailed
 

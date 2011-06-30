@@ -1,8 +1,3 @@
-'''
-Created on Feb 11, 2010
-
-@author: michel
-'''
 
 from zope.interface import Interface
 

@@ -119,17 +119,20 @@ class Manager(object):
     def __init__(self, options=None, checkpoint=None, overwrites={}):
         
         self.datasets = odict.SortedDict()  
-        self.command_dir = os.getcwd()
         
         if checkpoint is not None:
             self.run_position = checkpoint['run_position']
             self.options = checkpoint['options']
+            self.options['command_dir'] = os.getcwd()
+
             for dset_info in checkpoint['datasets']:
                 dset = DataSet(info=dset_info, overwrites=overwrites)
                 self.datasets[dset.name] = dset
         elif options is not None:   
             self.run_position = (0, 'initialize')
-            self.options = options      
+            self.options = options
+            self.options['command_dir'] = os.getcwd()
+    
             for img in options.get('images', []):
                 dset = DataSet(filename=img, overwrites=overwrites)
                 self.datasets[dset.name] = dset
@@ -145,10 +148,11 @@ class Manager(object):
                 elif _prefix[-1] == '_':
                     _prefix = _prefix[:-1]
                     
-                self.options['directory'] = os.path.join(self.command_dir, '%s-%s' % (_prefix, _suffix))
+                self.options['directory'] = os.path.join(self.options['command_dir'], '%s-%s' % (_prefix, _suffix))
             self.setup_directories()
         else:
             raise dpm.errors.DatasetError('Options/Checkpoint file not specified')
+        
             
 
         
@@ -250,7 +254,7 @@ class Manager(object):
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
                     
                 _logger.info('Processing `%s` in %s' % (dset.name, 
-                             misc.relpath(dset.parameters['working_directory'], self.command_dir)))                
+                             misc.relpath(dset.parameters['working_directory'], self.options['command_dir'])))                
                 for j, step in enumerate(run_steps):
                     self.run_position = (i, step)
                     if j < run_steps.index(next_step): continue

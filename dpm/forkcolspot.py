@@ -83,7 +83,7 @@ def main():
     os.remove('mcolspot.tmp')
     
 if __name__ == '__main__':
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 3:
         print 'usage: \n\tforkcolspot ntask maxcpu'
     else:
         main()

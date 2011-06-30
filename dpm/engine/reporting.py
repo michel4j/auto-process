@@ -517,7 +517,7 @@ def get_reports(datasets, options={}):
                 _section['frame_no'] = _t['frame']
                 for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
                     _section[k] = _t[k]
-            if dres['scaling'].get('diff_statistics') is not None:
+            if dres['correction'].get('diff_statistics') is not None:
                 _t = Table(dres['correction']['diff_statistics'])
                 _dataset_info['result']['details']['diff_statistics'] = {}
                 for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:

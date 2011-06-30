@@ -23,11 +23,15 @@ def main():
         sys.exit(1)
     app = Manager(checkpoint=chkpt)
     
-    # update app options
+    # update app and overwrite options
+    ow = {}
     if options.get('anomalous') is not None:
         app.options['anomalous'] = options.get('anomalous')
+    if options.get('frames') is not None:
+        ow.update(data_range=options.get('frames'))
+        
     app.options['backup'] = options.get('backup', False)
-    app.run(resume_from=(chkpt['run_position'][0],'integration'), overwrite=options)
+    app.run(resume_from=(chkpt['run_position'][0],'integration'), overwrite=ow)
      
 if __name__ == "__main__":
     try:

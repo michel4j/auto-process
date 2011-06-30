@@ -161,7 +161,7 @@ Examples:
 """
 def integrate_options(params):
     try:
-        opts, _ = getopt.gnu_getopt(params, "r:abfoih", ["res=", "anom", "backup", "frames", "opt", "inputs","help"])
+        opts, _ = getopt.gnu_getopt(params, "r:abf:oh", ["res=", "anom", "backup", "frames=", "opt", "inputs","help"])
     except:
         print INTEGRATE_USAGE
         sys.exit(0)
@@ -177,17 +177,10 @@ def integrate_options(params):
             options['anomalous'] = True
         if o in ('-b', '--backup'):
             options['backup'] = True
-        if o in ('-f', '--frames'):            
+        if o in ('-f', '--frames'):
+            print o, a         
             try:
-                range = []
-                _range_str = a.split('-')
-                assert len(_range_str) == 2
-                for v in _range_str:
-                    if v.strip() == '':
-                        range.append(None)
-                    else:
-                        range.append(int(v))
-                options['frames'] = range
+                options['frames'] = map(int, a.split('-'))
             except:
                 print INTEGRATE_USAGE
                 sys.exit(0)        

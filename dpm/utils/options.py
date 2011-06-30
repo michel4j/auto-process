@@ -178,7 +178,6 @@ def integrate_options(params):
         if o in ('-b', '--backup'):
             options['backup'] = True
         if o in ('-f', '--frames'):
-            print o, a         
             try:
                 options['frames'] = map(int, a.split('-'))
             except:

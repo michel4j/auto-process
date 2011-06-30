@@ -261,7 +261,7 @@ class Manager(object):
                     # special post-step handling 
                     if step == 'correction':
                         # update parameters with reference after correction
-                        if self.run_position > 0 and self.options.get('mode', 'simple') in ['merge', 'mad']:
+                        if i > 0 and self.options.get('mode', 'simple') in ['merge', 'mad']:
                             _ref_file = os.path.join('..', 
                                         self.datasets.values()[i-1].results['correction']['output_file'])
                             dset.parameters.update({'reference_data': _ref_file,

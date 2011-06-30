@@ -185,7 +185,7 @@ def get_log_data(datasets, options={}):
                 '%0.1f' % dset.parameters['two_theta'], 
                 '%0.0f x %0.0f' %  tuple(dset.parameters['beam_center']),
                 '%d x %d' %  tuple(dset.parameters['detector_size']), 
-                '%0.5f x %0.5f' %  (dset.parameters['pixel_size'],dset.parameters['pixel_size']) ,
+                '%0.5f x %0.5f' %  (dset.parameters['pixel_size'],dset.parameters['pixel_size']),
                  os.path.basename(dset.parameters['file_template']),]
         _section['table'].append(zip(_keys, _rows))
     info['parameters'] =  _section
@@ -643,7 +643,7 @@ def save_log(info, filename):
         file_text += text_heading("DETAILED RESULTS FOR DATASET: '%s'" % (name), level=1)
         if dset.get('strategy', None) is not None: 
             file_text += text_heading("Data Collection Strategy", level=2)
-            for key in ['summary','oscillation', 'overlap']:
+            for key in ['summary','overlap']:
                 if key in ['oscillation', 'overlap']:
                     invert = True
                 else:

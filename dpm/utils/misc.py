@@ -63,8 +63,12 @@ def file_requirements(*args):
 
 import posixpath
 
-def _relpath2(path, base=os.curdir):
-    """Return a relative version of a path"""
+def _relpath(path, base=os.curdir):
+    """
+    Return a relative path to the target from either the current dir or an optional base dir.
+    Base can be a directory specified either as absolute or relative to current dir.
+    """
+
     if not path:
         raise ValueError("no path specified")
     start_list = posixpath.abspath(base).split(posixpath.sep)
@@ -77,36 +81,12 @@ def _relpath2(path, base=os.curdir):
     return posixpath.join(*rel_list)
 
 
-def _relpath(target, base=os.curdir):
-    """
-    Return a relative path to the target from either the current dir or an optional base dir.
-    Base can be a directory specified either as absolute or relative to current dir.
-    """
-
-    base_list = (os.path.abspath(base)).split(os.sep)
-    target_list = (os.path.abspath(target)).split(os.sep)
-
-    if os.name in ['nt','dos','os2'] and base_list[0] <> target_list[0]:
-        raise OSError, 'Target is on a different drive to base. Target: '+target_list[0].upper()+', base: '+base_list[0].upper()
-
-    # Starting from the filepath root, work out how much of the filepath is
-    # shared by base and target.
-    for i in range(min(len(base_list), len(target_list))):
-        if base_list[i] <> target_list[i]: break
-    else:
-        # If we broke out of the loop, i is pointing to the first differing path elements.
-        # If we didn't break out of the loop, i is pointing to identical path elements.
-        # Increment i so that in all cases it points to the first differing path elements.
-        i+=1
-
-    rel_list = [os.pardir] * (len(base_list)-i) + target_list[i:]
-    return os.path.join(*rel_list)
 
 # custom relpath for python < 2.7
 try:
     from os.path import relpath
 except:
-    relpath = _relpath2
+    relpath = _relpath
 
 def prepare_dir(workdir, backup=False):
     """ 

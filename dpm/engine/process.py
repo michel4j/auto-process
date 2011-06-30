@@ -287,13 +287,6 @@ class Manager(object):
         for i, dset in enumerate(self.datasets.values()):
             if i < cur_pos: continue  # skip all datasets earlier than specified one
             
-            # Scoring and experiment setup check
-            ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-            _logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
-            _score = dset.score(self.options.get('mode')=='screening')
-            _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
-
-            
             # Run Data Quality Step:
             self.run_position = (i, 'data_quality')
             if self.options['mode'] == 'merge' and i > 0:
@@ -307,6 +300,12 @@ class Manager(object):
             else:
                 dset.results['data_quality'] = _out.get('data')
             self.save_checkpoint()
+            
+            # Scoring and experiment setup check
+            ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+            _logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
+            _score = dset.score(self.options.get('mode')=='screening')
+            _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
 
             # file format conversions
             self.run_position = (i, 'conversion')

@@ -170,14 +170,13 @@ def get_log_data(datasets, options={}):
     _section['table'] = []
     _keys = ['Description', 'Detector Distance (mm)','Exposure Time (sec)', 'No. Frames', 'Starting Angle (deg)',
              'Delta (deg)', 'Two Theta (deg)', 'Detector Origin (pix)', 'Detector Size (pix)',
-             'Pixel Size (um)', 'File Template','Output Directory']
+             'Pixel Size (um)', 'File Template']
     for dataset_name, dset in data_items:
         if dataset_name == "*combined*": continue
         
         dres = dset.results
         # print out data collection parameters
         
-        _out_dir = misc.relpath(dset.parameters['working_directory'])
         _rows = [dataset_name, dset.parameters['distance'],
                 dset.parameters['exposure_time'],
                 dset.parameters['frame_count'],
@@ -187,8 +186,7 @@ def get_log_data(datasets, options={}):
                 '%0.0f x %0.0f' %  tuple(dset.parameters['beam_center']),
                 '%d x %d' %  tuple(dset.parameters['detector_size']), 
                 '%0.5f x %0.5f' %  (dset.parameters['pixel_size'],dset.parameters['pixel_size']) ,
-                 os.path.basename(dset.parameters['file_template']),
-                 _out_dir]
+                 os.path.basename(dset.parameters['file_template']),]
         _section['table'].append(zip(_keys, _rows))
     info['parameters'] =  _section
     
@@ -421,7 +419,7 @@ def get_reports(datasets, options={}):
         _section['id'] = _id.keys()
         _section['type'] = _id.values()
         _cell_fmt = '%5.1f %5.1f %5.1f %5.1f %5.1f %5.1f'
-        _section['unit_cell'] = [_cell_fmt % c for c in _t['unit_cell']]
+        _section['unit_cell'] = [_cell_fmt % tuple(c) for c in _t['unit_cell']]
         _section['quality'] = _t['quality']
         _section['volume'] = [xtal.cell_volume(c) for c in _t['unit_cell']]
         _dataset_info['result']['details']['compatible_lattices'] = _section
@@ -623,7 +621,7 @@ def save_html(result_list, options={}):
         report_directory = os.path.join(report['result']['url'],'report')
         if not os.path.exists(report_directory):
             os.makedirs(report_directory)
-        if report['kind'] == AUTOXDS_SCREENING:
+        if report['result']['kind'] == AUTOXDS_SCREENING:
             try:
                 htmlreport.create_screening_report(report, report_directory)
             except:

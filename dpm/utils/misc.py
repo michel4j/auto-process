@@ -7,6 +7,9 @@ import pwd
 import os
 import shutil
 import math
+import numpy
+import posixpath
+
 
 try:
     import json
@@ -60,8 +63,13 @@ def file_requirements(*args):
             break
     return all_exist
 
+def rad2deg(r):
+    return r*180.0/numpy.pi
 
-import posixpath
+
+def deg2rad(d):
+    return r*numpy.pi/180.0
+
 
 def _relpath(path, base=os.curdir):
     """
@@ -105,4 +113,12 @@ def prepare_dir(workdir, backup=False):
             exists = os.path.isdir(bkdir)
         shutil.move(workdir, bkdir)
         os.makedirs(workdir)
+
+def calc_angle(v1, v2):
+    v1 = numpy.array(v1)/numpy.linalg.norm(v1)
+    v2 = numpy.array(v2)/numpy.linalg.norm(v2)
+    cs = numpy.dot(v1,v2)
+    sn = numpy.linalg.norm(numpy.cross(v1,v2))
+    return numpy.arctan2(sn,cs)
+    
     

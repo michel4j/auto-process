@@ -16,7 +16,7 @@ def determine_sg(data_info, dset, options={}):
     try:
         programs.pointless()
         sg_info = pointless.parse_pointless()
-    except dpm.errors.ProcessError, e:
+    except (dpm.errors.ProcessError, IOError), e:
         return {'step': 'symmetry', 'success': False, 'reason': str(e)}
     
     # Overwrite sg_info parameters with XDS friendly ones if present:

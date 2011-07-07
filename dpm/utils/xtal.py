@@ -221,8 +221,8 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
         -0.20 * score_penalty(completeness, 98, 70),
         -0.10 * score_penalty(r_meas, 3, 30),
         -0.10 * score_penalty(i_sigma, 20, 1),
-        -0.10 * score_penalty(mosaicity, 0.25, 3),
-        -0.10 * score_penalty(std_spindle, 0.1, 1),
+        -0.10 * score_penalty(mosaicity, 0.1, 3),
+        -0.10 * score_penalty(std_spindle, 0.05, 1),
         -0.05 * score_penalty(std_spot, 1, 3),
         -0.05 * score_penalty(ice_rings, 0, 5),
         ]

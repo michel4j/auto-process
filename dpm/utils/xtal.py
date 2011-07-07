@@ -217,14 +217,14 @@ def score_penalty(x, best=1, worst=0):
 def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings):
             
     score = [ 1.0,
-        -0.20 * score_penalty(resolution, 1.0, 5),
-        -0.20 * score_penalty(completeness, 98, 70),
-        -0.10 * score_penalty(r_meas, 3, 30),
+        -0.20 * score_penalty(resolution, 1.0, 6.0),
+        -0.20 * score_penalty(completeness, 100, 70),
+        -0.10 * score_penalty(r_meas, 1, 50),
         -0.10 * score_penalty(i_sigma, 20, 1),
-        -0.10 * score_penalty(mosaicity, 0.1, 3),
-        -0.10 * score_penalty(std_spindle, 0.05, 1),
-        -0.05 * score_penalty(std_spot, 1, 3),
-        -0.05 * score_penalty(ice_rings, 0, 5),
+        -0.10 * score_penalty(mosaicity, 0.1, 4),
+        -0.10 * score_penalty(std_spindle, 0.01, 2),
+        -0.05 * score_penalty(std_spot, 1, 4),
+        -0.05 * score_penalty(ice_rings, 0, 8),
         ]
     
     if DEBUG:

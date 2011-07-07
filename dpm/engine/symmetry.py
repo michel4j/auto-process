@@ -9,32 +9,48 @@ _logger = log.get_module_logger(__name__)
 
 def determine_sg(data_info, dset, options={}):
     os.chdir(data_info['working_directory'])
-    _logger.info("Determining Symmetry ...")
-    if not misc.file_requirements('INTEGRATE.HKL'):
-        return {'step': 'symmetry', 'success': False, 'reason': 'Required files from integration missing'}
     
-    try:
-        programs.pointless()
-        sg_info = pointless.parse_pointless()
-    except (dpm.errors.ProcessError, IOError), e:
-        return {'step': 'symmetry', 'success': False, 'reason': str(e)}
+    if data_info.get('sg_overwrite') is not None:
+        _logger.info("Manually Setting SpaceGroup ...")
+        sg_info = {}
+        if dset.results.get('symmetry') is None:
+            return {'step': 'symmetry', 'success': False, 'reason': 'Must run auto symmetry before manual symmetry'}
+        else:
+            sg_info.update(dset.results.get('symmetry'))
+            sg_info['character'] = xtal.get_character(data_info['sg_overwrite'])
+            sg_info['sg_number'] = data_info['sg_overwrite']
+            sg_info['type'] = "SpaceGroup"      
+    else:
+        _logger.info("Automaticaly Determining Symmetry ...")
+        if not misc.file_requirements('INTEGRATE.HKL'):
+            return {'step': 'symmetry', 'success': False, 'reason': 'Required files from integration missing'}
+        
+        try:
+            programs.pointless()
+            sg_info = pointless.parse_pointless()
+        except (dpm.errors.ProcessError, IOError), e:
+            return {'step': 'symmetry', 'success': False, 'reason': str(e)}
     
     # Overwrite sg_info parameters with XDS friendly ones if present:
     # fetches xds reindex matrix and cell constants based on lattice,
     # character
+    _lat_found = False
     for _lat in dset.results['correction']['symmetry']['lattices']:
         id, lat_type = _lat['id']
         if sg_info['character'] == lat_type:
+            _lat_found = True
             sg_info['reindex_matrix'] = _lat['reindex_matrix']
             sg_info['unit_cell'] = _lat['unit_cell']
             break
+        
+    if not _lat_found:
+        return {'step': 'symmetry', 'success': False, 'reason': 'Specified spacegroup is incompatible with lattice'}
     
     dset.parameters.update({'unit_cell': xtal.tidy_cell(sg_info['unit_cell'], sg_info['character']),
                             'space_group': sg_info['sg_number']
                             })
     if data_info.get('reference_data') is None:
-        dset.parameters.update({'reindex_matrix': sg_info['reindex_matrix']})
-        
+        dset.parameters.update({'reindex_matrix': sg_info['reindex_matrix']})        
     else:
         _ref_sgn = dset.parameters['reference_sginfo']['sg_number']
         _ref_type = dset.parameters['reference_sginfo']['type']
@@ -52,4 +68,4 @@ def determine_sg(data_info, dset, options={}):
                                         sg_info['sg_number'],
                                         cell_str))     
     return {'step':'symmetry', 'success':True, 'data': sg_info}       
-    
+

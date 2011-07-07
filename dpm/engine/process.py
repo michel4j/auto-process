@@ -268,6 +268,7 @@ class Manager(object):
                         continue
     
                     self.run_step(step, dset, overwrite=overwrite, optional=(step=='image_analysis'))
+                    
                     # special post-step handling 
                     if step == 'correction':
                         # update parameters with reference after correction

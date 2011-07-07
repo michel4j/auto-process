@@ -8,14 +8,14 @@ warnings.simplefilter("ignore") # ignore deprecation warnings
     
 from dpm.engine.process import Manager
 from dpm.utils import log
-from dpm.utils.options import scale_options
+from dpm.utils.options import symmetry_options
 from dpm.utils import misc
 
 _logger = log.get_module_logger('auto.symmetry')
 
 def main():
     # Parse options
-    options = scale_options(sys.argv[1:])
+    options = symmetry_options(sys.argv[1:])
     try:
         chkpt = misc.json.loads(file('checkpoint.json').read())
     except IOError:

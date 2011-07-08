@@ -1,9 +1,12 @@
 
 import utils
+from dpm.utils import xtal
 import xml.dom.minidom
 
 def parse_ctruncate(filename='ctruncate.log'):
-    return utils.parse_file(filename, config='ctruncate.ini')
+    info = utils.parse_file(filename, config='ctruncate.ini')
+    info['twinning_l_fraction'] = xtal.L2twin(info['twinning_l_statistic'][0])
+    return info
 
 
 def parse_sfcheck(filename='sfcheck.log'):

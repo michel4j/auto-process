@@ -145,6 +145,9 @@ def data_quality(filename, options={}):
     
     if sf_info['sf_check']['twin'] >= 0.1:
         _logger.warning('Data appear to be %0.1f%% twinned!' % (sf_info['sf_check']['twin']*100))
+    elif info['twinning_l_fraction'] >= 0.1:
+        _logger.warning('Data appear to be %0.1f%% twinned!' % (info['twinning_l_fraction']*100))
+        
         
     return {'step': 'data_quality','success': True, 'data': info}
 

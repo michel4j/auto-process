@@ -1,5 +1,6 @@
 import numpy
 import math
+import bisect
 
 DEBUG = False
 
@@ -236,3 +237,16 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
             print '\t\t%s : %0.3f (%0.3f)' % (name, contrib, val)
         
     return sum(score)
+
+
+# Determine twinning fraction from L statistic
+def _calc_L(a):
+    return (((1-2*a)**2)*(1-6*a+6*a**2)-8*((1-a)**2)*(a**2)*numpy.log(4*a*(1-a)))/(2*(1-2*a)**4)
+
+_a_array = numpy.linspace(0.499, 0.001, 1000)
+_l_array = _calc_L(_a_array)
+
+def L2twin(l):
+    idx = bisect.bisect_left(_l_array, l)
+    return _a_array[idx]
+    

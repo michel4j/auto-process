@@ -75,6 +75,8 @@ def resolution_shells(resolution, num=10.0):
 def get_character(sg_number=1):
     return [k for k, v in POINT_GROUPS.items() if sg_number in v][0]
 
+def get_number(sg_name):
+    return [number for number, name in SPACE_GROUP_NAMES.items() if name == sg_name.upper()][0]
      
 def tidy_cell(unit_cell, character):
     """

@@ -1,6 +1,6 @@
 
 
-class InvalidOptions(Exception):
+class InvalidOption(Exception):
     """Invalid command line parameters"""
     pass
     

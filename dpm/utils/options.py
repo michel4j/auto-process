@@ -3,6 +3,7 @@ import sys
 import os
 import dpm.errors
 import getopt
+from dpm.utils import xtal
 
 
 def _uniquify(seq): 
@@ -249,13 +250,15 @@ Description:
      
 Options:
     --res=<res>, -r <res> : Manually set the high resolution limit.
-    --spacegroup=<num>, -g <num>:  Manually set space group number (see below)
+    --spacegroup=<num|name>, -g <num|name>:  Manually set space group by name 
+            or number (see below for valid names and numbers)
     --backup, -b : Backup previous output if it exists
     --help, -h : display this message
     Default (no option): Resume previous processing from scaling step.
 
 Examples:
     auto.symmetry -g 19
+    auto.symmetry -g "P2(1)2(1)2(1)"
     auto.symmetry --spacegroup=19
 
 Table of spacegroup numbers:
@@ -289,6 +292,7 @@ def symmetry_options(params):
         opts, _ = getopt.gnu_getopt(params, "r:g:bih", ["res=", "spacegroup=", "backup", "inputs","help"])
     except:
         print SYMMETRY_USAGE
+        raise dpm.errors.InvalidOption(' '.join(params))
             
     # Parse options
     options = {}    
@@ -298,7 +302,21 @@ def symmetry_options(params):
             sys.exit(0)
             
         if o in ("-g","--spacegroup"):
-            options['sg_overwrite'] = int(a)
+            try:
+                sg_num = int(a)
+                options['sg_overwrite'] = sg_num
+            except ValueError:
+                try:
+                    sg_num = xtal.get_number(a)
+                    options['sg_overwrite'] = sg_num
+                except IndexError:
+                    if o == '--spacegroup':
+                        op = '%s=' % o
+                    else:
+                        op = '%s ' % o
+                    print SYMMETRY_USAGE
+                    raise dpm.errors.InvalidOption('Invalid SpaceGroup Option: `%s%s`' % (op, a))
+                
         if o in ('-b', '--backup'):
             options['backup'] = True
         if o in ('-r', '--res'):

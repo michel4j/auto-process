@@ -18,7 +18,7 @@ class ColoredConsoleHandler(logging.StreamHandler):
         try:
             msg = self.format(record)
             if record.levelno == logging.WARNING:
-                msg = termcolor.colored(msg, "yellow", attrs=["dark"])
+                msg = termcolor.colored(msg, "magenta", attrs=["dark"])
             elif record.levelno > logging.WARNING:
                 msg = termcolor.colored(msg, "red")
             elif record.levelno == logging.DEBUG:

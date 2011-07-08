@@ -5,17 +5,24 @@ import sys
 import os
 import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
-    
+
+import dpm.errors
 from dpm.engine.process import Manager
 from dpm.utils import log
 from dpm.utils.options import symmetry_options
 from dpm.utils import misc
 
+
 _logger = log.get_module_logger('auto.symmetry')
 
 def main():
     # Parse options
-    options = symmetry_options(sys.argv[1:])
+    try:
+        options = symmetry_options(sys.argv[1:])
+    except dpm.errors.InvalidOption, e:
+        _logger.error(str(e))
+        sys.exit(1)
+        
     try:
         chkpt = misc.json.loads(file('checkpoint.json').read())
     except IOError:

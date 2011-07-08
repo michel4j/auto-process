@@ -22,7 +22,7 @@ class ColoredConsoleHandler(logging.StreamHandler):
             elif record.levelno > logging.WARNING:
                 msg = termcolor.colored(msg, "red")
             elif record.levelno == logging.DEBUG:
-                msg = termcolor.colored(msg, "cyan")
+                msg = termcolor.colored(msg, "DarkCyan")
             if not hasattr(types, "UnicodeType"): #if no unicode support...
                 self.stream.write("%s\n" % msg)
             else:

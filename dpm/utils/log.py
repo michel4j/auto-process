@@ -18,11 +18,11 @@ class ColoredConsoleHandler(logging.StreamHandler):
         try:
             msg = self.format(record)
             if record.levelno == logging.WARNING:
-                msg = termcolor.colored(msg, "yellow")
+                msg = termcolor.colored(msg, "yellow", attrs=["dark"])
             elif record.levelno > logging.WARNING:
                 msg = termcolor.colored(msg, "red")
             elif record.levelno == logging.DEBUG:
-                msg = termcolor.colored(msg, "DarkCyan")
+                msg = termcolor.colored(msg, "cyan", attrs=["dark"])
             if not hasattr(types, "UnicodeType"): #if no unicode support...
                 self.stream.write("%s\n" % msg)
             else:

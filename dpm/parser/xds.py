@@ -52,7 +52,13 @@ def parse_idxref(filename='IDXREF.LP'):
         
 
 def parse_correct(filename='CORRECT.LP'):
-    return utils.parse_file(filename, config='correct.ini')
+    info = utils.parse_file(filename, config='correct.ini')
+    info_0 = utils.parse_file('CORRECT.LP.0', config='correct.ini')
+    info['symmetry']['candidates'] = info_0['symmetry'].get('candidates')
+    if info['symmetry'].get('candidates'):
+        t = utils.Table(info['symmetry'].get('candidates'))
+        info['min_rmeas'] = min(t['r_meas'])
+    return info
 
 def parse_xplan(filename='XPLAN.LP'):
     return utils.parse_file(filename, config='xplan.ini')

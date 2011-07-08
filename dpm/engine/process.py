@@ -219,7 +219,11 @@ class Manager(object):
             _out = _STEP_FUNCTIONS[step](step_parameters, self.options)
         dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
         if _out.get('data') is not None:
-            dset.results[step] = _out.get('data')
+            if dset.results.get(step) is not None:
+                dset.results[step].update(_out.get('data'))
+            else:
+                dset.results[step] = _out.get('data')
+                
         self.save_checkpoint()
 
         if not _out['success']:

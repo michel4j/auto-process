@@ -79,6 +79,8 @@ def parse_xdsstat(filename='XDSSTAT.LP'):
 
 
 def parse_xscale(filename='XSCALE.LP'):
+    if not os.path.exists(filename):
+        return {'failure': 'Scaling step failed'}
     data = file(filename).read()
     # extract separate sections corresponding to different datasets
     _st_p = re.compile('(STATISTICS OF SCALED OUTPUT DATA SET : ([\w-]*)/?XSCALE.HKL.+?STATISTICS OF INPUT DATA SET [=\s]*)', re.DOTALL)
@@ -97,29 +99,32 @@ def parse_xscale(filename='XSCALE.LP'):
     return info
 
 def parse_integrate(filename='INTEGRATE.LP'):
+    if not os.path.exists(filename):
+        return {'failure': 'Integration step failed'}
     info = utils.parse_file(filename, config='integrate.ini')
-    profiles = []
-    for i in range(9):
-        profile = {}
-        if i == 0:
-            x_max = info['profiles']['detector_regions'][0]['positions'][i]*2
-            y_max = info['profiles']['detector_regions'][1]['positions'][i]*2
-        profile['x'] = 9 * info['profiles']['detector_regions'][0]['positions'][i]/x_max
-        profile['y'] = 9* info['profiles']['detector_regions'][1]['positions'][i]/y_max
-        profile['spots'] = []
-        for j in range(9):
-            spot = tuple()
-            idx = j+(i*9)
-            x = idx%3
-            y = idx//3
-            sx, ex = x*9, (x+1)*9
-            sy, ey = y*9, (y+1)*9
-            for v in info['profiles']['averages'][sy:ey]:
-                spot += v['pixels'][sx:ex]
-            profile['spots'].append(spot)
-        profiles.append(profile)
-    info['profiles'] = profiles
-    return info 
+    if info.get('profiles') is not None:
+        profiles = []
+        for i in range(9):
+            profile = {}
+            if i == 0:
+                x_max = info['profiles']['detector_regions'][0]['positions'][i]*2
+                y_max = info['profiles']['detector_regions'][1]['positions'][i]*2
+            profile['x'] = 9 * info['profiles']['detector_regions'][0]['positions'][i]/x_max
+            profile['y'] = 9* info['profiles']['detector_regions'][1]['positions'][i]/y_max
+            profile['spots'] = []
+            for j in range(9):
+                spot = tuple()
+                idx = j+(i*9)
+                x = idx%3
+                y = idx//3
+                sx, ex = x*9, (x+1)*9
+                sy, ey = y*9, (y+1)*9
+                for v in info['profiles']['averages'][sy:ey]:
+                    spot += v['pixels'][sx:ex]
+                profile['spots'].append(spot)
+            profiles.append(profile)
+        info['profiles'] = profiles
+    return info
 
 def get_profile(raw_data):
     def _str2arr(s):

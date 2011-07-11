@@ -36,13 +36,14 @@ def _diagnose_index(info):
     _refl = _spots = None
     _st = info.get('subtrees')
     _local_spots = info.get('local_indexed_spots')
-    _summary = info.get('summary')
-    if _summary is not None:
-        _spots = _summary.get('selected_spots')
-        _refl = _summary.get('indexed_spots')
+
+    _reflx = info.get('reflections')
+    if _reflx is not None:
+        _spots = _reflx.get('selected_spots')
+        _refl = _reflx.get('indexed_spots')
         data['indexed_spots'] = _refl
-        data['percent_overlap'] = 100.0 * _summary.get('rejects_overlap')/_refl
-        data['percent_too_far'] = 100.0 * _summary.get('rejects_far')/_refl
+        data['percent_overlap'] = 100.0 * _reflx.get('rejects_overlap')/_refl
+        data['percent_too_far'] = 100.0 * _reflx.get('rejects_far')/_refl
 
     # get percent of indexed reflections
     data['percent_indexed'] = 0.0
@@ -87,7 +88,7 @@ def _diagnose_index(info):
     
     # get spot deviation 
     data['spot_deviation'] = 999.
-    if _summary  is not None:
+    if info.get('summary')  is not None:
         data['spot_deviation'] = info['summary'].get('stdev_spot')
     if data['spot_deviation'] > 3 : data['quality_code'] |= 32
     
@@ -161,8 +162,8 @@ def auto_index(data_info, options={}):
         _sigma_tried = False
 
         while info.get('failure_code') > 0 and _retries < 8:
-            _logger.warning(':-( %s' % info.get('failure'))
-            _logger.debug('Indexing Quality [%04d]' % (data['quality_code']))
+            _logger.warning(info.get('failure'))
+            #_logger.debug('Indexing Quality [%04d]' % (data['quality_code']))
             #_logger.debug(utils.print_table(data))
             if run_info['spot_range'][0] == run_info['data_range']:
                 _all_images = True

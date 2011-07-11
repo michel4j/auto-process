@@ -264,13 +264,14 @@ class Manager(object):
                              misc.relpath(dset.parameters['working_directory'], self.options['command_dir'])))                
                 for j, step in enumerate(run_steps):
                     self.run_position = (i, step)
+                    
+                    # skip this step based on the properties
                     if j < run_steps.index(next_step): continue
-                    if self.options.get('mode') != 'screen' and step == 'strategy':
-                        continue
+                    if self.options.get('mode') != 'screen' and step == 'strategy': continue
     
                     self.run_step(step, dset, overwrite=overwrite, optional=(step=='image_analysis'))
                     
-                    # special post-step handling 
+                    # special post-step handling  for specific steps
                     if step == 'correction':
                         # update parameters with reference after correction
                         if i > 0 and self.options.get('mode', 'simple') in ['merge', 'mad']:
@@ -280,14 +281,30 @@ class Manager(object):
                                                     'reference_sginfo': self.datasets.values()[i-1].results['symmetry'],
                                                     })
                     elif step == 'symmetry':
-                        self.run_step('correction', dset, overwrite=overwrite) #final correction after symmetry
-                        # check if selected space group degrades data quality
+                        # perform addition correction and check effect on 
+                        # data quality
+                        self.run_step('correction', dset, overwrite=overwrite)
                         min_rmeas = dset.results['correction']['summary']['min_rmeas']
                         final_rmeas = dset.results['correction']['summary']['r_meas']
                         
                         if _MAX_RMEAS_FACTOR * min_rmeas < final_rmeas:
                             _logger.warning('Data quality degraded (%0.1f%%) due to merging!' % (100.0*final_rmeas/min_rmeas))
                             _logger.warning('Selected SpaceGroup is likely inaccurate!')
+                    
+                    elif step == 'indexing' and self.options.get('mode') == 'screen':
+                        # calculate and report the angles of the spindle from
+                        # the three axes
+                        _logger.info('Angular offset of Reduced-cell axes from oscillation axis')
+                        _dat = dset.results['indexing']['summary']
+                        _logger.info('- A-AXIS  length: %5.1f A  offset: %5.1f deg' % (_dat['unit_cell'][0], 
+                                                                                        misc.calc_angle(_dat['cell_a_axis'],
+                                                                                                        _dat['rotation_axis'])))
+                        _logger.info('- B-AXIS  length: %5.1f A  offset: %5.1f deg' % (_dat['unit_cell'][1], 
+                                                                                        misc.calc_angle(_dat['cell_b_axis'],
+                                                                                                        _dat['rotation_axis'])))
+                        _logger.info('- C-AXIS  length: %5.1f A  offset: %5.1f deg' % (_dat['unit_cell'][2], 
+                                                                                        misc.calc_angle(_dat['cell_c_axis'],
+                                                                                                        _dat['rotation_axis'])))
                         
             next_step = 'scaling'
         

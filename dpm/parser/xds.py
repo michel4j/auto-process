@@ -27,6 +27,8 @@ _IDXREF_FAILURES = {
     7: 'Program died prematurely'
 }
 def parse_idxref(filename='IDXREF.LP'):
+    if not os.path.exists(filename):
+        return {'failure': 'Indexing step failed'}
     info = utils.parse_file(filename, config='idxref.ini')
     if os.path.getsize(filename) < 15000 and info.get('failure') is None:
         info['failure_code'] = 6
@@ -53,6 +55,8 @@ def parse_idxref(filename='IDXREF.LP'):
         
 
 def parse_correct(filename='CORRECT.LP'):
+    if not os.path.exists(filename):
+        return {'failure': 'Correction step failed'}
     info = utils.parse_file(filename, config='correct.ini')
     if info['symmetry'].get('candidates'):
         t = utils.Table(info['symmetry'].get('candidates'))

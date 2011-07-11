@@ -55,10 +55,8 @@ def correct(data_info, options={}):
     if not misc.file_requirements('INTEGRATE.HKL','X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf'):
         return {'step': 'correction', 'success': False, 'reason': 'Required files missing'}
     
-    # Always backup CORRECT.LP
-    misc.backup_files('CORRECT.LP')
     if options.get('backup', False):
-        misc.backup_files('XDS_ASCII.HKL')
+        misc.backup_files('XDS_ASCII.HKL', 'CORRECT.LP')
     io.write_xds_input("CORRECT", run_info)
     
     try:

@@ -55,6 +55,11 @@ def backup_files(*args):
             shutil.copy(filename, '%s.%0d' % (filename, index))
     return
 
+def backup_special_file(filename, suffix):
+    if os.path.exists(filename):
+        shutil.copy(filename, '%s.%s' % (filename, suffix))
+    return
+
 def file_requirements(*args):
     all_exist = True
     for f in args:

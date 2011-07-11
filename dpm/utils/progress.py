@@ -188,7 +188,7 @@ class ProgDisplay(threading.Thread):
         self.queue = q
         self.total = (data_range[1] - data_range[0])+1
         self.data_range = data_range
-        self.length = 60
+        self.length = 65
         self._cursor = False
         self._stopped = False
         self.chars=[c.encode("utf-8") for c in unicode(self.spinner,"utf-8")]
@@ -213,7 +213,6 @@ class ProgDisplay(threading.Thread):
     def run(self):
         prog = numpy.zeros(self.length)
         d = {1:'#',0:'-'}
-        _st_time = time.time()
         obj = [self.data_range[0], self.data_range[0]]
         pos = 0
         while not self._stopped:
@@ -223,14 +222,16 @@ class ProgDisplay(threading.Thread):
                 prog[l:r] = 1
                 bar = ''.join([d[v] for v in prog])
                 frac = prog.mean()
-                _elapsed = time.time() - _st_time
-                _rate = frac * self.total / _elapsed
-                txt = '[%s]%4.1f%% %4.1f/s' % (bar, frac*100, _rate)
+                txt = '[%s]%4.1f%%' % (bar, frac*100)
             self.refresh(txt, self.chars[pos])
             if self.queue.empty():
                 obj  = None
             else:
                 obj = self.queue.get(block=True)
-            time.sleep(0.01)
+            time.sleep(0.1)
             pos += 1
             pos%=len(self.chars)
+        bar = d[1]*self.length
+        txt = '[%s]%4.0f%%' % (bar, 100.0)
+        self.refresh(txt, self.chars[pos])
+        

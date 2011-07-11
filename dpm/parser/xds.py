@@ -5,6 +5,7 @@ Parsers for XDS Files
 import re, numpy
 import os
 import utils
+import shutil
 
 (NO_FAILURE,
 SPOT_LIST_NOT_3D,
@@ -53,13 +54,21 @@ def parse_idxref(filename='IDXREF.LP'):
 
 def parse_correct(filename='CORRECT.LP'):
     info = utils.parse_file(filename, config='correct.ini')
-    if os.path.exists('CORRECT.LP.0'):
-        info_0 = utils.parse_file('CORRECT.LP.0', config='correct.ini')
-        info['symmetry']['candidates'] = info_0['symmetry'].get('candidates')
-        
     if info['symmetry'].get('candidates'):
         t = utils.Table(info['symmetry'].get('candidates'))
         info['summary']['min_rmeas'] = min(t['r_meas'])
+        # copy the file to CORRECT.LP.first extension if it contains automatic
+        # space group determination
+        shutil.copy(filename, 'CORRECT.LP.first')
+        
+    elif os.path.exists('CORRECT.LP.first'):
+        # if the file does not contain automatic space group determination
+        # try to read it from existing file .first file
+        info_0 = utils.parse_file('CORRECT.LP.first', config='correct.ini')
+        info['symmetry']['candidates'] = info_0['symmetry'].get('candidates')
+        t = utils.Table(info['symmetry'].get('candidates'))
+        info['summary']['min_rmeas'] = min(t['r_meas'])
+
     return info
 
 def parse_xplan(filename='XPLAN.LP'):

@@ -208,7 +208,6 @@ class ProgDisplay(threading.Thread):
         
     def stop(self):
         self._stopped = True
-        sys.stdout.write('\n')
         
     def run(self):
         prog = numpy.zeros(self.length)
@@ -228,10 +227,11 @@ class ProgDisplay(threading.Thread):
                 obj  = None
             else:
                 obj = self.queue.get(block=True)
-            time.sleep(0.1)
+            time.sleep(0.05)
             pos += 1
             pos%=len(self.chars)
         bar = d[1]*self.length
         txt = '[%s]%4.0f%%' % (bar, 100.0)
         self.refresh(txt, self.chars[pos])
+        sys.stdout.write('\n')
         

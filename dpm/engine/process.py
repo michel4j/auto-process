@@ -296,15 +296,14 @@ class Manager(object):
                         # the three axes
                         _logger.info('Angular offset of Reduced-cell axes from oscillation axis')
                         _dat = dset.results['indexing']['summary']
-                        _logger.info('- A-AXIS  length: %5.1f A  offset: %5.1f deg' % (_dat['unit_cell'][0], 
-                                                                                        misc.calc_angle(_dat['cell_a_axis'],
-                                                                                                        _dat['rotation_axis'])))
-                        _logger.info('- B-AXIS  length: %5.1f A  offset: %5.1f deg' % (_dat['unit_cell'][1], 
-                                                                                        misc.calc_angle(_dat['cell_b_axis'],
-                                                                                                        _dat['rotation_axis'])))
-                        _logger.info('- C-AXIS  length: %5.1f A  offset: %5.1f deg' % (_dat['unit_cell'][2], 
-                                                                                        misc.calc_angle(_dat['cell_c_axis'],
-                                                                                                        _dat['rotation_axis'])))
+                        _a_offset = misc.rad2deg(misc.calc_angle(_dat['cell_a_axis'], _dat['rotation_axis']))
+                        _b_offset =  misc.rad2deg(misc.calc_angle(_dat['cell_b_axis'], _dat['rotation_axis']))
+                        _c_offset =  misc.rad2deg(misc.calc_angle(_dat['cell_c_axis'], _dat['rotation_axis']))
+                        deg = unichr(176).encode("latin-1")
+                        _logger.info('- A-AXIS length: %5.1f A  offset: %5.1f%s' % (_dat['unit_cell'][0], _a_offset, deg)) 
+                        _logger.info('- B-AXIS length: %5.1f A  offset: %5.1f%s' % (_dat['unit_cell'][1], _b_offset, deg))
+                        _logger.info('- C-AXIS length: %5.1f A  offset: %5.1f%s' % (_dat['unit_cell'][2], _c_offset, deg))
+
                         
             next_step = 'scaling'
         

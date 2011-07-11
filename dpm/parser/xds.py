@@ -59,7 +59,7 @@ def parse_correct(filename='CORRECT.LP'):
         
     if info['symmetry'].get('candidates'):
         t = utils.Table(info['symmetry'].get('candidates'))
-        info['min_rmeas'] = min(t['r_meas'])
+        info['summary']['min_rmeas'] = min(t['r_meas'])
     return info
 
 def parse_xplan(filename='XPLAN.LP'):

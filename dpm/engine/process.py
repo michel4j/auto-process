@@ -14,6 +14,7 @@ from dpm.engine import reporting, symmetry, strategy, conversion
 _logger = log.get_module_logger(__name__)
 
 VERSION = 3.0
+_MAX_RMEAS_FACTOR = 2
 
 _STEP_FUNCTIONS = {
     'initialize': spots.initialize,
@@ -96,7 +97,7 @@ class DataSet(object):
             ice_rings = self.results['image_analysis'].get('summary', {}).get('ice_rings', 0)
         else:
             ice_rings = 0
-        
+            
         #use predicted values for resolution, r_meas, i_sigma if we are screening
         if strategy:
             resolution = self.results['strategy']['resolution']
@@ -219,11 +220,7 @@ class Manager(object):
             _out = _STEP_FUNCTIONS[step](step_parameters, self.options)
         dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
         if _out.get('data') is not None:
-            if dset.results.get(step) is not None:
-                dset.results[step].update(_out.get('data'))
-            else:
-                dset.results[step] = _out.get('data')
-                
+            dset.results[step] = _out.get('data')
         self.save_checkpoint()
 
         if not _out['success']:
@@ -284,6 +281,14 @@ class Manager(object):
                                                     })
                     elif step == 'symmetry':
                         self.run_step('correction', dset, overwrite=overwrite) #final correction after symmetry
+                        # check if selected space group degrades data quality
+                        min_rmeas = dset.results['correction']['summary']['min_rmeas']
+                        final_rmeas = dset.results['correction']['summary']['r_meas']
+                        
+                        if _MAX_RMEAS_FACTOR * min_rmeas < final_rmeas:
+                            _logger.warning('Data quality degraded (%0.1f%%) due to merging!' % (100.0*final_rmeas/min_rmeas))
+                            _logger.warning('Selected SpaceGroup is likely inaccurate!')
+                        
             next_step = 'scaling'
         
         if next_step == 'scaling':
@@ -315,7 +320,7 @@ class Manager(object):
             else:
                 dset.results['data_quality'] = _out.get('data')
             self.save_checkpoint()
-            
+                       
             # Scoring and experiment setup check
             ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
             _logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
@@ -349,7 +354,7 @@ class Manager(object):
                         _logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
                     else:
                         dset.results['output_files'] = _out.get('data')
-                        _logger.info('(%s) Output Files: %s' % (dset.name, ', '.join(_out['data'])))
+                        _logger.info('(%s): %s' % (dset.name, ', '.join(_out['data'])))
                 self.save_checkpoint()
 
         # reporting

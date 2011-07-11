@@ -26,15 +26,19 @@ def integrate(data_info, options={}):
         return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
     _pc = ProgChecker(os.sysconf('SC_NPROCESSORS_ONLN'))
     _pd = ProgDisplay(data_info['data_range'], _pc.queue)
-    _pd.start()
-    _pc.start()
+
     try:
+        _pd.start()
+        _pc.start()
         programs.xds_par()
         info = xds.parse_integrate()
     except dpm.errors.ProcessError, e:
+        _pd.stop()
+        _pc.stop()   
         return {'step': 'integration', 'success':False, 'reason': str(e)}
-    _pd.stop()
-    _pc.stop()
+    else:
+        _pd.stop()
+        _pc.stop()
     
     if info.get('failure') is None:
         if data_info['working_directory'] == options.get('directory'):

@@ -188,7 +188,7 @@ class ProgDisplay(threading.Thread):
         self.queue = q
         self.total = (data_range[1] - data_range[0])+1
         self.data_range = data_range
-        self.length = 53
+        self.length = 60
         self._cursor = False
         self._stopped = False
         self.chars=[c.encode("utf-8") for c in unicode(self.spinner,"utf-8")]
@@ -231,6 +231,6 @@ class ProgDisplay(threading.Thread):
                 obj  = None
             else:
                 obj = self.queue.get(block=True)
-            time.sleep(0.1)
+            #time.sleep(0.1)
             pos += 1
             pos%=len(self.chars)

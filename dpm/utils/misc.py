@@ -119,6 +119,10 @@ def calc_angle(v1, v2):
     v2 = numpy.array(v2)/numpy.linalg.norm(v2)
     cs = numpy.dot(v1,v2)
     sn = numpy.linalg.norm(numpy.cross(v1,v2))
-    return numpy.arctan2(sn,cs)
+    a = numpy.arctan2(sn,cs)
+    if a > numpy.pi/2.0:
+        a = a - numpy.pi
+    return a
+    
     
     

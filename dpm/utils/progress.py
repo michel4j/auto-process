@@ -231,6 +231,6 @@ class ProgDisplay(threading.Thread):
                 obj  = None
             else:
                 obj = self.queue.get(block=True)
-            #time.sleep(0.1)
+            time.sleep(0.01)
             pos += 1
             pos%=len(self.chars)

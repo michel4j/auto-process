@@ -44,7 +44,7 @@ def determine_sg(data_info, dset, options={}):
             break
         
     if not _lat_found:
-        return {'step': 'symmetry', 'success': False, 'reason': 'Specified spacegroup is incompatible with lattice'}
+        return {'step': 'symmetry', 'success': False, 'reason': 'Selected SpaceGroup incompatible with lattice'}
     
     dset.parameters.update({'unit_cell': xtal.tidy_cell(sg_info['unit_cell'], sg_info['character']),
                             'space_group': sg_info['sg_number']

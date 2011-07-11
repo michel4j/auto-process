@@ -258,7 +258,6 @@ Options:
 
 Examples:
     auto.symmetry -g 19
-    auto.symmetry -g "P2(1)2(1)2(1)"
     auto.symmetry --spacegroup=19
 
 Table of spacegroup numbers:
@@ -304,18 +303,20 @@ def symmetry_options(params):
         if o in ("-g","--spacegroup"):
             try:
                 sg_num = int(a)
+                assert sg_num in xtal.SPACE_GROUP_NAMES.keys()
                 options['sg_overwrite'] = sg_num
             except ValueError:
-                try:
-                    sg_num = xtal.get_number(a)
-                    options['sg_overwrite'] = sg_num
-                except IndexError:
-                    if o == '--spacegroup':
-                        op = '%s=' % o
-                    else:
-                        op = '%s ' % o
-                    print SYMMETRY_USAGE
-                    raise dpm.errors.InvalidOption('Invalid SpaceGroup Option: `%s%s`' % (op, a))
+                if o == '--spacegroup':
+                    op = '%s=' % o
+                else:
+                    op = '%s ' % o
+                print SYMMETRY_USAGE
+                raise dpm.errors.InvalidOption('Invalid SpaceGroup Option: `%s%s`' % (op, a))
+
+            except AssertionError:
+                print SYMMETRY_USAGE
+                raise dpm.errors.InvalidOption('Invalid SpaceGroup Number: %s' % (a))
+
                 
         if o in ('-b', '--backup'):
             options['backup'] = True

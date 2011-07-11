@@ -389,6 +389,7 @@ class Manager(object):
 
         used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
         _logger.info("Done in: %s"  % (used_time))
+        print
   
         
             

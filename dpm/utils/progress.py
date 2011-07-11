@@ -231,7 +231,7 @@ class ProgDisplay(threading.Thread):
             pos += 1
             pos%=len(self.chars)
         bar = d[1]*self.length
-        txt = '[%s]%4.0f%%' % (bar, 100.0)
+        txt = '[%s]%4.1f%%' % (bar, 100.0)
         self.refresh(txt, self.chars[pos])
         sys.stdout.write('\n')
         

@@ -141,7 +141,7 @@ class ProgChecker(object):
     
     def _run(self):
         while not self._stopped:
-            time.sleep(0.5)
+            time.sleep(0.05)
             for fn in self.file_list:
                 if os.path.exists(fn):
                     if fn not in self.file_objs.keys():

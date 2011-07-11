@@ -32,7 +32,7 @@ def scale_datasets(dsets, options={}):
     # Check Requirements
     for dset in dsets.values():
         if dset.results.get('correction') is None:
-            return {'step': 'scaling', 'success': False, 'reason': 'Can only scale after successful correction'}
+            return {'step': 'scaling', 'success': False, 'reason': 'Can only scale after successful integration'}
             
     mode = options.get('mode', 'simple')
     if mode == 'mad':

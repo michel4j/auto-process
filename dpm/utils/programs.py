@@ -106,7 +106,7 @@ def best(data_info, options={}):
     else:
         det_flag = ''
 
-    command  = "best %s -t %f " % (det_flag, data_info['exposure_time'])
+    command  = "best %s -t %f -i2s 1.0 -q" % (det_flag, data_info['exposure_time'])
     command += " -e none -M 0.5 -w 0.2 %s -o best.plot -dna best.xml" % (anom_flag)
     command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL"
     

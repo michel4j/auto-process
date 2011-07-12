@@ -118,7 +118,7 @@ def _match_code(src, tgt):
     return src|tgt == src
 
 
-def _filter_spots(spot_list, sigma=0, unindexed=False, filename='SPOT.XDS'):
+def _filter_spots(sigma=0, unindexed=False, filename='SPOT.XDS'):
     new_list = numpy.loadtxt(filename)
     def _indexed(a):
         for v in a:

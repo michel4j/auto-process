@@ -108,7 +108,8 @@ def parse_xscale(filename='XSCALE.LP'):
         info[k] = utils.parse_data(d, config='xscale.ini')
         if info[k].get('statistics') is not None:
             if len(info[k]['statistics']) > 1:
-                info[k]['summary'] = info[k]['statistics'][-1]          
+                info[k]['summary'] = {}
+                info[k]['summary'].update(info[k]['statistics'][-1])          
                 del info[k]['summary']['shell']
     return info
 

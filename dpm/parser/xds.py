@@ -19,7 +19,7 @@ PROGRAM_ERROR ) = range(8)
 _IDXREF_FAILURES = {
     0: None,
     1: 'Dimension of difference vector set too low',
-    2: 'Insufficient percentage of reflections indexed',
+    2: 'Insufficient percentage of spots indexed',
     3: 'Insufficient number of spots',
     4: 'Solution is not good enough',
     5: 'Could not refine solution',

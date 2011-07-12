@@ -17,8 +17,8 @@ def initialize(data_info, options={}):
     io.write_xds_input('XYCORR INIT', run_info)
     try:
         programs.xds_par()
-    except dpm.errors.ProcessError:
-        return {'success':False, 'reason': 'Program died prematurely'}
+    except dpm.errors.ProcessError, e:
+        return {'step': 'initialize', 'success':False, 'reason': str(e)}
     
     if misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf',
         'BKGINIT.cbf', 'BLANK.cbf', 'GAIN.cbf'):

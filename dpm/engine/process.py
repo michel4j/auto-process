@@ -218,6 +218,7 @@ class Manager(object):
             _out = _STEP_FUNCTIONS[step](step_parameters, dset, self.options)
         else:
             _out = _STEP_FUNCTIONS[step](step_parameters, self.options)
+
         dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
         if _out.get('data') is not None:
             dset.results[step] = _out.get('data')
@@ -243,7 +244,7 @@ class Manager(object):
                      'strategy',
                      ]
         
-        _logger.info('AutoProcess(v%0.1f) - %s [%d dataset(s)]' % (VERSION, 
+        _logger.info('---- AutoProcess(v%0.1f) - %s [%d dataset(s)] ----' % (VERSION, 
                               self.options['mode'].upper(), len(self.datasets)))
         _num_cores = int(os.environ.get('DPM_CORES', misc.get_cpu_count))
         _env_hosts = os.environ.get('DPM_HOSTS', 'localhost')
@@ -389,7 +390,6 @@ class Manager(object):
 
         used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
         _logger.info("Done in: %s"  % (used_time))
-        print
   
         
             

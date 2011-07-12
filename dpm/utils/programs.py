@@ -17,7 +17,11 @@ def _execute_command(args, out_file=None):
             sts = os.waitpid(p.pid, 0)
             assert sts[1] == 0
         except OSError:
-            raise dpm.errors.ProcessError('Program not found `%s`' % (args,))
+            if type(args) in [tuple, list]: 
+                prog = args[0]
+            else: 
+                prog = args
+            raise dpm.errors.ProcessError('Program not found `%s`' % (prog,))
         except ValueError:
             raise dpm.errors.ProcessError('Invalid arguments `%s`' % (args,))
         except AssertionError:

@@ -289,7 +289,6 @@ class Manager(object):
                         #FIXME: min_rmeas is calculated to 5 A but low_r_meas is variable low resolution shell
                                                 
                         if _MAX_RMEAS_FACTOR * min_rmeas < low_rmeas and min_rmeas > 0.0:
-                            print min_rmeas, low_rmeas
                             _logger.warning('Data quality degraded (%0.1f%%) due to merging!' % (100.0*low_rmeas/min_rmeas))
                             _logger.warning('Selected SpaceGroup is likely inaccurate!')
                     

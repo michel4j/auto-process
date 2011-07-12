@@ -43,7 +43,7 @@ def parse_idxref(filename='IDXREF.LP'):
                            ]:
         info['failure_code'] = 1
     elif re.match("^INSUFFICIENT PERCENTAGE .+ OF INDEXED REFLECTIONS", info['failure_message']):
-        info['failure_code_message'] = 2
+        info['failure_code'] = 2
     elif info['failure_message'] == 'INSUFFICIENT NUMBER OF ACCEPTED SPOTS.':
         info['failure_code'] = 3
     elif info['failure_message'] == 'SOLUTION IS INACCURATE':

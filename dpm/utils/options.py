@@ -28,6 +28,7 @@ Options:
     --mad, -m : Process each set, scale together and generate separate reflection files.
     --screen, -s : Process a few frames from characterize crystal from each set.
     --anom, -a : Process with Friedel's law False
+    --zap, -z : Abandone saved state and start all over.
     --backup, -b : Backup previous output directory if it exists
     --prefix=p1,p2,p3 : comma separated list of prefixes to use for output files. 
             Default is first part of image name
@@ -48,7 +49,10 @@ Examples:
 """
 def process_options(params):
     try:
-        opts, args = getopt.gnu_getopt(params, "msahb", ["help", "dir=", "mad","screen","anom", "backup", "prefix="])
+        opts, args = getopt.gnu_getopt(params, 
+                                       "msahbz", 
+                                       ["help", "dir=", "mad","screen","anom",
+                                        "backup", "zap","prefix="])
     except:
         print PROCESS_USAGE
             
@@ -82,6 +86,8 @@ def process_options(params):
             options['directory'] = os.path.abspath(a)
         if o in ('-b', '--backup'):
             options['backup'] = True
+        if o in ('-z', '--zap'):
+            options['zap'] = True
         if o in ('--prefix'):
             options['prefix'] = a.split(',')
             if len(options['prefix']) != len(options['images']):
@@ -250,8 +256,8 @@ Description:
      
 Options:
     --res=<res>, -r <res> : Manually set the high resolution limit.
-    --spacegroup=<num|name>, -g <num|name>:  Manually set space group by name 
-            or number (see below for valid names and numbers)
+    --spacegroup=<num>, -g <num>:  Manually set space group by number (see 
+            below for valid spacegroup numbers)
     --backup, -b : Backup previous output if it exists
     --help, -h : display this message
     Default (no option): Resume previous processing from scaling step.

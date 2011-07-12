@@ -2,7 +2,6 @@
 import os
 import sys
 import time
-import pprint
 
 import dpm.errors
 from dpm.utils.misc import json
@@ -289,6 +288,7 @@ class Manager(object):
                         final_rmeas = dset.results['correction']['summary']['r_meas']
                         
                         if _MAX_RMEAS_FACTOR * min_rmeas < final_rmeas and min_rmeas > 0.0:
+                            print min_rmeas, final_rmeas
                             _logger.warning('Data quality degraded (%0.1f%%) due to merging!' % (100.0*final_rmeas/min_rmeas))
                             _logger.warning('Selected SpaceGroup is likely inaccurate!')
                     

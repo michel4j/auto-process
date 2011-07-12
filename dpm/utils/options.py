@@ -25,18 +25,20 @@ Description:
     datasets to converted reflection files.
 
 Options:
-    --mad, -m : Process each set, scale together and generate separate reflection files.
+    --mad, -m : Process each set, scale together and generate separate outputs.
     --screen, -s : Process a few frames from characterize crystal from each set.
     --anom, -a : Process with Friedel's law False
-    --zap, -z : Abandone saved state and start all over.
     --backup, -b : Backup previous output directory if it exists
     --prefix=p1,p2,p3 : comma separated list of prefixes to use for output files. 
             Default is first part of image name
             prefix order should correspond to the order of the data sets
               for example for MAD data, use --prefix=peak,infl,remo
-    --dir=/path : Directory to store processed results. Default is to create a  new one in the current directory.
+    --dir=/path : Directory to store processed results. Default is to create a  
+            new one in the current directory.
+    --zap, -z : Abandon saved state and start all over.
     --help, -h : display this message
-    Default (no option): Process each set, scale together and merge into one reflection file.
+    Default (no option): Process each set, scale together and merge into one 
+        reflection file.
     
 Data sets:
     Each data set can be represented by any frame from that set.
@@ -50,9 +52,9 @@ Examples:
 def process_options(params):
     try:
         opts, args = getopt.gnu_getopt(params, 
-                                       "msahbz", 
+                                       "msahbt:z", 
                                        ["help", "dir=", "mad","screen","anom",
-                                        "backup", "zap","prefix="])
+                                        "backup", "zap","task=", "prefix="])
     except:
         print PROCESS_USAGE
             
@@ -88,6 +90,13 @@ def process_options(params):
             options['backup'] = True
         if o in ('-z', '--zap'):
             options['zap'] = True
+        if o in ('-t', '--task'):
+            st = a.split(',')
+            if len(st) == 1:
+                options['resume_from'] = (0, st[0].strip())
+            elif len(st) == 2:
+                options['resume_from'] = (int(st[0]), st[1].strip())
+                
         if o in ('--prefix'):
             options['prefix'] = a.split(',')
             if len(options['prefix']) != len(options['images']):

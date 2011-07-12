@@ -25,9 +25,9 @@ def main():
             chkpt = misc.json.loads(file('checkpoint.json').read())
             app = Manager(checkpoint=chkpt, options=opt)
             if opt.get('zap', False):
-                app.run(resume_from=chkpt['run_position'])
-            else:
                 app.run()
+            else:                
+                app.run(resume_from=opt.get('resume_from', chkpt['run_position']))
         except IOError:
             _logger.error('Either specify a dataset, or run within a data processing directory.')
             print options.PROCESS_USAGE

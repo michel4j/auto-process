@@ -107,7 +107,6 @@ def write_xds_input(jobs, params):
     file_text += """
     DETECTOR=%s
     MINIMUM_VALID_PIXEL_VALUE= 1
-    MIN_RFL_Rmeas= 30
     STRONG_PIXEL= %0.1f
     OVERLOAD=%d
     MINIMUM_ZETA= 0.05

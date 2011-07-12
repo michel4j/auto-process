@@ -84,8 +84,6 @@ def correct(data_info, options={}):
         if info.get('statistics') is not None and len(info['statistics']) > 1:
             if info.get('summary') is not None:
                 info['summary']['resolution'] = xtal.select_resolution(info['standard_errors'])
-                info['summary'].update( info['statistics'][-1] )
-                del info['summary']['shell']
         if data_info['working_directory'] == options.get('directory'):
             info['output_file'] = 'XDS_ASCII.HKL'
         else:

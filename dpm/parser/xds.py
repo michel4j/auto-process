@@ -78,7 +78,10 @@ def parse_correct(filename='CORRECT.LP'):
         info['symmetry']['candidates'] = info_0['symmetry'].get('candidates')
         t = utils.Table(info['symmetry'].get('candidates'))
         info['summary']['min_rmeas'] = min(t['r_meas'])
-
+    if info.get('statistics') is not None:
+        if len(info['statistics']) > 1:
+            info['summary'].update( info['statistics'][-1] )
+            del info['summary']['shell']  
     return info
 
 def parse_xplan(filename='XPLAN.LP'):
@@ -105,7 +108,8 @@ def parse_xscale(filename='XSCALE.LP'):
         info[k] = utils.parse_data(d, config='xscale.ini')
         if info[k].get('statistics') is not None:
             if len(info[k]['statistics']) > 1:
-                info[k]['summary'] = info[k]['statistics'][-1]             
+                info[k]['summary'] = info[k]['statistics'][-1]          
+                del info[k]['summary']['shell']
     return info
 
 def parse_integrate(filename='INTEGRATE.LP'):

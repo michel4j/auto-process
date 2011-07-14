@@ -3,17 +3,21 @@ Parsers for POINTLESS output xml files
 
 """
 import xml.dom.minidom
+import dpm.errors
 from dpm.utils import xtal
+
 
 def parse_pointless(filename="pointless.xml"):
     """
     read Pointless XML output and return  a dictionay
     
     """
-    
-    doc = xml.dom.minidom.parse(filename)
-    summary_el = doc.getElementsByTagName('BestSolution')[0]
-    sg_list = doc.getElementsByTagName('Spacegroup')
+    try:
+        doc = xml.dom.minidom.parse(filename)
+        summary_el = doc.getElementsByTagName('BestSolution')[0]
+        sg_list = doc.getElementsByTagName('Spacegroup')
+    except:
+        raise dpm.errors.ParserError('POINTLESS output is invalid')
     sg_candidates = []
     sg_dict = {}
     

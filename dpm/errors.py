@@ -16,3 +16,7 @@ class FilesystemError(Exception):
 class ProcessError(Exception):
     """External program exit status is not 0"""
     pass
+
+class ParserError(Exception):
+    """External program exit status is not 0"""
+    pass

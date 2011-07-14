@@ -28,10 +28,8 @@ def determine_sg(data_info, dset, options={}):
         try:
             programs.pointless()
             sg_info = pointless.parse_pointless()
-        except (dpm.errors.ProcessError, IOError), e:
+        except (dpm.errors.ProcessError, dpm.errors.ParserError, IOError), e:
             return {'step': 'symmetry', 'success': False, 'reason': str(e)}
-        except:
-            return {'step': 'symmetry', 'success': False, 'reason': "Unable to run POINTLESS"}
     
     # Overwrite sg_info parameters with XDS friendly ones if present:
     # fetches xds reindex matrix and cell constants based on lattice,

@@ -108,6 +108,7 @@ def write_xds_input(jobs, params):
     DETECTOR=%s
     MINIMUM_VALID_PIXEL_VALUE= 1
     STRONG_PIXEL= %0.1f
+    MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT=12
     OVERLOAD=%d
     MINIMUM_ZETA= 0.05
     TRUSTED_REGION=0.00 1.25
@@ -120,7 +121,7 @@ def write_xds_input(jobs, params):
     FRACTION_OF_POLARIZATION=0.95
     POLARIZATION_PLANE_NORMAL= 1.0 0.0 0.0
     DIRECTION_OF_DETECTOR_X-AXIS= 1.000 0.000 0.000
-    DIRECTION_OF_DETECTOR_Y-AXIS= 0.000 %0.3f %0.3f\n""" % (detector, params.get('sigma', 6),
+    DIRECTION_OF_DETECTOR_Y-AXIS= 0.000 %0.3f %0.3f\n""" % (detector, params.get('sigma', 3),
                         params.get('saturated_value', 65535),
                        math.cos(params['two_theta']), 
                        -1 * math.sin(params['two_theta']))

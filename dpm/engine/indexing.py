@@ -121,15 +121,17 @@ def _match_code(src, tgt):
 def _filter_spots(sigma=0, unindexed=False, filename='SPOT.XDS'):
     new_list = numpy.loadtxt(filename)
     def _indexed(a):
-        for v in a:
-            if abs(v)>0.01:
-                return True
-        return False
+        if len(a) < 5:
+            return False
+        elif sum([abs(v) for v in a[4:]])>0.01:
+            return True
+        else:
+            return False
             
     if sigma > 0:
         new_list = [sp for sp in new_list if sp[3] > sigma ]
-    if unindexed and len(new_list[0]) > 4:
-        new_list = [sp for sp in new_list if _indexed(sp[4:])]
+    if unindexed:
+        new_list = [sp for sp in new_list if _indexed(sp)]
     f = open(filename, 'w')
     for spot in new_list:
         if len(spot)>4:

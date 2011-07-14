@@ -153,6 +153,7 @@ def select_resolution(table, method=1):
 
     shells = table[:-1]
     _rmet = 0
+    _resol_i = 0
     for shell in shells:
         if 'shell' in shell:
             res = float(shell['shell'])

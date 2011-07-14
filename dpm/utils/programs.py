@@ -84,7 +84,7 @@ def pointless(retry=False):
     txt = """pointless << eof
 xdsin INTEGRATE.HKL
 xmlout pointless.xml
-resol 4.0
+resol 3.0
 choose solution 1
 eof
 """  

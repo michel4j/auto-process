@@ -120,8 +120,8 @@ def prepare_dir(workdir, backup=False):
         os.makedirs(workdir)
 
 def calc_angle(v1, v2):
-    v1 = numpy.array(v1)/numpy.linalg.norm(v1)
-    v2 = numpy.array(v2)/numpy.linalg.norm(v2)
+    v1 = numpy.array(v1, dtype=numpy.float64)/numpy.linalg.norm(v1)
+    v2 = numpy.array(v2, dtype=numpy.float64)/numpy.linalg.norm(v2)
     cs = numpy.dot(v1,v2)
     sn = numpy.linalg.norm(numpy.cross(v1,v2))
     a = numpy.arctan2(sn,cs)
@@ -129,5 +129,38 @@ def calc_angle(v1, v2):
         a = a - numpy.pi
     return a
     
+def make_rot_matrix(direction, angle):
+    """
+    Create a rotation matrix corresponding to the rotation around a general
+    axis by a specified angle.
+
+    R = dd^T + cos(a) (I - dd^T) + sin(a) skew(d)
+
+    Parameters:
+
+        angle : float a
+        direction : array d
+    """
+    angle = angle * numpy.pi/180.0
     
-    
+    d = numpy.array(direction, dtype=numpy.float64)
+    d /= numpy.linalg.norm(d)
+
+    eye = numpy.eye(3, dtype=numpy.float64)
+    ddt = numpy.outer(d, d)
+    skew = numpy.array([[    0,  d[2],  -d[1]],
+                     [-d[2],     0,  d[0]],
+                     [ d[1], -d[0],    0]], dtype=numpy.float64)
+
+    mtx = ddt + numpy.cos(angle) * (eye - ddt) + numpy.sin(angle) * skew
+    return mtx    
+
+def rotate_vector(vec, mtxa):
+    mtx = numpy.matrix(mtxa, dtype=numpy.float64)
+    vec = numpy.matrix(vec, dtype=numpy.float64)
+    nvec = mtx * vec.getT()
+
+    if vec.shape == (1,3):
+        return nvec.getT().getA1()
+    else:
+        return nvec.getT().getA()

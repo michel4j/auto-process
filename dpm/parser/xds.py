@@ -90,6 +90,9 @@ def parse_xplan(filename='XPLAN.LP'):
 def parse_xdsstat(filename='XDSSTAT.LP'):
     return utils.parse_file(filename, config='xdsstat.ini')
 
+def parse_xparm(filename="XPARM.XDS"):
+    info = utils.parse_file(filename, config='xparm.ini')
+    return info['parameters']
 
 def parse_xscale(filename='XSCALE.LP'):
     if not os.path.exists(filename):

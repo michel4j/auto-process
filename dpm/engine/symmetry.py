@@ -34,17 +34,18 @@ def determine_sg(data_info, dset, options={}):
     # Overwrite sg_info parameters with XDS friendly ones if present:
     # fetches xds reindex matrix and cell constants based on lattice,
     # character
-    _lat_found = False
+    _lat_compatible = False
     for _lat in dset.results['correction']['symmetry']['lattices']:
         id, lat_type = _lat['id']
         if sg_info['character'] == lat_type:
-            _lat_found = True
+            _lat_compatible = (_lat['star'] == '*')
             sg_info['reindex_matrix'] = _lat['reindex_matrix']
             sg_info['unit_cell'] = _lat['unit_cell']
             break
         
-    if not _lat_found:
-        return {'step': 'symmetry', 'success': False, 'reason': 'Selected SpaceGroup incompatible with lattice'}
+    if not _lat_compatible:
+        _logger.warning('Selected SpaceGroup has a poor fit to the lattice')
+        #return {'step': 'symmetry', 'success': False, 'reason': 'Selected SpaceGroup incompatible with lattice'}
     
     dset.parameters.update({'unit_cell': xtal.tidy_cell(sg_info['unit_cell'], sg_info['character']),
                             'space_group': sg_info['sg_number']

@@ -145,7 +145,7 @@ def select_resolution(table, method=1):
     returns a tuple the first value of which is the selected resolution,
     and the second value of which is the selectio method where:
     0 : Detector edge
-    1 : I/sigma > 1
+    1 : I/sigma > 0.5
     2 : R-mrgdF < 40
     3 : DISTL 
     4 : Manualy chosen    
@@ -162,7 +162,7 @@ def select_resolution(table, method=1):
         i_sigma = shell['i_sigma']
         r_mgdf = shell.get('r_mrgdf', -99)
         resol_i = res
-        if (method == 1) and i_sigma < 1.0:
+        if (method == 1) and i_sigma < 0.5:
             _rmet = method
             break
         elif (method == 2) and r_mgdf > 40.0:

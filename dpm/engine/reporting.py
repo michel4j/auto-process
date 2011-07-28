@@ -100,7 +100,7 @@ def get_log_data(datasets, options={}):
     _section['table'] = []
     resol_method = {
         0: 'Based on detector edge',
-        1: 'Based on I/sigma(I) > 1 ',
+        1: 'Based on I/sigma(I) > 0.5 ',
         2: 'Based on R-mrgd-F < 40% cut-off.',
         3: 'Calculated by DISTL (see Zang et al, J. Appl. Cryst. (2006). 39, 112-119',
         4: 'Manualy chosen',

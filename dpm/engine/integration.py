@@ -24,7 +24,7 @@ def integrate(data_info, options={}):
     # check if we are screening
     _screening = options.get('mode')=='screen'
     
-    io.write_xds_input("DEFPIX INTEGRATE", run_info, screening=_screening)
+    io.write_xds_input("DEFPIX INTEGRATE", run_info)
     if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS'):
         return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
     _pc = ProgChecker(os.sysconf('SC_NPROCESSORS_ONLN'))

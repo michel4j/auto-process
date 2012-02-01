@@ -257,6 +257,7 @@ def get_log_data(datasets, options={}):
             _section['lattices']['table'] = []
             _sec_keys = ['No.', 'Character', 'Cell Parameters', 'Quality', 'Cell Volume', 'Reindexing Matrix']
             for l in dres['correction']['symmetry']['lattices']:
+                if l['star'] != '*': continue  #incompatible lattices
                 id, lat_type = l['id']
                 sg = xtal.POINT_GROUPS[ lat_type ][0]
                 sg_name = xtal.SPACE_GROUP_NAMES[ sg ]
@@ -414,7 +415,15 @@ def get_reports(datasets, options={}):
         
         # compatible lattices and space group selection
         _section = {}
-        _t = Table(dres['correction']['symmetry']['lattices'])
+        
+        #select only compatible lattices
+        _comp_lattices = []
+        for _lat in dres['correction']['symmetry']['lattices']:
+            if _lat['star'] == '*':
+                _comp_lattices.append(_lat)
+
+
+        _t = Table(_comp_lattices)
         _id = SortedDict(_t['id'])
         _section['id'] = _id.keys()
         _section['type'] = _id.values()

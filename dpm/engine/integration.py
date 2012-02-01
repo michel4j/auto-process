@@ -20,8 +20,11 @@ def integrate(data_info, options={}):
     if options.get('optimize', False) and os.path.exists('GXPARM.XDS'):
         misc.backup_files('XPARM.XDS')
         shutil.copy('GXPARM.XDS', 'XPARM.XDS')
-
-    io.write_xds_input("DEFPIX INTEGRATE", run_info)
+        
+    # check if we are screening
+    _screening = options.get('mode')=='screen'
+    
+    io.write_xds_input("DEFPIX INTEGRATE", run_info, screening=_screening)
     if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS'):
         return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
     _pc = ProgChecker(os.sysconf('SC_NPROCESSORS_ONLN'))

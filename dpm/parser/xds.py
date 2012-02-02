@@ -81,7 +81,11 @@ def parse_correct(filename='CORRECT.LP'):
     if info.get('statistics') is not None:
         if len(info['statistics']) > 1:
             info['summary'].update( info['statistics'][-1] )
-            del info['summary']['shell']  
+            del info['summary']['shell']
+    
+    # parse GXPARM.XDS and update with more accurate cell parameters
+    xparm = parse_xparm('GXPARM.XDS')
+    info['summary']['unit_cell'] = xparm['unit_cell']   
     return info
 
 def parse_xplan(filename='XPLAN.LP'):

@@ -278,8 +278,9 @@ class Manager(object):
                             _ref_file = os.path.join('..', 
                                         self.datasets.values()[i-1].results['correction']['output_file'])
                             dset.parameters.update({'reference_data': _ref_file,
-                                                    'reference_sginfo': self.datasets.values()[i-1].results['symmetry'],
+                                                    'reference_sginfo': self.datasets.values()[0].results['symmetry'],
                                                     })
+
                     elif step == 'symmetry':
                         # perform addition correction and check effect on 
                         # data quality

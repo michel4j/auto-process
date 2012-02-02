@@ -108,6 +108,16 @@ def get_log_data(datasets, options={}):
     data_items = datasets.items()
     if options.get('mode') == 'merge':
         data_items.append( ('*combined*', data_items[0][1]) )
+        # update the combined data with the weighted average cell
+        cell_weights = []
+        for _, dset in data_items[:-1]:
+            cell_weights.append((dset.results['correction']['summary']['unit_cell'],
+                                 dset.results['correction']['total_reflections']))
+        avgcell, avgcell_esd = xtal.average_cell(cell_weights)
+        dset = data_items[-1][1]
+        dset.results['correction']['summary']['unit_cell'] = avgcell
+        dset.results['correction']['summary']['unit_cell_esd'] = avgcell_esd
+        
     for dataset_name, dset in data_items:
         dres= dset.results
         if dres.get('image_analysis') is not None:
@@ -139,9 +149,9 @@ def get_log_data(datasets, options={}):
             '%0.2f' % _score,
             '%7.4f' % (dset.parameters['wavelength'],),
             xtal.SPACE_GROUP_NAMES[ dres['correction']['symmetry']['space_group']['sg_number'] ],
-            '%0.1f %0.1f %0.1f' % tuple(dres['correction']['symmetry']['space_group']['unit_cell'][:3]),
-            '%0.1f %0.1f %0.1f' % tuple(dres['correction']['symmetry']['space_group']['unit_cell'][3:]),
-            '%0.0f' % (xtal.cell_volume(dres['correction']['symmetry']['space_group']['unit_cell']),),
+            '%0.4f %0.4f %0.4f' % tuple(dres['correction']['summary']['unit_cell'][:3]),
+            '%0.4f %0.4f %0.4f' % tuple(dres['correction']['summary']['unit_cell'][3:]),
+            '%0.0f' % (xtal.cell_volume(dres['correction']['summary']['unit_cell']),),
             '%0.2f' % _summary['summary']['resolution'][0],
             _summary['summary']['observed'],
             _summary['summary']['unique'],
@@ -389,12 +399,12 @@ def get_reports(datasets, options={}):
             exp_id,
             dres['crystal_score'], 
             dres['correction']['symmetry']['space_group']['sg_number'],
-            dres['correction']['symmetry']['space_group']['unit_cell'][0],
-            dres['correction']['symmetry']['space_group']['unit_cell'][1],
-            dres['correction']['symmetry']['space_group']['unit_cell'][2],
-            dres['correction']['symmetry']['space_group']['unit_cell'][3],
-            dres['correction']['symmetry']['space_group']['unit_cell'][4],
-            dres['correction']['symmetry']['space_group']['unit_cell'][5],
+            dres['correction']['summary']['unit_cell'][0],
+            dres['correction']['summary']['unit_cell'][1],
+            dres['correction']['summary']['unit_cell'][2],
+            dres['correction']['summary']['unit_cell'][3],
+            dres['correction']['summary']['unit_cell'][4],
+            dres['correction']['summary']['unit_cell'][5],
             _summary['summary']['resolution'][0],
             _summary['summary']['observed'],
             _summary['summary']['unique'],

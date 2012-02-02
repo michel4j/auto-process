@@ -239,6 +239,23 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
         
     return sum(score)
 
+def average_cell(cell_and_weights):
+    """Average a series of cell parameters together with weights and return the average cell and standard deviations
+        input should be of the form [(cell1, weight), (cell2, weight), ...]
+        where cell1 is a container with 6 floats for a,b,c alpha, beta, gamma
+    """
+    
+    cells = numpy.zeros((len(cell_and_weights), 6))
+    weights = numpy.zeros((len(cell_and_weights)))
+    for i, cw in enumerate(cell_and_weights):
+        cell, weight = cw
+        cells[i] = numpy.array(cell)
+        weights[i] = weight
+    
+    new_cell = (cells.transpose()*weights).sum(1)/weights.sum()
+    cell_esd = numpy.sqrt(numpy.dot(weights, (cells-new_cell)**2)/weights.sum())
+    return (new_cell, cell_esd)
+    
 
 # Determine twinning fraction from L statistic
 def _calc_L(a):

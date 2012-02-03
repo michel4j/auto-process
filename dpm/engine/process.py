@@ -279,22 +279,7 @@ class Manager(object):
                                         self.datasets.values()[i-1].results['correction']['output_file'])
                             dset.parameters.update({'reference_data': _ref_file,
                                                     'reference_sginfo': self.datasets.values()[0].results['symmetry'],
-                                                    })
-                        if self.options.get('mode') == 'screen':
-                            # calculate and report the angles of the spindle from
-                            # the three axes
-                            _logger.info('Optimizing angular offset of longest-cell axes from spindle')   
-                            _dat = dset.results['correction']['parameters']
-                            _output = misc.optimize_xtal_offset(_dat)
-                            
-                            _logger.info('... %s-AXIS [%5.1f A]  %5.1f deg offset' % (
-                                            ['A','B','C'][_output['longest_axis']],
-                                            _dat['unit_cell'][_output['longest_axis']], 
-                                            _output['offset']))
-                            _logger.info('... Best Offset = %5.1f deg' %(_output['best_offset']))
-                            _logger.info('......   Kappa  = %5.1f deg' %(_output['kappa'])) 
-                            _logger.info('......   Phi    = %5.1f deg' %(_output['phi']))
-                            
+                                                    })                            
                     elif step == 'symmetry':
                         # perform addition correction and check effect on 
                         # data quality
@@ -306,6 +291,22 @@ class Manager(object):
                         if _MAX_RMEAS_FACTOR * min_rmeas < low_rmeas and min_rmeas > 0.0:
                             _logger.warning('Data quality degraded (%0.1f%%) due to merging!' % (100.0*low_rmeas/min_rmeas))
                             _logger.warning('Selected SpaceGroup is likely inaccurate!')
+                            
+                        if self.options.get('mode') == 'screen':
+                            # calculate and report the angles of the spindle from
+                            # the three axes
+                            _logger.info('Optimizing offset of longest-cell axes from spindle')   
+                            _dat = dset.results['correction']['parameters']
+                            _output = misc.optimize_xtal_offset(_dat)
+                            
+                            _logger.info('... %s-AXIS [%5.1f A]  %5.1f deg offset' % (
+                                            ['A','B','C'][_output['longest_axis']],
+                                            _dat['unit_cell'][_output['longest_axis']], 
+                                            _output['offset']))
+                            _logger.info('... Best Offset = %5.1f deg' %(_output['best_offset']))
+                            _logger.info('......   Kappa  = %5.1f deg' %(_output['kappa'])) 
+                            _logger.info('......   Phi    = %5.1f deg' %(_output['phi']))
+                        
                     
                         
             next_step = 'scaling'

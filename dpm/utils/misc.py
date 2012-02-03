@@ -180,7 +180,7 @@ def optimize_xtal_offset(info, kappa_axis=KAPPA_AXIS):
     axis_names = ['cell_a_axis', 'cell_b_axis', 'cell_c_axis']
     longest_axis = max(zip(info['unit_cell'], axis_names))[1]
     kmat = make_rot_matrix(kappa_axis, 1.0)
-    orig_offset = abs(calc_angle(longest_axis, info['rotation_axis']))*180.0/numpy.pi
+    orig_offset = abs(calc_angle(info[longest_axis], info['rotation_axis']))*180.0/numpy.pi
     offsets = []
     axis = info[longest_axis]
     phi_axis = info['rotation_axis']
@@ -190,9 +190,9 @@ def optimize_xtal_offset(info, kappa_axis=KAPPA_AXIS):
         for phi in range(360):
             offset = abs(calc_angle(naxis, info['rotation_axis']))
             offsets.append((offset, kappa, phi))
-            naxis = misc.rotate_vector(naxis, pmat)
+            naxis = rotate_vector(naxis, pmat)
         phi_axis = rotate_vector(phi_axis, kmat)
-        axis = misc.rotate_vector(axis, kmat)
+        axis = rotate_vector(axis, kmat)
     
     opt_offset, opt_kappa, opt_phi = min(offsets)
     _out = {

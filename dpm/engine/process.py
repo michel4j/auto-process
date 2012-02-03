@@ -280,7 +280,21 @@ class Manager(object):
                             dset.parameters.update({'reference_data': _ref_file,
                                                     'reference_sginfo': self.datasets.values()[0].results['symmetry'],
                                                     })
-
+                        if self.options.get('mode') == 'screen':
+                            # calculate and report the angles of the spindle from
+                            # the three axes
+                            _logger.info('Optimizing angular offset of longest-cell axes from spindle')   
+                            _dat = dset.results['correction']['parameters']
+                            _output = misc.optimize_xtal_offset(_dat)
+                            
+                            _logger.info('... %s-AXIS [%5.1f A]  %5.1f deg offset' % (
+                                            ['A','B','C'][_output['longest_axis']],
+                                            _dat['unit_cell'][_output['longest_axis']], 
+                                            _output['offset']))
+                            _logger.info('... Best Offset = %5.1f deg' %(_output['best_offset']))
+                            _logger.info('......   Kappa  = %5.1f deg' %(_output['kappa'])) 
+                            _logger.info('......   Phi    = %5.1f deg' %(_output['phi']))
+                            
                     elif step == 'symmetry':
                         # perform addition correction and check effect on 
                         # data quality
@@ -293,20 +307,6 @@ class Manager(object):
                             _logger.warning('Data quality degraded (%0.1f%%) due to merging!' % (100.0*low_rmeas/min_rmeas))
                             _logger.warning('Selected SpaceGroup is likely inaccurate!')
                     
-                    elif step == 'indexing' and self.options.get('mode') == 'screen':
-                        # calculate and report the angles of the spindle from
-                        # the three axes
-                        _logger.info('Angular offset of Reduced-cell axes from oscillation axis')
-
-                        _dat = dset.results['indexing']['summary']
-                        _a_offset = misc.rad2deg(misc.calc_angle(_dat['cell_a_axis'], _dat['rotation_axis']))
-                        _b_offset =  misc.rad2deg(misc.calc_angle(_dat['cell_b_axis'], _dat['rotation_axis']))
-                        _c_offset =  misc.rad2deg(misc.calc_angle(_dat['cell_c_axis'], _dat['rotation_axis']))
-
-                        _logger.info('... A-AXIS [%5.1f A]  %5.1f deg' % (_dat['unit_cell'][0], _a_offset)) 
-                        _logger.info('... B-AXIS [%5.1f A]  %5.1f deg' % (_dat['unit_cell'][1], _b_offset))
-                        _logger.info('... C-AXIS [%5.1f A]  %5.1f deg' % (_dat['unit_cell'][2], _c_offset))
-
                         
             next_step = 'scaling'
         

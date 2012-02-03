@@ -85,6 +85,7 @@ def parse_correct(filename='CORRECT.LP'):
     
     # parse GXPARM.XDS and update with more accurate cell parameters
     xparm = parse_xparm('GXPARM.XDS')
+    info['parameters'] = xparm
     info['summary']['unit_cell'] = xparm['unit_cell']   
     return info
 

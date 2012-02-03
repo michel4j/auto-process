@@ -20,6 +20,9 @@ except:
 _h = 4.13566733e-15 # eV.s
 _c = 299792458e10   # A/s
 
+#direction vector of kappa axis on 08B1-1 when omega is at 0.0 deg
+KAPPA_AXIS = numpy.array([ 0.91354546,  0.3468    ,  0.21251931])
+
 def get_cpu_count():
     return os.sysconf('SC_NPROCESSORS_ONLN')
 
@@ -164,3 +167,40 @@ def rotate_vector(vec, mtxa):
         return nvec.getT().getA1()
     else:
         return nvec.getT().getA()
+
+def optimize_xtal_offset(info, kappa_axis=KAPPA_AXIS):
+    """Optimize the kappa and Phi rotations required to align the 
+    longest cell axis closest to the spindle axis
+    
+    input:
+        - info is a dictionary produced by parser.xds.parse_xparm
+        - kappa_axis is the direction vector of the kappa axis at zero spindle rotation
+    """
+    
+    axis_names = ['cell_a_axis', 'cell_b_axis', 'cell_c_axis']
+    longest_axis = max(zip(info['unit_cell'], axis_names))[1]
+    kmat = make_rot_matrix(kappa_axis, 1.0)
+    orig_offset = abs(calc_angle(longest_axis, info['rotation_axis']))*180.0/numpy.pi
+    offsets = []
+    axis = info[longest_axis]
+    phi_axis = info['rotation_axis']
+    for kappa in range(180):
+        naxis = axis
+        pmat = make_rot_matrix(phi_axis, 1.0)
+        for phi in range(360):
+            offset = abs(calc_angle(naxis, info['rotation_axis']))
+            offsets.append((offset, kappa, phi))
+            naxis = misc.rotate_vector(naxis, pmat)
+        phi_axis = rotate_vector(phi_axis, kmat)
+        axis = misc.rotate_vector(axis, kmat)
+    
+    opt_offset, opt_kappa, opt_phi = min(offsets)
+    _out = {
+        'kappa': opt_kappa,
+        'phi': opt_phi,
+        'longest_axis': axis_names.index(longest_axis),
+        'offset': orig_offset,
+        'best_offset': opt_offset,
+        'data': numpy.array(offsets),  
+    }
+    return _out

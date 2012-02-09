@@ -55,7 +55,7 @@ def integrate(data_info, options={}):
 
 def correct(data_info, options={}):
     os.chdir(data_info['working_directory'])
-    _logger.info('Correcting ... ')
+    _logger.info('Correcting & Refining ... ')
     run_info = {}
     run_info.update(data_info)
 

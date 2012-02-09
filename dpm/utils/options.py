@@ -49,6 +49,7 @@ Examples:
     auto.process /path/to/dataset_{hires,lores}_001.img
     auto.process --screen /foo/bar/test_001.img --dir=/foo/screen_output
 """
+
 def process_options(params):
     try:
         opts, args = getopt.gnu_getopt(params, 
@@ -342,3 +343,13 @@ def symmetry_options(params):
                 print SYMMETRY_USAGE
                 sys.exit(0)
     return options
+
+INPUTS_USAGE = """
+auto.inputs /path/to/set.img
+
+Description:
+    Generate XDS.INP file for running XDS manually
+
+Example:
+    auto.inputs  /foo/bar/test_001.img
+"""

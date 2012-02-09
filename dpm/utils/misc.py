@@ -8,6 +8,8 @@ import os
 import shutil
 import math
 import numpy
+import scipy
+import scipy.optimize
 import posixpath
 
 
@@ -177,30 +179,42 @@ def optimize_xtal_offset(info, kappa_axis=KAPPA_AXIS):
         - kappa_axis is the direction vector of the kappa axis at zero spindle rotation
     """
     
+    STEP = 5 # How coarse should the brute force search be?
+    
     axis_names = ['cell_a_axis', 'cell_b_axis', 'cell_c_axis']
     longest_axis = max(zip(info['unit_cell'], axis_names))[1]
-    kmat = make_rot_matrix(kappa_axis, 1.0)
+    kmat = make_rot_matrix(kappa_axis, STEP)
     orig_offset = abs(calc_angle(info[longest_axis], info['rotation_axis']))*180.0/numpy.pi
     offsets = []
-    axis = info[longest_axis]
-    phi_axis = info['rotation_axis']
-    for kappa in range(180):
-        naxis = axis
-        pmat = make_rot_matrix(phi_axis, 1.0)
-        for phi in range(360):
-            offset = abs(calc_angle(naxis, info['rotation_axis']))
-            offsets.append((offset, kappa, phi))
-            naxis = rotate_vector(naxis, pmat)
-        phi_axis = rotate_vector(phi_axis, kmat)
-        axis = rotate_vector(axis, kmat)
+    cell_axis = info[longest_axis]
+    rot_axis = info['rotation_axis']
     
-    opt_offset, opt_kappa, opt_phi = min(offsets)
+    for kappa in range(0, 180, STEP):
+        for phi in range(0, 360, STEP):
+            pmat = make_rot_matrix(rot_axis, phi)
+            nc_axis = rotate_vector(cell_axis, pmat) # first apply phi rotation to cell axis
+            kmat = make_rot_matrix(kappa_axis, kappa)
+            nc_axis = rotate_vector(nc_axis, kmat) # then add kappa rotation to cell axis
+            
+            offset = abs(calc_angle(nc_axis, rot_axis))*180.0/numpy.pi
+            p_ax =  rotate_vector(rot_axis, kmat)
+            chi_offset = abs(calc_angle(p_ax, rot_axis))*180.0/numpy.pi
+            offsets.append((offset, kappa, phi, chi_offset))
+
+    
+    # offset dimensions
+    ks = len(range(0, 180, STEP))
+    ps = len(range(0, 360, STEP))
+   
+    opt_offset, opt_kappa, opt_phi, chi_offset = min(offsets)
     _out = {
         'kappa': opt_kappa,
         'phi': opt_phi,
+        'chi': chi_offset,
         'longest_axis': axis_names.index(longest_axis),
-        'offset': orig_offset,
+        'offset': orig_offset,   
         'best_offset': opt_offset,
-        'data': numpy.array(offsets),  
+        'data': numpy.array(offsets),
+        'shape': (ks, ps),
     }
     return _out

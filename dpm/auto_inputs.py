@@ -15,7 +15,7 @@ _logger = log.get_module_logger('auto.process')
 
 def main():
     # Parse options
-    opt = options.process_options(sys.argv[1:])
+    opt = options.process_options(sys.argv[1:], options.INPUTS_USAGE)
     
     if len(opt['images']) >= 1:
         dset = DataSet(filename=opt['images'][0])

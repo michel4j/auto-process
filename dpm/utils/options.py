@@ -50,14 +50,14 @@ Examples:
     auto.process --screen /foo/bar/test_001.img --dir=/foo/screen_output
 """
 
-def process_options(params):
+def process_options(params, usage=PROCESS_USAGE):
     try:
         opts, args = getopt.gnu_getopt(params, 
                                        "msahbt:z", 
                                        ["help", "dir=", "mad","screen","anom",
                                         "backup", "zap","task=", "prefix="])
     except:
-        print PROCESS_USAGE
+        print usage
             
     # Parse options
     options = {
@@ -72,7 +72,7 @@ def process_options(params):
     
     for o, a in opts:
         if o in ("-h","--help"):
-            print PROCESS_USAGE
+            print usage
             sys.exit(0)
             
         if o in ("-a","--anom"):

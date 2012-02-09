@@ -12,7 +12,12 @@ from dpm.engine import reporting, symmetry, strategy, conversion
 
 _logger = log.get_module_logger(__name__)
 
-VERSION = 3.0
+_version_file = os.path.join(os.path.dirname(__file__), '..', 'VERSION')
+if os.path.exists(_version_file):
+    VERSION = (file(_version_file).readline()).strip()
+else:
+    VERSION = '3.0 Dev'
+
 _MAX_RMEAS_FACTOR = 2
 
 _STEP_FUNCTIONS = {
@@ -243,7 +248,7 @@ class Manager(object):
                      'strategy',
                      ]
         
-        _logger.info('---- AutoProcess(v%0.1f) - %s [%d dataset(s)] ----' % (VERSION, 
+        _logger.info('---- AutoProcess(v%s) - %s [%d dataset(s)] ----' % (VERSION, 
                               self.options['mode'].upper(), len(self.datasets)))
         _num_cores = int(os.environ.get('DPM_CORES', misc.get_cpu_count))
         _env_hosts = os.environ.get('DPM_HOSTS', 'localhost')

@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+#
+
+exec git describe | sed 's/.0-/./g' > dpm/VERSION
+

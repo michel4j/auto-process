@@ -248,7 +248,7 @@ class Manager(object):
                      'strategy',
                      ]
         
-        _logger.info('---- AutoProcess(v%s) - %s [%d dataset(s)] ----' % (VERSION, 
+        _logger.info('---- AutoProcess(%s) - %s [%d dataset(s)] ----' % (VERSION, 
                               self.options['mode'].upper(), len(self.datasets)))
         _num_cores = int(os.environ.get('DPM_CORES', misc.get_cpu_count))
         _env_hosts = os.environ.get('DPM_HOSTS', 'localhost')

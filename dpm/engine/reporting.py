@@ -423,6 +423,10 @@ def get_reports(datasets, options={}):
         _dataset_info['result'] = dict(zip(_sum_keys, _sum_values))
         _dataset_info['result']['details'] = {}
         
+        
+        # set anomalous flag in details
+        _dataset_info['result']['details']['anomalous'] = options.get('anomalous', False)
+      
         # compatible lattices and space group selection
         _section = {}
         

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block headline %}
-<h2 class="screen"> Crystal Screening Report - &ldquo;{{object.name}}&rdquo;</h2>
+<h2 class="screen">{% if object.details.anomalous %}Anomalous {% endif %}Screening Report - &ldquo;{{object.name}}&rdquo;</h2>
 {% endblock %}
 
 {% block content-override %}

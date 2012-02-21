@@ -179,7 +179,7 @@ def optimize_xtal_offset(info, kappa_axis=KAPPA_AXIS):
         - kappa_axis is the direction vector of the kappa axis at zero spindle rotation
     """
     
-    STEP = 5 # How coarse should the brute force search be?
+    STEP = 5 # How coarse should the brute force search be in degrees?
     
     axis_names = ['cell_a_axis', 'cell_b_axis', 'cell_c_axis']
     longest_axis = max(zip(info['unit_cell'], axis_names))[1]

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block headline %}
-<h2 class="process"> Data Processing Report - &ldquo;{{object.name}}&rdquo;</h2>
+<h2 class="process">{% if object.details.anomalous %}Anomalous {% endif %}Data Processing Report - &ldquo;{{object.name}}&rdquo;</h2>
 {% endblock %}
 
 {% block content-override %}
@@ -33,7 +33,7 @@
                 <tr><td>Spindle deviation</td><td>{{object.sigma_angle}}</td></tr>
                 {% ifnotequal object.ice_rings -1 %}
                     <tr><td>Ice Rings</td><td>{{object.ice_rings}}</td></tr>
-                {% endifnotequal %}
+                {% endifnotequal %}                
             </tbody>
         </table>
     </div>

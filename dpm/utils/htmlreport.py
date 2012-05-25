@@ -64,6 +64,7 @@ rcParams['legend.fontsize'] = 10
 rcParams['legend.isaxes'] = False
 rcParams['figure.facecolor'] = 'white'
 rcParams['figure.edgecolor'] = 'white'
+#rcParams['mathtext.fontset'] = 'cm'
 
 PLOT_WIDTH = 8
 PLOT_HEIGHT = 6
@@ -269,7 +270,7 @@ def plot_error_stats(results, filename):
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(211)
     ax1.plot(shell, data['chi_sq'], 'r-')
-    ax1.set_ylabel(r'$\chi^{2}$', color='r')
+    ax1.set_ylabel('Chi^2', color='r')
     ax11 = ax1.twinx()
     ax11.plot(shell, data['i_sigma'], 'b-')
     ax11.set_ylabel('I/Sigma', color='b')
@@ -342,7 +343,7 @@ def plot_wilson_stats(results, filename):
     plot_data = numpy.array(plot_data)
     ax1.plot(plot_data[:,0], plot_data[:,1], 'r-+')
     ax1.set_xlabel('Resolution')
-    ax1.set_ylabel(r'$ln({<I>}/{\Sigma(f)^2})$')
+    ax1.set_ylabel('ln(<I>/Sigma(f)^2)')
     ax1.grid(True)
     ax1.xaxis.set_major_formatter(ResFormatter())
     ax1.xaxis.set_major_locator(ResLocator())
@@ -378,8 +379,8 @@ def plot_twinning_stats(results, filename):
     ax1.plot(data['abs_l'], data['observed'], 'b-+', label='observed')
     ax1.plot(data['abs_l'], data['untwinned'], 'r-+', label='untwinned')
     ax1.plot(data['abs_l'], data['twinned'], 'm-+', label='twinned')
-    ax1.set_xlabel('$|L|$')
-    ax1.set_ylabel('$P(L>=1)$')
+    ax1.set_xlabel('|L|')
+    ax1.set_ylabel('P(L>=1)')
     ax1.grid(True)
     
     # set font parameters for the ouput table

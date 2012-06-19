@@ -18,9 +18,9 @@ import time
 HOST_NAMES = os.environ['DPM_HOSTS'].split()
 
 def num_chunks(N, n):
-    """ Yield n approximately equal chunks from l.
-    if l is not direcly divisible by n some of the chunks will have 
-    will be larger
+    """ Yield n approximately equal chunks from N.
+    if N is not direcly divisible by n some of the chunks will have 
+    to be larger
     """
     base_size, extras = divmod(N,n) 
     for i in range(n):

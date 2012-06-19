@@ -28,7 +28,7 @@
                 <tr><td>Mosaicity</td><td>{{object.mosaicity}}</td></tr>
                 <tr><td>I/Sigma(I)</td><td>{{object.i_sigma}}</td></tr>
                 <tr><td>R-meas<sup class="footnote">[4]</sup></td><td>{{object.r_meas}}</td></tr>
-                <tr><td>R-mrgd-F<sup class="footnote">[5]</sup></td><td>{{object.r_mrgd}}</td></tr>
+                <tr><td>CC(&frac12;)<sup class="footnote">[5]</sup></td><td>{{object.cc_half}}</td></tr>
                 <tr><td>Spot deviation</td><td>{{object.sigma_spot}}</td></tr>
                 <tr><td>Spindle deviation</td><td>{{object.sigma_angle}}</td></tr>
                 {% ifnotequal object.ice_rings -1 %}
@@ -62,7 +62,7 @@
             <dt>[4] -<dt>
             <dd>Redundancy independent R-factor. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)</dd>
             <dt>[5] -<dt>
-            <dd>Quality of amplitudes. (see Diederichs & Karplus, 1997, Nature Struct. Biol. 4, 269-275.)</dd>
+            <dd>Percentage correlation between intensities from random half-datasets. (see Karplus & Diederichs (2012), Science. 336 (6084): 1030-1033)</dd>
         </dl>
         </div>
     </div>
@@ -156,14 +156,14 @@
                 <th scope="col">Shell</th>
                 <th scope="col">Completeness</th>
                 <th scope="col">R<sub>meas</sub></th>
-                <th scope="col">R<sub>mrgd-F</sub></th>
+                <th scope="col">CC(&frac12;)</th>
                 <th scope="col">I/sigma(I)<sup class="footnote">[1]</sup></th>
                 <th scope="col">Sig<sub>ano</sub><sup class="footnote">[2]</sup></th>
             </tr>
         </thead>
         <tbody>
         {% with object.details.shell_statistics as stats %}
-        {% zip stats.shell  stats.completeness  stats.r_meas stats.r_mrgdf stats.i_sigma stats.sig_ano as tbl %}
+        {% zip stats.shell  stats.completeness  stats.r_meas stats.cc_half stats.i_sigma stats.sig_ano as tbl %}
         {% for rows in tbl %}
             <tr>
             {% for col in rows %}

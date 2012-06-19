@@ -83,6 +83,11 @@ class ResLocator(Locator):
         locs = numpy.linspace(0.0156, 1, 30 )
         return locs
 
+def get_min_max(a, dev=0.1):
+    mn, mx = min(a), max(a)
+    dev = (mx-mn)*dev
+    return mn-dev, mx+dev
+
 def plot_shell_stats(results, filename):
 
     data = results['details'].get('shell_statistics')
@@ -95,7 +100,7 @@ def plot_shell_stats(results, filename):
     ax1.set_ylabel('completeness (%)', color='r')
     ax11 = ax1.twinx()
     ax11.plot(shell, data['r_meas'], 'g-', label='R-meas')
-    ax11.plot(shell, data['r_mrgdf'], 'g:+', label='R-mrgd-F')
+    ax11.plot(shell, data['cc_half'], 'g:+', label='CC(1/2)')
     ax11.legend(loc='center left')
     ax1.grid(True)
     ax11.set_ylabel('R-factors (%)', color='g')
@@ -105,7 +110,7 @@ def plot_shell_stats(results, filename):
         tl.set_color('r')
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
     ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
-    ax1.set_ylim((0, 105))
+    ax1.set_ylim(0, 105)
     ax11.set_ylim((0, 105))
 
     ax2 = fig.add_subplot(212, sharex=ax1)
@@ -122,8 +127,8 @@ def plot_shell_stats(results, filename):
         tl.set_color('m')
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
     ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    ax2.set_ylim((-5, max(data['i_sigma'])+5))
-    ax21.set_ylim((0, max(data['sig_ano'])+1))
+    ax2.set_ylim(0, get_min_max(data['i_sigma'], 0.1)[1])
+    ax21.set_ylim(0, get_min_max(data['sig_ano'], 0.1)[1])
 
     ax1.xaxis.set_major_formatter(ResFormatter())
     ax1.xaxis.set_minor_formatter(ResFormatter())
@@ -160,7 +165,7 @@ def plot_pred_quality(results, filename):
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
     ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
     ax1.set_ylim((0, 105))
-    ax11.set_ylim((0,  max(data['r_factor'])+10))
+    ax11.set_ylim(0,  get_min_max(data['r_factor'], 0.1)[1])
 
     ax2 = fig.add_subplot(212, sharex=ax1)
     ax2.plot(shell, data['i_sigma'], 'm-')
@@ -176,8 +181,8 @@ def plot_pred_quality(results, filename):
         tl.set_color('m')
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
     ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    ax2.set_ylim((-1, max(data['i_sigma'])+1))
-    ax21.set_ylim((0, max(data['multiplicity'])+0.5))
+    ax2.set_ylim(get_min_max(data['i_sigma'], 0.1))
+    ax21.set_ylim(get_min_max(data['multiplicity'],0.1))
 
     ax1.xaxis.set_major_formatter(ResFormatter())
     ax1.xaxis.set_minor_formatter(ResFormatter())
@@ -281,8 +286,8 @@ def plot_error_stats(results, filename):
         tl.set_color('r')
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    ax1.set_ylim((0, 3))
-    #ax11.set_ylim((0, 105))
+    ax1.set_ylim(get_min_max(data['chi_sq'], 0.2))
+    ax11.set_ylim(0, get_min_max(data['i_sigma'], 0.1)[1])
 
     ax2 = fig.add_subplot(212, sharex=ax1)
     ax2.plot(shell, data['r_obs'], 'g-', label='R-observed')
@@ -292,7 +297,7 @@ def plot_error_stats(results, filename):
     ax2.legend(loc='best')
     ax2.grid(True)
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
-    ax2.set_ylim((0,105))
+    ax2.set_ylim(0, get_min_max(data['r_obs'], 0.1)[1])
 
     ax1.xaxis.set_major_formatter(ResFormatter())
     ax1.xaxis.set_minor_formatter(ResFormatter())
@@ -333,6 +338,7 @@ def plot_diff_stats(results, filename):
 def plot_wilson_stats(results, filename):
     
     data = results['details'].get('wilson_plot')
+
     if data is None:
         return
 
@@ -421,13 +427,13 @@ def plot_frame_stats(results, filename):
         tl.set_color('r')
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
-    ax1.set_ylim((min(data['scale'])-0.2, max(data['scale'])+0.2))
-    ax11.set_ylim((min(data['mosaicity'])-0.01, max(data['mosaicity'])+0.01))
+    ax1.set_ylim(get_min_max(data['scale'], 0.2))
+    ax11.set_ylim(get_min_max(data['mosaicity'], 0.2))
 
     ax2 = fig.add_subplot(312, sharex=ax1)
     ax2.plot(data['frame'], data['divergence'], 'm-')
     ax2.set_ylabel('Divergence', color='m')
-    ax2.set_ylim((min(data['divergence'])-0.02, max(data['divergence'])+0.02))
+    ax2.set_ylim(get_min_max(data['divergence'], 0.2))
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.3f'))
     ax2.grid(True)
     if data.get('frame_no') is not None:
@@ -488,13 +494,13 @@ def plot_batch_stats(results, filename):
         tl.set_color('r')
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    ax11.set_ylim((min(data['distance'])-3, max(data['distance'])+3))
-    ax1.set_ylim((min(data['mosaicity'])-0.01, max(data['mosaicity'])+0.01))
+    ax11.set_ylim(get_min_max(data['distance'], 0.1))
+    ax1.set_ylim(get_min_max(data['mosaicity'], 0.1))
 
     ax2 = fig.add_subplot(412, sharex=ax1)
     ax2.plot(frames, data['stdev_spot'], 'm-')
     ax2.set_ylabel('spot dev.', color='m')
-    ax2.set_ylim((min(data['stdev_spot'])-0.1, max(data['stdev_spot'])+0.1))
+    ax2.set_ylim(get_min_max(data['stdev_spot'],0.1))
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
     ax2.grid(True)
     ax21 = ax2.twinx()

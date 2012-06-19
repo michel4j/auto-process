@@ -1,6 +1,7 @@
 import numpy
 import math
 import bisect
+from dpm.parser.utils import Table
 
 DEBUG = False
 
@@ -130,7 +131,7 @@ def cell_volume(unit_cell):
     return v 
 
 
-def select_resolution(table, method=1):
+def select_resolution_OLD(table, method=2):
     """
     Takes a table of statistics and determines the optimal resolutions
     The table is a list of dictionaries each with at least the following fields
@@ -138,19 +139,20 @@ def select_resolution(table, method=1):
         'shell': string convertible to float
             or  'resol_range': a pair of floats
         'r_meas': float
-        'r_mrgdf': float
+        'cc_half': float
         'i_sigma' : float
+        'signif' : '*' or ' '
     }
     
     returns a tuple the first value of which is the selected resolution,
     and the second value of which is the selectio method where:
     0 : Detector edge
     1 : I/sigma > 0.5
-    2 : R-mrgdF < 40
+    2 : cc_half == '*'
     3 : DISTL 
     4 : Manualy chosen    
     """
-
+    
     shells = table[:-1]
     _rmet = 0
     _resol_i = 0
@@ -159,17 +161,62 @@ def select_resolution(table, method=1):
             res = float(shell['shell'])
         elif 'resol_range' in shell:
             res = shell['resol_range'][1]
-        i_sigma = shell['i_sigma']
-        r_mgdf = shell.get('r_mrgdf', -99)
+
         resol_i = res
-        if (method == 1) and i_sigma < 0.5:
+        if (method == 1) and shell['i_sigma'] < 0.5:
             _rmet = method
             break
-        elif (method == 2) and r_mgdf > 40.0:
+        elif (method == 2) and shell.get('signif', '*') != "*":
             _rmet = method
             break
             
     return (resol_i, _rmet)
+
+
+def select_resolution(table, method=2, optimistic=False):
+    """
+    Takes a table of statistics and determines the optimal resolutions
+    The table is a list of dictionaries each with at least the following fields
+    record = {
+        'shell': string convertible to float
+            or  'resol_range': a pair of floats
+        'r_meas': float
+        'cc_half': float
+        'i_sigma' : float
+        'signif' : '*' or ' '
+    }
+    
+    returns a tuple the first value of which is the selected resolution,
+    and the second value of which is the selectio method where:
+    0 : Detector edge
+    1 : I/sigma > 0.5
+    2 : cc_half == '*'
+    3 : DISTL 
+    4 : Manualy chosen    
+    """
+    
+    data = Table(table[:-1])
+    if 'shell' in data.keys():
+        resol = [float(v) for v in data['shell']]
+    else:
+        resol = [float(v[1]) for v in data['resol_range']]
+    
+    idx = len(resol) - 1
+    
+    if method == 1:
+        idx = bisect.bisect_left(data['i_sigma'], 0.5)
+
+    if method == 2:
+        idx = len(data['signif']) - data['signif'][::-1].index("*") - 1
+            
+    if optimistic and idx < len(resol) - 1:
+        idx += 1
+
+    if idx == len(resol) - 1:
+        method = 0
+        
+    return (resol[idx], method)
+
 
 
 def select_lattices(table):

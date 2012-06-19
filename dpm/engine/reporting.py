@@ -94,14 +94,14 @@ def get_log_data(datasets, options={}):
                   'Unit Cell (A)', '        (deg)', 
                   'Cell Volume (A^3)', 'Resolution (A)[c]', 'All Reflections',
                   'Unique Reflections', 'Multiplicity', 'Completeness',
-                  'I/sigma(I) [d]', 'R-mrgd-F [e]',
-                  'R-meas [f]', 'Mosaicity', 'sigma(spot) (pix)', 'sigma(angle) (deg)','No. Ice rings',
+                  'I/sigma(I) [d]', 'CC(1/2) [f]',
+                  'R-meas [e]', 'Mosaicity', 'sigma(spot) (pix)', 'sigma(angle) (deg)','No. Ice rings',
                   ]
     _section['table'] = []
     resol_method = {
         0: 'Based on detector edge',
         1: 'Based on I/sigma(I) > 0.5 ',
-        2: 'Based on R-mrgd-F < 40% cut-off.',
+        2: 'Based on CC(1/2) significant at 0.1% level.',
         3: 'Calculated by DISTL (see Zang et al, J. Appl. Cryst. (2006). 39, 112-119',
         4: 'Manualy chosen',
     }
@@ -158,7 +158,7 @@ def get_log_data(datasets, options={}):
             '%0.1f' % (float(_summary['summary']['observed'])/_summary['summary']['unique'],),
             '%0.1f%%' % (_compl,),
             '%0.1f' % (_summary['summary']['i_sigma'],),
-            '%0.1f%%' % (_summary['summary']['r_mrgdf'],),
+            '%0.1f' % (_summary['summary']['cc_half'],),
             '%0.1f%%' % (_summary['summary']['r_meas'],),
             _mos,
             _std_pix,
@@ -171,7 +171,7 @@ def get_log_data(datasets, options={}):
 [c] Resolution selection method: %s
 [d] Average I/sigma(I) for all data.
 [e] Redundancy independent R-factor. Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.
-[f] Quality of amplitudes. see Diederichs & Karplus (1997), Nature Struct. Biol. 4, 269-275.""" % resol_method[_summary['summary']['resolution'][1]]
+[f] Percentage correlation between intensities from random half-datasets. (see Karplus & Diederichs (2012), Science. 336 (6084): 1030-1033)""" % resol_method[_summary['summary']['resolution'][1]]
     info['summary'] = _section
     
     # print data collection parameters
@@ -325,13 +325,13 @@ def get_log_data(datasets, options={}):
                 _data_key = 'table'
             else:
                 _data_key = 'table+plot'
-                _section['plot_axes'] = [('Resolution',['R_meas', 'R_mrgd-F', 'Completeness']),('Resolution', ['I/Sigma'])]
+                _section['plot_axes'] = [('Resolution',['R_meas', 'CC(1/2)', 'Completeness']),('Resolution', ['I/Sigma'])]
                 if options.get('anomalous') == True:
                     _section['plot_axes'].append(('Resolution', ['SigAno']))
             _section[_data_key] = []
             for row in dres['correction']['statistics']:
                 n_row = SortedDict()
-                for k,t in [('Resolution','shell'),('Completeness', 'completeness'),('R_meas','r_meas'), ('R_mrgd-F','r_mrgdf'), ('I/Sigma','i_sigma'), ('SigAno','sig_ano'), ('AnoCorr','cor_ano')]:
+                for k,t in [('Resolution','shell'),('Completeness', 'completeness'),('R_meas','r_meas'), ('CC(1/2)','cc_half'), ('I/Sigma','i_sigma'), ('SigAno','sig_ano'), ('AnoCorr','cor_ano')]:
                     n_row[k] = row[t]
                 _section[_data_key].append(n_row.items())
             resol = dres['correction']['summary']['resolution']
@@ -348,11 +348,11 @@ def get_log_data(datasets, options={}):
             _section['shells'][_data_key] = []
             for row in dres['scaling']['statistics']:
                 n_row = SortedDict()
-                for k, t in [('Resolution', 'shell'), ('Completeness', 'completeness'), ('R_meas', 'r_meas'), ('R_mrgd-F', 'r_mrgdf'), ('I/Sigma', 'i_sigma'), ('SigAno', 'sig_ano'), ('AnoCorr', 'cor_ano')]:
+                for k, t in [('Resolution', 'shell'), ('Completeness', 'completeness'), ('R_meas', 'r_meas'), ('CC(1/2)', 'cc_half'), ('I/Sigma', 'i_sigma'), ('SigAno', 'sig_ano'), ('AnoCorr', 'cor_ano')]:
                     n_row[k] = row[t]
                 _section['shells'][_data_key].append(n_row.items())
                 
-            _section['shells']['plot_axes'] = [('Resolution', ['R_meas', 'R_mrgd-F', 'Completeness']), ('Resolution', ['I/Sigma'])]
+            _section['shells']['plot_axes'] = [('Resolution', ['R_meas', 'CC(1/2)', 'Completeness']), ('Resolution', ['I/Sigma'])]
             if options.get('anomalous', False):
                 _section['shells']['plot_axes'].append(('Resolution', ['SigAno']))
                           
@@ -391,7 +391,7 @@ def get_reports(datasets, options={}):
             _summary= dres['correction']
         _sum_keys = ['name', 'data_id', 'crystal_id', 'experiment_id', 'score', 'space_group_id', 'cell_a','cell_b', 'cell_c', 'cell_alpha', 'cell_beta','cell_gamma',
                  'resolution','reflections', 'unique','multiplicity', 'completeness','mosaicity', 'i_sigma',
-                 'r_meas','r_mrgdf', 'sigma_spot', 'sigma_angle','ice_rings', 'url', 'wavelength']
+                 'r_meas','cc_half', 'sigma_spot', 'sigma_angle','ice_rings', 'url', 'wavelength']
         _sum_values = [
             dataset_name,
             data_id,
@@ -413,7 +413,7 @@ def get_reports(datasets, options={}):
             dres['correction']['summary']['mosaicity'],
             _summary['summary']['i_sigma'],
             _summary['summary']['r_meas'],
-            _summary['summary']['r_mrgdf'],
+            _summary['summary']['cc_half'],
             dres['correction']['summary']['stdev_spot'],
             dres['correction']['summary']['stdev_spindle'],
             _ice_rings,
@@ -558,7 +558,7 @@ def get_reports(datasets, options={}):
                 _t = Table(dres['scaling']['statistics'])
             else:
                 _t = Table(dres['correction']['statistics'])
-            for k in ['completeness','r_meas','r_mrgdf','i_sigma','sig_ano','cor_ano']:
+            for k in ['completeness','r_meas','cc_half','i_sigma','sig_ano','cor_ano']:
                 _section[k] = _t[k][:-1] # don't get 'total' row
             _section['shell'] = [float(v) for v in _t['shell'][:-1]]
             _dataset_info['result']['details']['shell_statistics'] = _section
@@ -650,12 +650,12 @@ def save_html(result_list, options={}):
         if report['result']['kind'] == AUTOXDS_SCREENING:
             try:
                 htmlreport.create_screening_report(report, report_directory)
-            except:
+            except ValueError:
                 pass
         else:
             try:
                 htmlreport.create_full_report(report, report_directory)
-            except:
+            except ValueError:
                 pass         
         _logger.info('(%s) HTML report: %s/index.html' % (report['result']['name'], misc.relpath(report_directory, options['command_dir']) ))
 

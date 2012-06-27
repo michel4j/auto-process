@@ -648,15 +648,9 @@ def save_html(result_list, options={}):
         if not os.path.exists(report_directory):
             os.makedirs(report_directory)
         if report['result']['kind'] == AUTOXDS_SCREENING:
-            try:
-                htmlreport.create_screening_report(report, report_directory)
-            except ValueError:
-                pass
+            htmlreport.create_screening_report(report, report_directory)
         else:
-            try:
-                htmlreport.create_full_report(report, report_directory)
-            except ValueError:
-                pass         
+            htmlreport.create_full_report(report, report_directory)    
         _logger.info('(%s) HTML report: %s/index.html' % (report['result']['name'], misc.relpath(report_directory, options['command_dir']) ))
 
 def save_log(info, filename):

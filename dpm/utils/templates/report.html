@@ -156,14 +156,15 @@
                 <th scope="col">Shell</th>
                 <th scope="col">Completeness</th>
                 <th scope="col">R<sub>meas</sub></th>
-                <th scope="col">CC(&frac12;)</th>
+                <th scope="col">CC<sub>&frac12;</sub></th>
                 <th scope="col">I/sigma(I)<sup class="footnote">[1]</sup></th>
                 <th scope="col">Sig<sub>ano</sub><sup class="footnote">[2]</sup></th>
+                <th scope="col">CC<sub>ano</sub><sup class="footnote">[3]</sup></th>
             </tr>
         </thead>
         <tbody>
         {% with object.details.shell_statistics as stats %}
-        {% zip stats.shell  stats.completeness  stats.r_meas stats.cc_half stats.i_sigma stats.sig_ano as tbl %}
+        {% zip stats.shell  stats.completeness  stats.r_meas stats.cc_half stats.i_sigma stats.sig_ano stats.cor_ano as tbl %}
         {% for rows in tbl %}
             <tr>
             {% for col in rows %}
@@ -191,6 +192,10 @@
                 mean anomalous difference in units of its estimated standard
                 deviation (|F(+)-F(-)|/Sigma). F(+), F(-) are structure factor estimates
                 obtained from the merged intensity observations in each parity class.
+            </dd>
+            <dt>[3] -<dt>
+            <dd>
+                Percentage of correlation between random half-sets of anomalous intensity differences.
             </dd>
         </dl>
     </div>

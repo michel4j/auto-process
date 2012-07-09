@@ -206,8 +206,10 @@ def select_resolution(table, method=2, optimistic=False):
     if method == 1:
         idx = bisect.bisect_left(data['i_sigma'], 0.5)
 
-    if method == 2:
+    if method == 2 and data['signif'].count('*') > 0:
         idx = len(data['signif']) - data['signif'][::-1].index("*") - 1
+    elif method == 2:
+        idx = len(data['signif']) - 1
             
     if optimistic and idx < len(resol) - 1:
         idx += 1

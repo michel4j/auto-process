@@ -70,7 +70,9 @@ def extract_xml_table(xml_node, list_name):
                 except:
                     value = value
                 _entry[key] = value
-            _table.append((int(index), _entry))
+            # restrict keys to those in the first entry
+            if len(_table) == 0 or set(_entry.keys()) == set(_table[0][1].keys()):
+                _table.append((int(index), _entry))
     _sorted_table = utils.Table([v for _,v in sorted(_table)])
     final_table = {}
     for k in _sorted_table.keys():
@@ -89,6 +91,9 @@ def parse_best(filename_prefix='best'):
     summary['prediction_all'] = {}
     summary['prediction_hi'] = {}
     summary['details'] = {}
+
+
+    best_version = doc.childNodes[1].getAttribute('version').split()
 
     for node in doc.getElementsByTagName('table'):
         name = node.getAttribute('name')
@@ -132,9 +137,12 @@ def parse_best(filename_prefix='best'):
         elif name == 'dc_optimal_time' and index == '1':
             summary['details']['time_statistics'] = extract_xml_table(node, 'compl_time_vs_resolution')
         
-
     #fix the attenuation
-    summary['attenuation'] = 100*(1.0 - summary['attenuation'])
+    if best_version[0] == '3.4.4':
+        summary['attenuation'] = 100*(1.0 - summary['transmission'])
+        del summary['transmission']
+    else:
+        summary['attenuation'] = 100*(1.0 - summary['attenuation'])
     
     #parse the plot file if any
     plot_stats = parse_best_plot('%s.plot' % filename_prefix)

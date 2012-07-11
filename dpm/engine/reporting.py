@@ -424,8 +424,18 @@ def get_reports(datasets, options={}):
         _dataset_info['result']['details'] = {}
         
         
-        # set anomalous flag in details
+        resol_method = {
+            0: 'based on detector edge',
+            1: 'based on I/sigma(I) > 0.5',
+            2: 'based on CC(1/2) significant at 0.1% level',
+            3: 'by DISTL (see Zang et al, J. Appl. Cryst. (2006). 39, 112-119',
+            4: 'manualy',
+        }
+        
+        # set detailed parameters
         _dataset_info['result']['details']['anomalous'] = options.get('anomalous', False)
+        _dataset_info['result']['details']['resolution_method'] = resol_method[_summary['summary']['resolution'][1]]
+        
       
         # compatible lattices and space group selection
         _section = {}

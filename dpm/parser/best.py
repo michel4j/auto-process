@@ -13,7 +13,7 @@ def parse_best_plot(filename):
     info = {}
     max_osc = {}
     max_osc_data, pos = utils.cut_section("Maximal oscillation width", "DATA=CURVE2D", data)
-    for m in re.finditer("(?P<shell>\d+\.\d+)\s+'\n(?P<curve>(\s*\d+\s+\d+\.\d+\n)+)", max_osc_data):
+    for m in re.finditer("(?P<shell>[\d-]+\.[\d-]+)\s+'\n(?P<curve>(\s*\d+\s+[\d-]+\.[\d-]+\n)+)", max_osc_data):
         max_osc[m.group('shell')] = numpy.fromstring(m.group('curve'), sep=' ').reshape((-1,2))
     
     info['delta_statistics'] = {}

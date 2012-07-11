@@ -141,7 +141,7 @@ def parse_best(filename_prefix='best'):
         
     #fix the attenuation
     if best_version[0] == '3.4.4':
-        summary['attenuation'] = 100.0 - summary['transmission'])
+        summary['attenuation'] = 100.0 - summary['transmission']
         del summary['transmission']
     else:
         summary['attenuation'] = 100*(1.0 - summary['attenuation'])

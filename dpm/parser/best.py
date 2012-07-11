@@ -119,6 +119,8 @@ def parse_best(filename_prefix='best'):
                         if key != 'overlaps':
                             value = float(value)
                         run[key] = value
+                    if best_version[0] == '3.4.4':
+                        run['distance'] = summary['distance']
                     summary['runs'].append(run)
         elif name == 'statistical_prediction' and index == '1':
             summary['details']['shell_statistics'] = extract_xml_table(node,'resolution_bin')

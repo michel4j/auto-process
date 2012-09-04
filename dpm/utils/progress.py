@@ -41,9 +41,9 @@ class ProgressMeter(object):
 
     def reset_cursor(self, first=False):
         if self._cursor:
-            sys.stdout.write(self.ESC + '[u')
+            self.stream.write(self.ESC + '[u')
         self._cursor = True
-        sys.stdout.write(self.ESC + '[s')
+        self.stream.write(self.ESC + '[s')
 
     def update(self, count, **kw):
         now = time.time()
@@ -91,13 +91,13 @@ class ProgressMeter(object):
 
     def refresh(self, **kw):
         # Clear line
-        sys.stdout.write(self.ESC + '[2K')
+        self.stream.write(self.ESC + '[2K')
         self.reset_cursor()
-        sys.stdout.write(self.get_meter(**kw))
+        self.stream.write(self.get_meter(**kw))
         # Are we finished?
         if self.count >= self.total:
-            sys.stdout.write('\n')
-        sys.stdout.flush()
+            self.stream.write('\n')
+        self.stream.flush()
         # Timestamp
         self.last_refresh = time.time()
 
@@ -180,10 +180,12 @@ class ProgChecker(object):
 # vary between single and double width?
 #spinner="▏▎▍▌▋▊▉█▉▊▌▍▎" #utf8
 #spinner="▁▂▃▄▅▆▇█▇▆▅▄▃▂" #utf8
+#spinner=".oO@*"
+#spinner="⠁⠂⠄⡀⢀⠠⠐⠈"
 class ProgDisplay(threading.Thread):
     ESC = chr(27)
     spinner="|/-\\"
-    def __init__(self, data_range, q):
+    def __init__(self, data_range, q, descr="", stream=sys.stdout):
         threading.Thread.__init__(self)
         self.queue = q
         self.total = (data_range[1] - data_range[0])+1
@@ -192,19 +194,23 @@ class ProgDisplay(threading.Thread):
         self._cursor = False
         self._stopped = False
         self.chars=[c.encode("utf-8") for c in unicode(self.spinner,"utf-8")]
+        self.descr = descr
+        self.stream = stream
+
         
     def reset_cursor(self, first=False):
         if self._cursor:
-            sys.stdout.write(self.ESC + '[u')
+            self.stream.write(self.ESC + '[u')
         self._cursor = True
-        sys.stdout.write(self.ESC + '[s')
+        self.stream.write(self.ESC + '[s')
         
-    def refresh(self, txt, c):
+    def refresh(self, txt, c='', force=False):
         # Clear line
-        sys.stdout.write(self.ESC + '[2K')
+        if not self.stream.isatty() and not force: return
+        self.stream.write(self.ESC + '[2K')
         self.reset_cursor()
-        sys.stdout.write(c + txt)
-        sys.stdout.flush()
+        self.stream.write(txt)
+        self.stream.flush()
         
     def stop(self):
         self._stopped = True
@@ -214,24 +220,30 @@ class ProgDisplay(threading.Thread):
         d = {1:'#',0:'-'}
         obj = [self.data_range[0], self.data_range[0]]
         pos = 0
+        txt2 = ' %4.1f%%' % (0.0)
         while not self._stopped:
+            _t = time.strftime('%b%d %H:%M:%S')
+            txt1 = '%s| %s ' % (_t, self.descr)
             if obj is not None:
                 l = int((obj[0]-self.data_range[0])*self.length/self.total)
                 r = int((obj[1]-self.data_range[0]+1)*self.length/self.total)
                 prog[l:r] = 1
                 bar = ''.join([d[v] for v in prog])
                 frac = prog.mean()
-                txt = '[%s]%4.1f%%' % (bar, frac*100)
-            self.refresh(txt, self.chars[pos])
+                txt2 = ' %4.1f%%' % (frac*100)
+            txt = txt1 + self.chars[pos] + txt2
+            self.refresh(txt)
             if self.queue.empty():
                 obj  = None
             else:
                 obj = self.queue.get(block=True)
-            time.sleep(0.05)
             pos += 1
             pos%=len(self.chars)
+            if not self._stopped:
+                time.sleep(0.1)
+
         bar = d[1]*self.length
-        txt = '[%s]%4.1f%%' % (bar, 100.0)
-        self.refresh(txt, self.chars[pos])
-        sys.stdout.write('\n')
+        _t = time.strftime('%b%d %H:%M:%S')
+        txt = '%s| %s. %4.1f%% done.\n' % (_t, self.descr , 100)
+        self.refresh(txt, force=True)
         

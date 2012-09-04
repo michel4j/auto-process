@@ -4,10 +4,11 @@ import sys
 import time
 
 import dpm.errors
-from dpm.utils.misc import json
-from dpm.utils import odict, dataset, misc, log, xtal
+from dpm.utils.misc import json, SortedDict
+from dpm.utils import dataset, misc, log, xtal, programs
 from dpm.engine import indexing, spots, integration, scaling
 from dpm.engine import reporting, symmetry, strategy, conversion
+from dpm.parser import xds
 
 
 _logger = log.get_module_logger(__name__)
@@ -123,7 +124,7 @@ class DataSet(object):
 class Manager(object):
     def __init__(self, options=None, checkpoint=None, overwrites={}):
         
-        self.datasets = odict.SortedDict()  
+        self.datasets = SortedDict()  
         
         if checkpoint is not None:
             self.run_position = checkpoint['run_position']
@@ -248,8 +249,10 @@ class Manager(object):
                      'strategy',
                      ]
         
-        _logger.info('---- AutoProcess(%s) - %s [%d dataset(s)] ----' % (VERSION, 
-                              self.options['mode'].upper(), len(self.datasets)))
+        _header = '------ AutoProcess(%s) - %s [%d dataset(s)] ------' % (VERSION, 
+                              self.options['mode'].upper(), len(self.datasets))
+        _separator = len(_header)*'-'
+        _logger.info(_header)
         _num_cores = int(os.environ.get('DPM_CORES', misc.get_cpu_count))
         _env_hosts = os.environ.get('DPM_HOSTS', 'localhost')
         _num_nodes = len(_env_hosts.split(' '))
@@ -260,84 +263,144 @@ class Manager(object):
             cur_pos, next_step = resume_from
         else:
             cur_pos, next_step = (0, 'initialize')
-        
-        if next_step not in ['scaling', 'conversion', 'data_quality', 'reporting']:
+
+        # Fist initialize and index all datasets
+        _sub_steps = ['initialize', 'image_analysis', 'spot_search', 'indexing']
+        if next_step in _sub_steps:
             for i, dset in enumerate(self.datasets.values()):
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
-                    
-                _logger.info('Processing `%s` in directory "%s"' % (dset.name, 
+                _logger.info(_separator)
+                _logger.info('Initializing `%s` in directory "%s"' % (dset.name, 
                              misc.relpath(dset.parameters['working_directory'], self.options['command_dir'])))                
-                for j, step in enumerate(run_steps):
+                for j, step in enumerate(_sub_steps):
+                    self.run_position = (i, step)
+                    
+                    # prepare separate copy of overwrite parameters for this step
+                    step_ovw = {}
+                    step_ovw.update(overwrite)
+
+                    # skip this step based on the properties
+                    if j < _sub_steps.index(next_step): continue
+                    if self.options.get('mode') != 'screen' and step == 'image_analysis': continue
+    
+                    self.run_step(step, dset, overwrite=step_ovw)
+                    
+                    # Special post processing after indexing
+                    if step == 'indexing':
+                        # Update parameters with reduced cell
+                        dset.parameters.update({
+                            'unit_cell': dset.results['indexing']['parameters']['unit_cell'],
+                            'space_group': dset.results['indexing']['parameters']['sg_number']})
+                        
+                        _logger.log(log.IMPORTANT, "Reduced Cell: %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f" % tuple(
+                                            dset.results['indexing']['parameters']['unit_cell']))
+                        _xter_list = [ v['character'] for v in dset.results['indexing']['lattices'] ]
+                        _pg_txt = ", ".join(xtal.get_pg_list(_xter_list))
+                        _logger.log(log.IMPORTANT, "Possible Point Groups: %s" % _pg_txt)
+                            
+            next_step = 'integration'
+        
+        # then integrate and correct separately
+        _sub_steps = ['integration', 'correction']
+        if next_step in _sub_steps:
+            for i, dset in enumerate(self.datasets.values()):
+                if i < cur_pos: continue  # skip all datasets earlier than specified one                    
+                _logger.info(_separator)
+                for j, step in enumerate(_sub_steps):
                     self.run_position = (i, step)
                     
                     # skip this step based on the properties
-                    if j < run_steps.index(next_step): continue
-                    if self.options.get('mode') != 'screen' and step == 'strategy': continue
+                    if j < _sub_steps.index(next_step): continue
+                    
+                    # prepare separate copy of overwrite parameters for this step
+                    step_ovw = {}
+                    step_ovw.update(overwrite)
     
-                    self.run_step(step, dset, overwrite=overwrite, optional=(step=='image_analysis'))
-                    
-                    # special post-step handling  for specific steps
-                    if step == 'correction':
+                    # special pre-step handling  for correction
+                    if step == 'correction' and i > 0 and self.options.get('mode') in ['merge', 'mad']:                  
                         # update parameters with reference after correction
-                        if i > 0 and self.options.get('mode', 'simple') in ['merge', 'mad']:
-                            _ref_file = os.path.join('..', 
-                                        self.datasets.values()[i-1].results['correction']['output_file'])
-                            dset.parameters.update({'reference_data': _ref_file,
-                                                    'reference_sginfo': self.datasets.values()[0].results['symmetry'],
-                                                    })                            
-                    elif step == 'symmetry':
-                        # perform addition correction and check effect on 
-                        # data quality
-                        self.run_step('correction', dset, overwrite=overwrite)
-                        min_rmeas = dset.results['correction']['summary']['min_rmeas']
-                        low_rmeas = dset.results['correction']['statistics'][0]['r_meas']
-                        #FIXME: min_rmeas is calculated to 5 A but low_r_meas is variable low resolution shell
-                                                
-                        if _MAX_RMEAS_FACTOR * min_rmeas < low_rmeas and min_rmeas > 0.0:
-                            _logger.warning('Data quality degraded (%0.1f%%) due to merging!' % (100.0*low_rmeas/min_rmeas))
-                            _logger.warning('Selected SpaceGroup is likely inaccurate!')
-                            
-                        if self.options.get('mode') == 'screen':
-                            # calculate and report the angles of the spindle from
-                            # the three axes
-                            _logger.info('Optimizing offset of longest-cell axes from spindle')   
-                            _dat = dset.results['correction']['parameters']
-                            _output = misc.optimize_xtal_offset(_dat)
-                            
-                            _logger.info('... %s-AXIS [%5.1f A]  %5.1f deg offset' % (
-                                            ['A','B','C'][_output['longest_axis']],
-                                            _dat['unit_cell'][_output['longest_axis']], 
-                                            _output['offset']))
-                            _logger.info('... Best Offset = %5.1f deg' %(_output['best_offset']))
-                            _logger.info('......   Kappa  = %5.1f deg' %(_output['kappa'])) 
-                            _logger.info('......   Phi    = %5.1f deg' %(_output['phi']))
-                        
-                    
-                        
-            next_step = 'scaling'
+                        _ref_file = os.path.join('..', self.datasets.values()[i-1].results['correction']['output_file'])
+                        _ref_sg = self.datasets.values()[0].results['correction']['summary']['spacegroup']
+                        step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg })
+                                                             
+                    self.run_step(step, dset, overwrite=step_ovw)
+            next_step = 'symmetry'
         
-        if next_step == 'scaling':
+        # Check Spacegroup and scale the datasets                          
+        if next_step in ['symmetry', 'scaling']:
+            self.run_position = (0, 'symmetry')
+            if overwrite.get('sg_overwite') is not None:
+                _sg_number = overwrite['sg_overwrite']
+                ref_info = None              
+            elif self.options.get('mode') in ['merge', 'mad']:
+                ref_info = scaling.prepare_reference(self.datasets, self.options)
+                _sg_number = ref_info['sg_number']
+                
+            for dset in self.datasets.values():
+                if self.options.get('mode') in ['simple', 'screen'] and overwrite.get('sg_overwite') is None:
+                    # automatic spacegroup determination
+                    self.run_step('symmetry', dset, overwrite=step_ovw, optional=(step=='image_analysis'))
+                    ref_sginfo = dset.results['symmetry']
+                else:
+                    # tranfer symmetry info from reference to this dataset and update with specific reindex matrix
+                    if ref_info is not None: 
+                        dset.results['symmetry'] = ref_info
+                    ref_sginfo = symmetry.get_symmetry_params(_sg_number, dset)
+                    dset.results['symmetry'].update(ref_sginfo)
+
+                step_ovw = {}
+                step_ovw.update(overwrite)
+                step_ovw.update({
+                    'space_group': ref_sginfo['sg_number'],
+                    'unit_cell': ref_sginfo['unit_cell'],
+                    'reindex_matrix': ref_sginfo['reindex_matrix'],
+                    'reference_data': ref_sginfo.get('reference_data'), # will be none for single data sets
+                    'message': 'Reindexing & refining',
+                    })
+                self.run_step('correction', dset, overwrite=step_ovw)
+
+                if self.options.get('mode') == 'screen':
+                    # calculate and report the angles of the spindle from
+                    # the three axes  
+                    _dat = dset.results['correction']['parameters']
+                    _output = misc.optimize_xtal_offset(_dat)
+                    deg = u"\u00b0"            
+                    _logger.info('Optimum offset (%0.1f%s) of longest axis (%s) can be achieved with:' % (
+                                    _output['best_offset'], deg,
+                                    ['A','B','C'][_output['longest_axis']],
+                                    ))
+                    _logger.info('... Kappa = %5.1f%s' %(_output['kappa'], deg)) 
+                    _logger.info('... Phi   = %5.1f%s' %(_output['phi'], deg))
+
+            
+            
+            self.save_checkpoint()
+                            
             self.run_position = (0, 'scaling')
-            scaling_options = {}
-            scaling_options.update(self.options)
-            scaling_options.update(overwrite)
-            _out= scaling.scale_datasets(self.datasets, scaling_options)
+            step_ovw = {}
+            step_ovw.update(self.options)
+            step_ovw.update(overwrite)
+            _out= scaling.scale_datasets(self.datasets, step_ovw)
             self.save_checkpoint()
 
             if not _out['success']:
                 _logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
                 sys.exit()
+
+ 
+        # Strategy
+        if self.options.get('mode') == 'screen':
+            self.run_position = (0, 'strategy')
+            for dset in self.datasets.values():
+                self.run_step('strategy', dset, overwrite=overwrite)
         
-        # Final steps run for all datasets       
+        # check quality and covert formats     
         for i, dset in enumerate(self.datasets.values()):
-            if i < cur_pos: continue  # skip all datasets earlier than specified one
-            
+            # Only calculate for first dataset when merging.
+            if self.options['mode'] == 'merge' and i > 0: break
             # Run Data Quality Step:
             self.run_position = (i, 'data_quality')
-            if self.options['mode'] == 'merge' and i > 0:
-                _out = scaling.data_quality(dset.results['correction']['output_file'], self.options)
-            else:
-                _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
+            _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
             dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
             if not _out['success']:
                 _logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
@@ -345,14 +408,19 @@ class Manager(object):
             else:
                 dset.results['data_quality'] = _out.get('data')
             self.save_checkpoint()
-                       
+                   
             # Scoring and experiment setup check
-            ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-            _logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
-            _score = dset.score(strategy=(self.options.get('mode')=='screening'),
-                                scaled=(self.options.get('mode')!='merge'))
+            #ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+            #_logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
+            _score = dset.score(strategy=(self.options.get('mode')=='screening'), scaled=True)
             _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
 
+            # Extra statistics
+            _logger.info("(%s) Calculating extra statistics ..." )
+            programs.xdsstat(dset.results['correction']['output_file'])
+            stat_info = xds.parse_xdsstat()
+            dset.results['correction'].update(stat_info)
+            
             # file format conversions
             self.run_position = (i, 'conversion')
             if self.options.get('mode') != 'screen':
@@ -389,7 +457,7 @@ class Manager(object):
 
         _logger.info('Saving summaries ... "process.log", "process.json"')
         log_data = reporting.get_log_data(self.datasets, self.options)
-        reporting.save_log(log_data, 'process.log')     
+        reporting.save_log(log_data, 'process.log')   
         reports = reporting.get_reports(self.datasets, self.options)
         reporting.save_json(reports, 'process.json', self.options)
         _logger.info('Generating HTML reports ...')

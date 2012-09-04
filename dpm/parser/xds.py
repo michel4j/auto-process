@@ -2,10 +2,12 @@
 Parsers for XDS Files
 
 """
-import re, numpy
+import re
+import numpy
 import os
 import utils
 import shutil
+from dpm.utils import misc
 
 (NO_FAILURE,
 SPOT_LIST_NOT_3D,
@@ -27,7 +29,7 @@ _IDXREF_FAILURES = {
     7: 'Program died prematurely'
 }
 def parse_idxref(filename='IDXREF.LP'):
-    if not os.path.exists(filename):
+    if not misc.file_requirements(filename,'XPARM.XDS'):
         return {'failure': 'Indexing step failed'}
     info = utils.parse_file(filename, config='idxref.ini')
     
@@ -55,7 +57,7 @@ def parse_idxref(filename='IDXREF.LP'):
     else:
         info['failure_code'] = 7
         
-    
+    info['parameters'] = parse_xparm('XPARM.XDS')
     info['failure'] = _IDXREF_FAILURES[info['failure_code']]
     return info
         
@@ -64,25 +66,15 @@ def parse_correct(filename='CORRECT.LP'):
     if not os.path.exists(filename):
         return {'failure': 'Correction step failed'}
     info = utils.parse_file(filename, config='correct.ini')
-    if info['symmetry'].get('candidates'):
-        t = utils.Table(info['symmetry'].get('candidates'))
-        info['summary']['min_rmeas'] = min(t['r_meas'])
-        # copy the file to CORRECT.LP.first extension if it contains automatic
-        # space group determination
-        shutil.copy(filename, 'CORRECT.LP.first')
-        
-    elif os.path.exists('CORRECT.LP.first'):
-        # if the file does not contain automatic space group determination
-        # try to read it from existing file .first file
-        info_0 = utils.parse_file('CORRECT.LP.first', config='correct.ini')
-        info['symmetry']['candidates'] = info_0['symmetry'].get('candidates')
-        t = utils.Table(info['symmetry'].get('candidates'))
-        info['summary']['min_rmeas'] = min(t['r_meas'])
+    
     if info.get('statistics') is not None:
         if len(info['statistics']) > 1:
             info['summary'].update( info['statistics'][-1] )
             del info['summary']['shell']
-    
+            
+    if info['summary']['spacegroup'] == 1:
+        shutil.copy(filename, 'CORRECT.LP.first')
+            
     # parse GXPARM.XDS and update with more accurate cell parameters
     xparm = parse_xparm('GXPARM.XDS')
     info['parameters'] = xparm
@@ -104,11 +96,14 @@ def parse_xscale(filename='XSCALE.LP'):
         return {'failure': 'Scaling step failed'}
     data = file(filename).read()
     # extract separate sections corresponding to different datasets
-    _st_p = re.compile('(STATISTICS OF SCALED OUTPUT DATA SET : ([\w-]*)/?XSCALE.HKL.+?STATISTICS OF INPUT DATA SET [=\s]*)', re.DOTALL)
-    _wl_p = re.compile('(WILSON STATISTICS OF SCALED DATA SET: ([\w-]*)/?XSCALE.HKL\s+[*]{78}.+?(?:List of|\s+[*]{78}|cpu time))', re.DOTALL)
+    
+    _header = utils.cut_section("CONTROL CARDS", "CORRECTION FACTORS AS FUNCTION", data)[0]
+    _st_p = re.compile('(STATISTICS OF SCALED OUTPUT DATA SET : ([\w-]*)/?[\w]+.HKL.+?STATISTICS OF INPUT DATA SET [=\s]*)', re.DOTALL)
+    _wl_p = re.compile('(WILSON STATISTICS OF SCALED DATA SET: ([\w-]*)/?[\w]+.HKL\s+[*]{78}.+?(?:List of|\s+[*]{78}|cpu time))', re.DOTALL)
+
     data_sections = {}
     for d,k in _st_p.findall(data):
-        data_sections[k] = d
+        data_sections[k] = _header + d
     for d,k in _wl_p.findall(data):
         data_sections[k] += d
     info = {}

@@ -79,15 +79,15 @@ def xdsstat(filename):
     _execute_command(["sh", "xdsstat.com"])
 
        
-def pointless(retry=False):
+def pointless(retry=False, filename="INTEGRATE.HKL"):
     f = open('pointless.com', 'w')
     txt = """pointless << eof
-xdsin INTEGRATE.HKL
+xdsin %s
 xmlout pointless.xml
 resol 3.0
 choose solution 1
 eof
-"""  
+"""  % filename
     try:
         f.write(txt)
         f.close()

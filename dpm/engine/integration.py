@@ -10,7 +10,6 @@ _logger = log.get_module_logger(__name__)
 
 def integrate(data_info, options={}):
     os.chdir(data_info['working_directory'])
-    _logger.info('Integrating ...')
     run_info = {}
     run_info.update(data_info)
     if options.get('backup', False):
@@ -20,6 +19,10 @@ def integrate(data_info, options={}):
     if options.get('optimize', False) and os.path.exists('GXPARM.XDS'):
         misc.backup_files('XPARM.XDS')
         shutil.copy('GXPARM.XDS', 'XPARM.XDS')
+        step_descr = 'Optimizing `%s` ...' % (data_info['name'])
+    else:
+        step_descr = 'Integrating `%s` ...' % (data_info['name'])
+             
         
     # check if we are screening
     _screening = options.get('mode')=='screen'
@@ -28,7 +31,7 @@ def integrate(data_info, options={}):
     if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS'):
         return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
     _pc = ProgChecker(os.sysconf('SC_NPROCESSORS_ONLN'))
-    _pd = ProgDisplay(data_info['data_range'], _pc.queue)
+    _pd = ProgDisplay(data_info['data_range'], _pc.queue, descr=step_descr)
 
     try:
         _pd.start()
@@ -42,6 +45,7 @@ def integrate(data_info, options={}):
     else:
         _pd.stop()
         _pc.stop()
+    _pd.join()
     
     if info.get('failure') is None:
         if data_info['working_directory'] == options.get('directory'):
@@ -52,10 +56,10 @@ def integrate(data_info, options={}):
     else:
         return {'step': 'integration','success': False, 'reason': info['failure']}
 
-
 def correct(data_info, options={}):
     os.chdir(data_info['working_directory'])
-    _logger.info('Correcting & Refining ... ')
+    message = options.get('message', "Applying corrections to")
+    _logger.info('%s `%s` in `%s` ... ' % (message, data_info['name'], xtal.SPACE_GROUP_NAMES[data_info['space_group']]))
     run_info = {}
     run_info.update(data_info)
 

@@ -1,7 +1,7 @@
 import numpy
 import math
 import bisect
-from dpm.parser.utils import Table
+from dpm.utils.misc import Table
 
 DEBUG = False
 
@@ -79,6 +79,12 @@ def get_character(sg_number=1):
 
 def get_number(sg_name):
     return [number for number, name in SPACE_GROUP_NAMES.items() if name == sg_name.upper()][0]
+
+def get_pg_list(lattices):     
+    """Takes a list of lattice characters and returns a unique list of the
+    names of the lowest symmetry pointgroup."""
+    pgnums = sorted(set([ POINT_GROUPS[l][0] for l in lattices ]))
+    return [ SPACE_GROUP_NAMES[n] for n in pgnums ]
      
 def tidy_cell(unit_cell, character):
     """
@@ -310,7 +316,7 @@ def average_cell(cell_and_weights):
 def _calc_L(a):
     return (((1-2*a)**2)*(1-6*a+6*a**2)-8*((1-a)**2)*(a**2)*numpy.log(4*a*(1-a)))/(2*(1-2*a)**4)
 
-_a_array = numpy.linspace(0.499, 0.001, 1000)
+_a_array = numpy.linspace(0.4999, 0.001, 1000)
 _l_array = _calc_L(_a_array)
 
 def L2twin(l):

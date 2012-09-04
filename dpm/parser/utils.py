@@ -247,6 +247,7 @@ def _process_sections(data, conf):
                 entry = []
                 params = sconf['keys'].items()
                 _v, _p = scanf(sconf['body'], chunk)
+                
                 while _v:
                     entry.append( cast_params(params, _v) )
                     _v, _p = scanf(sconf['body'], chunk, _p)
@@ -272,15 +273,3 @@ def parse_data(data, config):
     info = _process_sections(data, conf)
     return info
     
-
-class Table(object):
-    def __init__(self, t):
-        self._table = t
-    
-    def keys(self):
-        return self._table[0].keys()
-    
-    def __getitem__(self, s):
-        vals = [r[s] for r in self._table]
-        return vals
-        

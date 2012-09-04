@@ -5,6 +5,8 @@ import termcolor
 import types
 
 LOG_LEVEL = logging.DEBUG
+IMPORTANT = 25
+logging.addLevelName(IMPORTANT, 'IMPORTANT')
 
 class NullHandler(logging.Handler):
 
@@ -18,11 +20,13 @@ class ColoredConsoleHandler(logging.StreamHandler):
         try:
             msg = self.format(record)
             if record.levelno == logging.WARNING:
-                msg = termcolor.colored(msg, "magenta", attrs=["dark"])
+                msg = termcolor.colored(msg, color="magenta", attrs=["dark"])
             elif record.levelno > logging.WARNING:
-                msg = termcolor.colored(msg, "red")
+                msg = termcolor.colored(msg, color="red")
             elif record.levelno == logging.DEBUG:
-                msg = termcolor.colored(msg, "cyan", attrs=["dark"])
+                msg = termcolor.colored(msg, color="cyan", attrs=["dark"])
+            elif record.levelno == IMPORTANT:
+                msg = termcolor.colored(msg, attrs=["bold"])
             if not hasattr(types, "UnicodeType"): #if no unicode support...
                 self.stream.write("%s\n" % msg)
             else:

@@ -1,7 +1,7 @@
 import os
 import numpy
 
-from dpm.parser.utils import Table
+from dpm.utils.misc import Table
 from dpm.parser import xds
 from dpm.utils import log, misc, programs, io
 import dpm.errors
@@ -144,7 +144,7 @@ def _filter_spots(sigma=0, unindexed=False, filename='SPOT.XDS'):
 
 def auto_index(data_info, options={}):
     os.chdir(data_info['working_directory'])
-    _logger.info('Auto-indexing ...')
+    _logger.info('Determining lattice orientation and parameters ...')
     jobs = 'IDXREF'
     run_info = {}
     info = {}

@@ -2,11 +2,9 @@ import os
 import textwrap
 
 from dpm.utils.prettytable import PrettyTable
-from dpm.utils.odict import SortedDict
 from dpm.utils import xtal, misc, log
-from dpm.utils.misc import json
+from dpm.utils.misc import json, Table, SortedDict
 from dpm.utils import htmlreport
-from dpm.parser.utils import Table
 
 _logger = log.get_module_logger(__name__)
 
@@ -119,6 +117,8 @@ def get_log_data(datasets, options={}):
         dset.results['correction']['summary']['unit_cell_esd'] = avgcell_esd
         
     for dataset_name, dset in data_items:
+        #if options.get('mode') == 'merge' and dataset_name != '*combined*':
+        #    continue
         dres= dset.results
         if dres.get('image_analysis') is not None:
             _ice_rings = dres['image_analysis']['summary']['ice_rings']
@@ -166,7 +166,7 @@ def get_log_data(datasets, options={}):
             _ice_rings,
             ]
         _section['table'].append(zip(_sum_keys, _sum_values))
-    _section['notes'] = """[a] Data Quality Score for comparing similar data sets. > 0.8 Excellent, > 0.6 Good, > 0.5 Acceptable, > 0.4 Marginal, > 0.3 Barely usable
+    _section['notes'] = """[a] Data Quality Score. > 0.8 Excellent, > 0.6 Good, > 0.5 Acceptable, > 0.4 Marginal, > 0.3 Barely usable
 [b] NOTE: Automatic Space group selection is unreliable for incomplete data. See detailed results below.
 [c] Resolution selection method: %s
 [d] Average I/sigma(I) for all data.
@@ -260,7 +260,7 @@ def get_log_data(datasets, options={}):
             _strategy['overlap'] = _section
             info['details'][dataset_name]['strategy'] = _strategy
         
-        if dataset_name != "*combined*": 
+        if dataset_name != '*combined*':
             _section = {}
             _section['lattices'] = {}
             _section['lattices']['title'] = 'Compatible Lattice Character and Bravais Lattices'
@@ -284,22 +284,23 @@ def get_log_data(datasets, options={}):
             _sec_keys = ['Space Group','No.', 'Probability']
             sg_num = dres['correction']['symmetry']['space_group']['sg_number']
             sg_name = xtal.SPACE_GROUP_NAMES[ sg_num ]
-            for i, sol in enumerate(dres['symmetry']['candidates']):
-                if sg_num == sol['number'] and i== 0:
-                    sg_name = '* %s' % (xtal.SPACE_GROUP_NAMES[ sol['number'] ])
-                else:
-                    sg_name = '  %s' % (xtal.SPACE_GROUP_NAMES[ sol['number'] ])
-                row = [ sg_name,   sol['number'],    sol['probability']]
-                _section['space_groups']['table'].append(zip(_sec_keys, row))
-            u_cell = xtal.tidy_cell(dres['symmetry']['unit_cell'], dres['symmetry']['character'])
-            sg_name = xtal.SPACE_GROUP_NAMES[ dres['symmetry']['sg_number'] ]
-            _section['space_groups']['notes'] = "[*] Selected:  %s,  #%s. " % ( 
-                sg_name, dres['symmetry']['sg_number'] )
-            _section['space_groups']['notes'] += " Unit Cell: %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f." % u_cell 
-            _section['space_groups']['notes'] += " NOTE: Detailed statistics reported below use this selection. "    
-            if dres['symmetry']['type'] == 'PointGroup':
-                _section['space_groups']['notes'] += """
-    [!] Space Group is ambiguous. The lowest symmetry group of the high probability candidates has been chosen to permit reindexing in the future without loss of data!"""
+            if dres['symmetry'].get('candidates') is not None:
+                for i, sol in enumerate(dres['symmetry']['candidates']):
+                    if sg_num == sol['number'] and i== 0:
+                        sg_name = '* %s' % (xtal.SPACE_GROUP_NAMES[ sol['number'] ])
+                    else:
+                        sg_name = '  %s' % (xtal.SPACE_GROUP_NAMES[ sol['number'] ])
+                    row = [ sg_name,   sol['number'],    sol['probability']]
+                    _section['space_groups']['table'].append(zip(_sec_keys, row))
+                u_cell = xtal.tidy_cell(dres['symmetry']['unit_cell'], dres['symmetry']['character'])
+                sg_name = xtal.SPACE_GROUP_NAMES[ dres['symmetry']['sg_number'] ]
+                _section['space_groups']['notes'] = "[*] Selected:  %s,  #%s. " % ( 
+                    sg_name, dres['symmetry']['sg_number'] )
+                _section['space_groups']['notes'] += " Unit Cell: %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f." % u_cell 
+                _section['space_groups']['notes'] += " NOTE: Detailed statistics reported below use this selection. "    
+                if dres['symmetry']['type'] == 'PointGroup':
+                    _section['space_groups']['notes'] += """
+        [!] Space Group is ambiguous. The lowest symmetry group of the high probability candidates has been chosen to permit reindexing in the future without loss of data!"""
             
             info['details'][dataset_name]['symmetry'] = _section
             
@@ -363,7 +364,23 @@ def get_log_data(datasets, options={}):
 def get_reports(datasets, options={}):
     info = []
     
-    for dataset_name, dset in datasets.items():
+    count = 0
+    for _name, dset in datasets.items():
+        
+        # Only generate report for first dataset when multi-merging
+        if options.get('mode') == 'merge' and count > 0:
+            continue
+        elif options.get('mode') == 'merge':
+            _report_directory = options["directory"]
+            dataset_name = os.path.commonprefix(datasets.keys())
+            if dataset_name == "":
+                dataset_name = "-".join(datasets.keys())
+        else:
+            _report_directory = dset.parameters['working_directory']
+            dataset_name = _name
+
+        count += 1
+                
         _dataset_info = {}
         dres = dset.results
         
@@ -417,7 +434,7 @@ def get_reports(datasets, options={}):
             dres['correction']['summary']['stdev_spot'],
             dres['correction']['summary']['stdev_spindle'],
             _ice_rings,
-            dset.parameters['working_directory'],
+            _report_directory,
             dset.parameters['wavelength'],
             ]
         _dataset_info['result'] = dict(zip(_sum_keys, _sum_values))
@@ -586,13 +603,21 @@ def get_reports(datasets, options={}):
             _dataset_info['result']['details']['correction_factors'] = dres['correction'].get('correction_factors')
 
             # Print out wilson_plot, cum int dist, twinning test
+            if dres['scaling'].get('wilson_plot') is not None:
+                _section = {}
+                _t = Table(dres['scaling']['wilson_plot'])
+                for k in ['inv_res_sq', 'log_i_sigma']:
+                    _section[k] = _t[k]
+                _dataset_info['result']['details']['wilson_plot'] = _section
+
+            
             if dres.get('data_quality') is not None:
-                if dres['data_quality'].get('wilson_plot') is not None:
-                    _section = {}
-                    _t = Table(dres['data_quality']['wilson_plot'])
-                    for k in ['inv_res_sq', 'log_i_sigma']:
-                        _section[k] = _t[k]
-                    _dataset_info['result']['details']['wilson_plot'] = _section
+#                if dres['data_quality'].get('wilson_plot') is not None:
+#                    _section = {}
+#                    _t = Table(dres['data_quality']['wilson_plot'])
+#                    for k in ['inv_res_sq', 'log_i_sigma']:
+#                        _section[k] = _t[k]
+#                    _dataset_info['result']['details']['wilson_plot'] = _section
                 if dres['data_quality'].get('cum_int_dist') is not None:
                     _section = {}
                     _t = Table(dres['data_quality']['cum_int_dist'])

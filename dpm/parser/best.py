@@ -7,6 +7,7 @@ import os
 import utils
 import re
 import numpy
+from dpm.utils.misc import Table
 
 def parse_best_plot(filename):
     data = file(filename).read()
@@ -73,7 +74,7 @@ def extract_xml_table(xml_node, list_name):
             # restrict keys to those in the first entry
             if len(_table) == 0 or set(_entry.keys()) == set(_table[0][1].keys()):
                 _table.append((int(index), _entry))
-    _sorted_table = utils.Table([v for _,v in sorted(_table)])
+    _sorted_table = Table([v for _,v in sorted(_table)])
     final_table = {}
     for k in _sorted_table.keys():
         final_table[k] = _sorted_table[k]

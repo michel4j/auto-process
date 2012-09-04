@@ -1,8 +1,11 @@
 import os
 import time
+import numpy
+from itertools import chain
 
-from dpm.parser import xds, ccp4
-from dpm.utils import log, misc, programs, io, xtal
+from dpm.parser import xds, ccp4, pointless
+from dpm.utils import log, misc, programs, io, xtal, cluster
+from dpm.engine import symmetry
 import dpm.errors
 
 _logger = log.get_module_logger(__name__)
@@ -16,18 +19,17 @@ def _check_chisq(result):
     return True
 
   
-def scale_datasets(dsets, options={}):
+def scale_datasets(dsets, options={}, message="Scaling"):
     os.chdir(options['directory'])
     
     # indicate overwritten parameters
-    _suffix = []
+    suffix = []
+    suffix_txt = ""
     if options.get('resolution'):
-        _suffix.append("res=%0.2f" % options.get('resolution'))
-    if len(_suffix) > 0: 
-        _logger.info("Re-scaling ... (%s)" % ",".join(_suffix))
-    else:
-        _logger.info("Scaling ... ")
-    
+        suffix.append("res=%0.2f" % options.get('resolution'))
+    if len(suffix)>0:
+        suffix_txt = "with [%s]" % ",".join(suffix)
+    sg_name = xtal.SPACE_GROUP_NAMES[dsets.values()[0].results['correction']['summary']['spacegroup']]
       
     # Check Requirements
     for dset in dsets.values():
@@ -36,6 +38,8 @@ def scale_datasets(dsets, options={}):
             
     mode = options.get('mode', 'simple')
     if mode == 'mad':
+        _logger.info("Scaling %d MAD datasets in `%s` %s ... " % (len(dsets), sg_name, suffix_txt))   
+
         sections = []
         for dset in dsets.values():
             dres = dset.results
@@ -53,6 +57,10 @@ def scale_datasets(dsets, options={}):
                 misc.backup_files(out_file, 'XSCALE.LP')
             dset.results['scaling'] = {'output_file': out_file}
     else:
+        if options.get('mode') == 'merge':
+            _logger.info("Merging %d datasets in `%s` %s ... " % (len(dsets), sg_name, suffix_txt))
+        else:
+            _logger.info("Scaling `%s` in `%s` %s ... " % (dset.name, sg_name, suffix_txt))
         inputs = []
         for dset in dsets.values():
             dres = dset.results
@@ -66,7 +74,6 @@ def scale_datasets(dsets, options={}):
             'inputs': inputs,}]
         if options.get('backup', False):
             misc.backup_files('XSCALE.HKL', 'XSCALE.LP')
-
 
     xscale_options = {
         'sections': sections
@@ -84,16 +91,7 @@ def scale_datasets(dsets, options={}):
     if len(raw_info.keys()) == 1:
         info = raw_info.values()[0]
         info['output_file'] = 'XSCALE.HKL'
-        for i, dset in enumerate(dsets.values()):           
-            try:
-                _logger.info("(%s) Calculating extra statistics ..." % dset.name)
-                programs.xdsstat(dset.results['correction']['output_file'])
-                stat_info = xds.parse_xdsstat()
-                dset.results['correction'].update(stat_info)           
-            except dpm.errors.ProcessError, e:
-                dset.log.append((time.time(), 'frame_statistics', False, str(e)))
-                return {'step': 'scaling', 'success': False, 'reason': str(e)}
-
+        for i, dset in enumerate(dsets.values()):
             if i == 0:
                 # Set resolution
                 if options.get('resolution'):
@@ -104,6 +102,7 @@ def scale_datasets(dsets, options={}):
                 dset.results['scaling'] = info
                 dset.log.append((time.time(), 'scaling', True, None))
     else:
+        print raw_info.keys()
         for name, info in raw_info.items():
             dset = dsets[name]
             # Set resolution
@@ -112,19 +111,126 @@ def scale_datasets(dsets, options={}):
             else:
                 resol = xtal.select_resolution(info['statistics'])
             info['summary']['resolution'] = resol
-            try:
-                _logger.info("(%s) Calculating extra statistics ..." % (name))
-                programs.xdsstat(dset.results['correction']['output_file'])
-                stat_info = xds.parse_xdsstat()
-                dset.results['correction'].update(stat_info)
-            except dpm.errors.ProcessError, e:
-                dset.log.append((time.time(), 'frame_statistics', False, str(e)))
-                return {'step': 'scaling', 'success': False, 'reason': str(e)}
             
             dsets[name].results['scaling'].update(info)
             dsets[name].log.append((time.time(), 'scaling', True, None))
 
+    misc.backup_files('XSCALE.LP', 'XSCALE.HKL')
     return {'step': 'scaling', 'success': True}
+
+
+def prepare_reference(dsets, options={}):
+    os.chdir(options['directory'])
+    
+    # use most complete dataset if fewer than 4 are being scaled
+    best = max([(dset.results['correction']['summary']['completeness'], dset.name) for dset in dsets.values()])
+    reference_name = best[1]  # the most complete dataset of the lot
+    if len(dsets) < 4 or best[0] >= 30.0:
+        _logger.info('Using the most complete dataset `%s`(%0.1f%%) as reference.' % (best[1], best[0]))
+        reference_file = dsets[reference_name].results['correction']['output_file']
+    else:       
+        dset_names = [dset.name for dset in dsets.values()]
+        dset_options = []
+        for name in dset_names:
+            dset_options.append(
+                {'name': name, 
+                 'input_file': dsets[name].results['correction']['output_file'], 
+                 'resolution': 2.0,
+                 'reference': name == reference_name})
+            
+        xscale_options = {'sections' : [{
+            'anomalous': options.get('anomalous', False),
+            'strict_absorption': False,
+            'output_file': "REF1.HKL",
+            'inputs': dset_options,
+            }]}
+
+        io.write_xscale_input(xscale_options)
+        programs.xscale_par()
+        _out = xds.parse_xscale('XSCALE.LP').values()[0]
+        correlations = _out['correlations']
+        corr_table = misc.Table(correlations)
+        if min(corr_table['corr']) >= 0.95:
+            _logger.info('All datasets correlate to better than %0.3f.' % (min(corr_table['corr'])))
+            reference_file = 'REF1.HKL'                       
+        else:
+            _logger.info('Some correlations are low %0.3f. Reference dataset needed ...' % min(corr_table['corr']))
+            # cluster datasets by correlation
+            _distance_dict = dict([(tuple(sorted((v['i'], v['j']))), (v['corr'], v['num'])) for v in correlations])
+            def _get_dist(x, y):
+                xn = x['name']
+                yn = y['name']
+                i = 1+dset_names.index(xn)
+                j = 1+dset_names.index(yn)
+                key = tuple(sorted((i,j)))
+                c, d = _distance_dict[key]
+                return (1 - c) + 0.1/numpy.sqrt(d)
+        
+            cl = cluster.HierarchicalClustering(dset_options, _get_dist, linkage='complete')
+            cl.cluster()
+            best_subtree = max(cl.getlevel(0.05), key=len)
+            
+            # set new reference name if old one not present withint the best subtree
+            if reference_name not in [v['name'] for v in best_subtree]:
+                reference_name = best_subtree[0]['name']
+                best_subtree[0]['reference'] = True
+                
+            if len(best_subtree) > 1:
+                # Merge the datasets and return
+                _logger.info('Creating reference from %d datasets ... ' % len(best_subtree))
+                xscale_options = {'sections' : [{
+                    'anomalous': options.get('anomalous', False),
+                    'strict_absorption': False,
+                    'output_file': "REF1.HKL",
+                    'inputs': best_subtree,
+                    }]}
+            
+                io.write_xscale_input(xscale_options)
+                programs.xscale_par()
+                opt_info = xds.parse_xscale('XSCALE.LP').values()[0]
+                opt_info['output_file'] = 'REF1.HKL'
+                misc.backup_special_file('XSCALE.LP','ref1')
+                reference_file = 'REF1.HKL'  
+            else:
+                _good_corrs = [(v['i'], v['j']) for v in correlations if v['corr']>0.95 and v['num']>=10]
+                _good_corrs = list(chain.from_iterable(_good_corrs))
+                _best_num = max(set(_good_corrs), key=_good_corrs.count)
+                _best_name = dset_names[_best_num-1]
+                reference_file = dsets[_best_name].results['correction']['output_file']
+                _logger.info('Using single %s as reference ... ' % reference_file)
+    
+    # Verify Spacegroup of reference
+    programs.pointless(filename=reference_file)
+    sg_info = pointless.parse_pointless()
+
+    _info = symmetry.get_symmetry_params(sg_info['sg_number'], dsets[reference_name])
+    sg_info.update(_info)
+    sg_info['reference_data'] = reference_file
+    cell_str = "%0.3f %0.3f %0.3f %0.3f %0.3f %0.3f" % tuple(sg_info['unit_cell'])
+    _logger.info('Reference %s: %s (#%d) - %s' % (sg_info['type'],
+                                        xtal.SPACE_GROUP_NAMES[sg_info['sg_number']], 
+                                        sg_info['sg_number'],
+                                        cell_str))
+    
+    # now rescale reference data and transform to above spacegroup
+    xscale_options = {'sections' : [{
+        'anomalous': False,
+        'unit_cell': sg_info['unit_cell'],
+        'space_group': sg_info['sg_number'],
+        'reindex_matrix': sg_info['reindex_matrix'],
+        'strict_absorption': False,
+        'output_file': "REFERENCE.HKL",
+        'inputs': [{'input_file': reference_file}],
+        }]}
+
+    io.write_xscale_input(xscale_options)
+    programs.xscale_par()
+    opt_info = xds.parse_xscale('XSCALE.LP').values()[0]
+    opt_info['output_file'] = 'REFERENCE.HKL'
+    misc.backup_special_file('XSCALE.LP','reference')
+    sg_info['reference_data'] = 'REFERENCE.HKL'
+    
+    return sg_info
 
 
 def data_quality(filename, options={}):

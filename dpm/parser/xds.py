@@ -112,9 +112,19 @@ def parse_xscale(filename='XSCALE.LP'):
         if info[k].get('statistics') is not None:
             if len(info[k]['statistics']) > 1:
                 info[k]['summary'] = {}
-                info[k]['summary'].update(info[k]['statistics'][-1])          
+                info[k]['summary'].update(info[k]['statistics'][-1])       
                 del info[k]['summary']['shell']
     return info
+
+def parse_correlations(filename='XSCALE.LP'):
+    if not os.path.exists(filename):
+        return {'failure': 'File not found'}
+    data = file(filename).read()
+    # extract separate sections corresponding to different datasets
+    
+    _header = utils.cut_section("CONTROL CARDS", "CORRECTION FACTORS AS FUNCTION", data)[0]
+    return utils.parse_data(_header, config='xscale.ini')
+
 
 def parse_integrate(filename='INTEGRATE.LP'):
     if not os.path.exists(filename):

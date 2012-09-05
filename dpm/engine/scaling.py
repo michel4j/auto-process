@@ -102,7 +102,6 @@ def scale_datasets(dsets, options={}, message="Scaling"):
                 dset.results['scaling'] = info
                 dset.log.append((time.time(), 'scaling', True, None))
     else:
-        print raw_info.keys()
         for name, info in raw_info.items():
             dset = dsets[name]
             # Set resolution
@@ -135,7 +134,7 @@ def prepare_reference(dsets, options={}):
             dset_options.append(
                 {'name': name, 
                  'input_file': dsets[name].results['correction']['output_file'], 
-                 'resolution': 2.0,
+                 'resolution': 0,
                  'reference': name == reference_name})
             
         xscale_options = {'sections' : [{
@@ -147,7 +146,8 @@ def prepare_reference(dsets, options={}):
 
         io.write_xscale_input(xscale_options)
         programs.xscale_par()
-        _out = xds.parse_xscale('XSCALE.LP').values()[0]
+        _out = xds.parse_correlations('XSCALE.LP')
+        misc.backup_special_file('XSCALE.LP','first')
         correlations = _out['correlations']
         corr_table = misc.Table(correlations)
         if min(corr_table['corr']) >= 0.95:
@@ -164,7 +164,7 @@ def prepare_reference(dsets, options={}):
                 j = 1+dset_names.index(yn)
                 key = tuple(sorted((i,j)))
                 c, d = _distance_dict[key]
-                return (1 - c) + 0.1/numpy.sqrt(d)
+                return (1 - c) #+ 0.1/numpy.sqrt(d)
         
             cl = cluster.HierarchicalClustering(dset_options, _get_dist, linkage='complete')
             cl.cluster()

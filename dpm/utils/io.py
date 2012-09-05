@@ -191,7 +191,7 @@ def write_xscale_input(params):
                 star = '*'
             else:
                 star = ' '
-            file_text += "INPUT_FILE=%c%s  XDS_ASCII \n" % (star, _input['input_file'])
+            file_text += "INPUT_FILE=%c%s \n" % (star, _input['input_file'])
             file_text += "INCLUDE_RESOLUTION_RANGE= 50 %5.2f\n" % _input.get('resolution', 0)
             if section.get('crystal'):
                 file_text += "CRYSTAL_NAME=%s\n" % (section['crystal'])

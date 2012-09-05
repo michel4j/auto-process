@@ -326,10 +326,10 @@ class Manager(object):
                     self.run_step(step, dset, overwrite=step_ovw)
             next_step = 'symmetry'
         
-        # Check Spacegroup and scale the datasets                          
+        # Check Spacegroup and scale the datasets
         if next_step in ['symmetry', 'scaling']:
             self.run_position = (0, 'symmetry')
-            if overwrite.get('sg_overwite') is not None:
+            if overwrite.get('sg_overwrite') is not None:
                 _sg_number = overwrite['sg_overwrite']
                 ref_info = None              
             elif self.options.get('mode') in ['merge', 'mad']:
@@ -337,7 +337,7 @@ class Manager(object):
                 _sg_number = ref_info['sg_number']
                 
             for dset in self.datasets.values():
-                if self.options.get('mode') in ['simple', 'screen'] and overwrite.get('sg_overwite') is None:
+                if self.options.get('mode') in ['simple', 'screen'] and overwrite.get('sg_overwrite') is None:
                     # automatic spacegroup determination
                     self.run_step('symmetry', dset, overwrite=step_ovw, optional=(step=='image_analysis'))
                     ref_sginfo = dset.results['symmetry']
@@ -416,7 +416,7 @@ class Manager(object):
             _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
 
             # Extra statistics
-            _logger.info("(%s) Calculating extra statistics ..." )
+            _logger.info("Calculating extra statistics ..." )
             programs.xdsstat(dset.results['correction']['output_file'])
             stat_info = xds.parse_xdsstat()
             dset.results['correction'].update(stat_info)

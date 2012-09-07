@@ -370,6 +370,7 @@ def plot_wilson_stats(results, filename):
         if wilson_scale is not None:
             info += "Scale factor: %0.3f\n" % wilson_scale    
         fig.text(0.55,0.65, info, fontdict=fontpar, color='k')
+    ax1.set_ylim(0, max(data['log_i_sigma']))
 
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')

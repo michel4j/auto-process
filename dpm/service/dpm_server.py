@@ -229,7 +229,7 @@ def run_command_output(command, args, path='/tmp', uid=0, gid=0, output=None):
         args[0],
         args,
         env=os.environ,
-        uid=uid, gid=gid, usePTY=True
+        uid=uid, gid=gid, usePTY=False
         )
     return prot.deferred
 

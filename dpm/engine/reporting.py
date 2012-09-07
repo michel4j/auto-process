@@ -577,7 +577,6 @@ def get_reports(datasets, options={}):
                 
             if dres['correction'].get('frame_statistics'):                     
                 _t = Table(dres['correction']['frame_statistics'])
-                _section['frame_no'] = _t['frame']
                 for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
                     _section[k] = _t[k]
                     

@@ -9,14 +9,16 @@ def convert_formats(dset, options={}):
     os.chdir(options['directory'])
     
     # GENERATE MTZ and CNS output files    
-    _logger.info('Generating MTZ, SHELX & CNS files ...')
-    if not misc.file_requirements(dset.results['scaling'].get('output_file')):
-        return {'step': 'conversion', 'success': False, 'reason': 'Required files missing'}
 
     infile = dset.results['scaling'].get('output_file')
     out_file_dir = os.path.dirname(infile)
+    out_file_base = os.path.basename(infile)
     out_file_root = os.path.join(out_file_dir, options.get('file_root', dset.name))
     output_files = []
+
+    _logger.info('Generating MTZ, SHELX & CNS files for `%s` ...' % out_file_base)
+    if not misc.file_requirements(dset.results['scaling'].get('output_file')):
+        return {'step': 'conversion', 'success': False, 'reason': 'Required files missing'}
     
 
     # Create convertion options

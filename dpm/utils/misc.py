@@ -100,6 +100,20 @@ def _relpath(path, base=os.curdir):
     return posixpath.join(*rel_list)
 
 
+def combine_names(names):
+    """
+    Return a combined name to represent a set of names
+    """
+
+    _prefix = os.path.commonprefix(names)
+    if _prefix[-1] in ['_', '-', '.']:
+        _prefix = _prefix[:-1]
+    if len(_prefix) == 0:
+        _prefix = '_'.join(names)                      
+
+    return _prefix
+
+
 # custom relpath for python < 2.7
 try:
     from os.path import relpath

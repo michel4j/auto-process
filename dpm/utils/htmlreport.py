@@ -79,8 +79,11 @@ class ResFormatter(Formatter):
             return u"%0.2f" % (x**-0.5)
 
 class ResLocator(Locator):
-    def __call__(self, *args, **kwargs):
-        locs = numpy.linspace(0.0156, 1, 30 )
+    def __init__(self, steps=15):
+        self.steps = steps
+        
+    def __call__(self):
+        locs = numpy.linspace(0.0156, 1, self.steps)
         return locs
 
 def get_min_max(a, dev=0.1):
@@ -301,11 +304,11 @@ def plot_error_stats(results, filename):
 
     ax1.xaxis.set_major_formatter(ResFormatter())
     ax1.xaxis.set_minor_formatter(ResFormatter())
-    ax1.xaxis.set_major_locator(ResLocator())
+    #ax1.xaxis.set_major_locator(ResLocator())
 
     ax2.xaxis.set_major_formatter(ResFormatter())
     ax2.xaxis.set_minor_formatter(ResFormatter())
-    ax2.xaxis.set_major_locator(ResLocator())
+    #ax2.xaxis.set_major_locator(ResLocator())
 
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
@@ -349,10 +352,10 @@ def plot_wilson_stats(results, filename):
     plot_data = numpy.array(plot_data)
     ax1.plot(plot_data[:,0], plot_data[:,1], 'r-+')
     ax1.set_xlabel('Resolution')
-    ax1.set_ylabel('ln(<I>/Sigma(f)^2)')
+    ax1.set_ylabel('log(<I>)')
     ax1.grid(True)
     ax1.xaxis.set_major_formatter(ResFormatter())
-    ax1.xaxis.set_major_locator(ResLocator())
+    #ax1.xaxis.set_major_locator(ResLocator(40))
     
     # set font parameters for the ouput table
     wilson_line = results['details'].get('wilson_line')
@@ -361,9 +364,9 @@ def plot_wilson_stats(results, filename):
         fontpar = {}
         fontpar["family"]="monospace"
         fontpar["size"]=9
-        info =  "Estimated B: %0.3f\n" % wilson_line[0]
-        info += "sigma a: %8.3f\n" % wilson_line[1]
-        info += "sigma b: %8.3f\n" % wilson_line[2]
+        info =  "B:    %6.2f\n" % wilson_line[0]
+        info += "A:    %6.2f\n" % wilson_line[1]
+        info += "Corr: %6.2f\n" % wilson_line[2]
         if wilson_scale is not None:
             info += "Scale factor: %0.3f\n" % wilson_scale    
         fig.text(0.55,0.65, info, fontdict=fontpar, color='k')
@@ -415,10 +418,10 @@ def plot_frame_stats(results, filename):
         return
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(311)
-    ax1.plot(data['frame'], data['scale'], 'r-')
+    ax1.plot(data['frame'], data['scale'], 'r+')
     ax1.set_ylabel('Scale Factor', color='r')
     ax11 = ax1.twinx()
-    ax11.plot(data['frame'], data['mosaicity'], 'g-')
+    ax11.plot(data['frame'], data['mosaicity'], 'g+')
     ax1.grid(True)
     ax11.set_ylabel('Mosaicity', color='g')
     for tl in ax11.get_yticklabels():
@@ -431,14 +434,15 @@ def plot_frame_stats(results, filename):
     ax11.set_ylim(get_min_max(data['mosaicity'], 0.2))
 
     ax2 = fig.add_subplot(312, sharex=ax1)
-    ax2.plot(data['frame'], data['divergence'], 'm-')
+    ax2.plot(data['frame'], data['divergence'], 'm+')
     ax2.set_ylabel('Divergence', color='m')
     ax2.set_ylim(get_min_max(data['divergence'], 0.2))
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%0.3f'))
     ax2.grid(True)
+    bot_ax = ax2
     if data.get('frame_no') is not None:
         ax21 = ax2.twinx()
-        ax21.plot(data['frame_no'], data['i_sigma'], 'b-')
+        ax21.plot(data['frame_no'], data['i_sigma'], 'b.')
 
         ax21.set_ylabel('I/Sigma(I)', color='b')
         for tl in ax21.get_yticklabels():
@@ -447,11 +451,10 @@ def plot_frame_stats(results, filename):
             tl.set_color('m')
 
         ax3 = fig.add_subplot(313, sharex=ax1)
-        ax3.plot(data['frame_no'], data['r_meas'], 'k-')
-        ax3.set_xlabel('Frame Number')
+        ax3.plot(data['frame_no'], data['r_meas'], 'k.')
         ax3.set_ylabel('R-meas', color='k')
         ax31 = ax3.twinx()
-        ax31.plot(data['frame_no'], data['unique'], 'c-')
+        ax31.plot(data['frame_no'], data['unique'], 'c.')
         ax3.grid(True)
         ax31.set_ylabel('Unique Reflections', color='c')
         for tl in ax31.get_yticklabels():
@@ -461,6 +464,10 @@ def plot_frame_stats(results, filename):
         ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
         ax3.yaxis.set_major_formatter(FormatStrFormatter('%0.3f'))
         ax31.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
+        bot_ax = ax3
+    bot_ax.set_xlabel('Frame')
+    
+        
 
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')

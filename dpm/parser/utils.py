@@ -74,7 +74,7 @@ def _scanf_compile(format):
         if not found:
             char = format[i]
             # escape special characters
-            if char in "()[]-.+*?{}<>!\\^":
+            if char in "$()|[]-.+*?{}<>!\\^":
                 format_pat += "\\"
             format_pat += char
             i += 1
@@ -156,7 +156,7 @@ def cut_section(start, end, s, position=0):
         return (s, 0)
     
     if start is not None:
-        start_re = re.compile(start)
+        start_re = re.compile(start, re.DOTALL)
         start_m = start_re.search(s, position)
         if start_m:
             _s = start_m.start()
@@ -165,7 +165,7 @@ def cut_section(start, end, s, position=0):
     else:
         _s = position
     if end is not None:
-        end_re = re.compile(end)
+        end_re = re.compile(end, re.DOTALL)
         end_m = end_re.search(s, _s)
         if end_m:
             _e = end_m.end()
@@ -173,7 +173,6 @@ def cut_section(start, end, s, position=0):
             _e = len(s)
     else:
         _e = len(s)
-    
     result = (s[_s:_e], _e)
     return result
    

@@ -277,15 +277,14 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
             
     score = [ 1.0,
         -0.20 * score_penalty(resolution, 1.0, 6.0),
-        -0.20 * score_penalty(completeness, 100, 70),
+        -0.20 * score_penalty(completeness, 100, 0),
         -0.10 * score_penalty(r_meas, 1, 50),
-        -0.10 * score_penalty(i_sigma, 20, 1),
-        -0.10 * score_penalty(mosaicity, 0.1, 4),
-        -0.10 * score_penalty(std_spindle, 0.01, 2),
+        -0.10 * score_penalty(i_sigma, 100, 1),
+        -0.10 * score_penalty(mosaicity, 0.01, 5),
+        -0.10 * score_penalty(std_spindle, 0.01, 3),
         -0.05 * score_penalty(std_spot, 1, 4),
         -0.05 * score_penalty(ice_rings, 0, 8),
         ]
-    
     if DEBUG:
         names = ['Root', 'Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Ice']
         vals = [1, resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, ice_rings]

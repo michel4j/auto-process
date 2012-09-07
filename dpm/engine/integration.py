@@ -73,8 +73,12 @@ def correct(data_info, options={}):
     try:
         programs.xds_par()
         info = xds.parse_correct()
-    
-        # enable correction factors if anomalous data and repeat correction   
+        if data_info['working_directory'] == options.get('directory'):
+            info['output_file'] = 'XDS_ASCII.HKL'
+        else:
+            info['output_file'] = os.path.join(data_info['name'], 'XDS_ASCII.HKL')
+            
+        # enable correction factors if anomalous data and repeat correction
         if info.get('correction_factors') is not None and options.get('anomalous', False):
             for f in info['correction_factors'].get('factors', []):
                 if abs(f['chi_sq_fit']-1.0) > 0.25:
@@ -84,17 +88,18 @@ def correct(data_info, options={}):
                     info = xds.parse_correct()
                     info['strict_absorption'] = True
                     break
+        
+        # Extra statistics
+        programs.xdsstat(info['output_file'])
+        stat_info = xds.parse_xdsstat()
+        info.update(stat_info)
+
     except dpm.errors.ProcessError, e:
         return {'step': 'correction', 'success': False, 'reason': str(e)}
                           
     if info.get('failure') is None:
-        if len(info.get('statistics', [])) > 1:
-            if info.get('summary') is not None:
-                info['summary']['resolution'] = xtal.select_resolution(info['statistics'])
-        if data_info['working_directory'] == options.get('directory'):
-            info['output_file'] = 'XDS_ASCII.HKL'
-        else:
-            info['output_file'] = os.path.join(data_info['name'], 'XDS_ASCII.HKL')
+        if len(info.get('statistics', [])) > 1 and info.get('summary') is not None:
+            info['summary']['resolution'] = xtal.select_resolution(info['statistics'])
         
         return {'step': 'correction', 'success':True, 'data': info}
     else:

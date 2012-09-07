@@ -3,7 +3,7 @@ import time
 import numpy
 from itertools import chain
 
-from dpm.parser import xds, ccp4, pointless
+from dpm.parser import xds, ccp4, pointless, phenix
 from dpm.utils import log, misc, programs, io, xtal, cluster
 from dpm.engine import symmetry
 import dpm.errors
@@ -124,6 +124,7 @@ def prepare_reference(dsets, options={}):
     # use most complete dataset if fewer than 4 are being scaled
     best = max([(dset.results['correction']['summary']['completeness'], dset.name) for dset in dsets.values()])
     reference_name = best[1]  # the most complete dataset of the lot
+    minimum_correlation = 0.0
     if len(dsets) < 4 or best[0] >= 30.0:
         _logger.info('Using the most complete dataset `%s`(%0.1f%%) as reference.' % (best[1], best[0]))
         reference_file = dsets[reference_name].results['correction']['output_file']
@@ -146,11 +147,12 @@ def prepare_reference(dsets, options={}):
 
         io.write_xscale_input(xscale_options)
         programs.xscale_par()
-        _out = xds.parse_correlations('XSCALE.LP')
         misc.backup_special_file('XSCALE.LP','first')
+        _out = xds.parse_correlations('XSCALE.LP.first')
         correlations = _out['correlations']
         corr_table = misc.Table(correlations)
-        if min(corr_table['corr']) >= 0.95:
+        minimum_correlation = min(corr_table['corr'])
+        if minimum_correlation >= 0.95:
             _logger.info('All datasets correlate to better than %0.3f.' % (min(corr_table['corr'])))
             reference_file = 'REF1.HKL'                       
         else:
@@ -229,30 +231,53 @@ def prepare_reference(dsets, options={}):
     opt_info['output_file'] = 'REFERENCE.HKL'
     misc.backup_special_file('XSCALE.LP','reference')
     sg_info['reference_data'] = 'REFERENCE.HKL'
+    sg_info['minimum_correlation'] = minimum_correlation
     
     return sg_info
 
 
 def data_quality(filename, options={}):
     os.chdir(options['directory'])
-    _logger.info('Checking data quality ...')
-        
+    
+    _LAW_TYPE = {'PM': 'Pseudo-merohedral', 'M': 'Merohedral'}
     # Check Requirements
     if not misc.file_requirements(filename):
         return {'step': 'data_quality', 'success': False, 'reason': 'Required files missing'}
     
     try:
-        programs.ccp4check(filename)
-        info = ccp4.parse_ctruncate()
-        sf_info = ccp4.parse_sfcheck()
-        info.update(sf_info)
+        programs.xtriage(filename)
+        info = phenix.parse_xtriage()
     except dpm.errors.ProcessError, e:
         return {'step': 'data_quality', 'success':False, 'reason': str(e)}
     
-    if sf_info['sf_check']['twin'] >= 0.1:
-        _logger.warning('Data appear to be %0.1f%% twinned!' % (sf_info['sf_check']['twin']*100))
-    elif info['twinning_l_fraction'] >= 0.1:
-        _logger.warning('Data appear to be %0.1f%% twinned!' % (info['twinning_l_fraction']*100))
+    statistics_deviate = False
+    if info['twinning_l_zscore'] > 3.5:
+        statistics_deviate = True
+        _logger.warning('Intensity statistics deviate significantly from expected.')
+          
+    if len(info['twin_laws']) > 0:
+        if statistics_deviate:
+            _logger.warning('Possible twin laws which may explain the deviation:')
+        else:
+            _logger.info('Possible twin laws:')
+        max_fraction = 0.0
+        for law in info['twin_laws']:
+            fraction = 100.0 * max([law['britton_alpha'], law['ML_alpha'], law['H_alpha']])
+            txt = ".. %s operator: [%s], Max twin-fraction: %0.1f%%" % (
+                    _LAW_TYPE[law['type'].strip()],
+                    law['operator'].strip(),
+                    fraction,
+                    )
+            max_fraction = max(max_fraction, fraction)
+            if statistics_deviate:
+                _logger.warning(txt)
+            else:
+                _logger.info(txt)
+        if not statistics_deviate and max_fraction > 10.0:
+            _logger.warning('Despite reasonable intensity statistics, high twin-fraction suggests wrong symmetry.')
+    if statistics_deviate and len(info['twin_laws']) == 0:
+        _logger.warning('No pseudo/merohedral twin laws possible in this lattice.')
+                       
         
         
     return {'step': 'data_quality','success': True, 'data': info}

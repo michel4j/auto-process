@@ -58,10 +58,11 @@ def log_to_console(level=logging.DEBUG):
     logging.getLogger('').addHandler(console)
 
 def log_to_file(filename, level=logging.DEBUG):
-    """Add a log handler which logs to the console."""    
+    """Add a log handler which logs to the console."""
+    print filename    
     logfile = logging.FileHandler(filename)
     logfile.setLevel(level)
-    formatter = logging.Formatter('%(name)s|%(asctime)s| %(message)s', '%d/%m/%y %H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s| %(message)s', '%b%d %H:%M:%S')
     logfile.setFormatter(formatter)
     logging.getLogger('').addHandler(logfile)
 

@@ -41,9 +41,9 @@ def format_section(section, level=1, invert=False, fields=[], show_title=True):
     else:
         file_text = ''
         
-    if _section.get('table') is not None:
+    if _section.get('table'):
         _key = 'table'
-    elif _section.get('table+plot') is not None:
+    elif _section.get('table+plot') :
         _key = 'table+plot'
     else:
         return ''
@@ -120,7 +120,7 @@ def get_log_data(datasets, options={}):
         #if options.get('mode') == 'merge' and dataset_name != '*combined*':
         #    continue
         dres= dset.results
-        if dres.get('image_analysis') is not None:
+        if dres.get('image_analysis'):
             _ice_rings = dres['image_analysis']['summary']['ice_rings']
         else:
             _ice_rings = 'N/C'
@@ -139,10 +139,10 @@ def get_log_data(datasets, options={}):
             _std_pix = "N/A"
             _std_deg = "N/A"
             _mos = "N/A"
-            _compl = dres['data_quality']['sf_check']['data_compl']
+            _compl = dres['data_quality']['completeness']*100.0
         else: 
             _summary = dres['correction']
-            _score = dset.score(scaled=False)
+            _score = dset.score()
             _compl = _summary['summary']['completeness']
 
         _sum_values = [ dataset_name,
@@ -208,7 +208,7 @@ def get_log_data(datasets, options={}):
         dres = dset.results
         
         # Print out strategy information
-        if dres.get('strategy', None) and dres['strategy'].get('runs', None) is not None:
+        if dres.get('strategy') and dres['strategy'].get('runs'):
             _strategy = {}
             _strategy['summary'] = {}
             _strategy['summary']['title'] = 'Recommended Strategy for %s Data Collection' % adj
@@ -284,7 +284,7 @@ def get_log_data(datasets, options={}):
             _sec_keys = ['Space Group','No.', 'Probability']
             sg_num = dres['correction']['symmetry']['space_group']['sg_number']
             sg_name = xtal.SPACE_GROUP_NAMES[ sg_num ]
-            if dres['symmetry'].get('candidates') is not None:
+            if dres['symmetry'].get('candidates'):
                 for i, sol in enumerate(dres['symmetry']['candidates']):
                     if sg_num == sol['number'] and i== 0:
                         sg_name = '* %s' % (xtal.SPACE_GROUP_NAMES[ sol['number'] ])
@@ -322,7 +322,7 @@ def get_log_data(datasets, options={}):
             # Print out correction results
             _section = {}
             _section['title'] = "Correction Statistics"
-            if dres.get('scaling', None) is not None:
+            if dres.get('scaling'):
                 _data_key = 'table'
             else:
                 _data_key = 'table+plot'
@@ -340,7 +340,7 @@ def get_log_data(datasets, options={}):
             info['details'][dataset_name]['correction'] = _section
         
         # Print out scaling results
-        if dres.get('scaling', None) is not None:
+        if dres.get('scaling'):
             _section = {}
             _section['title'] = "Statistics of scaled output files"
             _section['shells'] = {}
@@ -361,6 +361,9 @@ def get_log_data(datasets, options={}):
 
     return info
 
+def _next_10th(x):
+    return ((x//10)+1)*10
+
 def get_reports(datasets, options={}):
     info = []
     
@@ -372,9 +375,8 @@ def get_reports(datasets, options={}):
             continue
         elif options.get('mode') == 'merge':
             _report_directory = options["directory"]
-            dataset_name = os.path.commonprefix(datasets.keys())
-            if dataset_name == "":
-                dataset_name = "-".join(datasets.keys())
+            # data description is different for merged data
+            dataset_name = misc.combine_names(datasets.keys())
         else:
             _report_directory = dset.parameters['working_directory']
             dataset_name = _name
@@ -397,12 +399,12 @@ def get_reports(datasets, options={}):
             crystal_id = dataset_info.get('crystal_id')
             exp_id = dataset_info.get('experiment_id')
         
-        if dres.get('image_analysis', None) is not None:
+        if dres.get('image_analysis'):
             _ice_rings = dres['image_analysis']['summary']['ice_rings']
         else:
             _ice_rings = -1
         
-        if dres.get('scaling') is not None and options.get('mode') != 'merge':
+        if dres.get('scaling') and options.get('mode') != 'merge':
             _summary = dres['scaling']
         else:
             _summary= dres['correction']
@@ -484,7 +486,7 @@ def get_reports(datasets, options={}):
         # Harvest screening details
         if options.get('mode', None) == 'screen':
             _dataset_info['result']['kind'] = AUTOXDS_SCREENING
-            if dres.get('strategy') is not None and dres['strategy'].get('runs') is not None:
+            if dres.get('strategy') and dres['strategy'].get('runs'):
                 _strategy = dres['strategy']
                 # harvest old strategy
                 _strategy_keys = ['name', 'attenuation', 'distance',    'start_angle',
@@ -557,16 +559,28 @@ def get_reports(datasets, options={}):
             _dataset_info['result']['kind'] = AUTOXDS_PROCESSING
             # Print out integration results
             _section = {}
-            _t = Table(dres['integration']['scale_factors'])
+            scale_factors = dres['integration']['scale_factors']
+            # combine integration statistics if merging
+            if options.get('mode') == 'merge':
+                max_frame = max([v['frame'] for v in scale_factors])
+                for dat in datasets.values()[1:] :
+                    _dat_sf = []
+                    _dat_sf.extend(dat.results['integration']['scale_factors'])
+                    next_start = _next_10th(max_frame)
+                    for v in _dat_sf:
+                        v['frame'] = v['frame'] + next_start
+                        max_frame = v['frame']
+                    scale_factors.extend(dat.results['integration']['scale_factors'])
+            _t = Table(scale_factors)
             for k in ['frame','scale','overloads','reflections','mosaicity','unexpected','divergence']:
                 _section[k] = _t[k]
                 
-            if dres['correction'].get('frame_statistics') is not None:                     
+            if dres['correction'].get('frame_statistics'):                     
                 _t = Table(dres['correction']['frame_statistics'])
-                _section['frame_no'] = _t['frame']
-                for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
+                for k in ['frame_no', 'i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
                     _section[k] = _t[k]
-            if dres['correction'].get('diff_statistics') is not None:
+                    
+            if dres['correction'].get('diff_statistics'):
                 _t = Table(dres['correction']['diff_statistics'])
                 _dataset_info['result']['details']['diff_statistics'] = {}
                 for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
@@ -581,7 +595,7 @@ def get_reports(datasets, options={}):
                 
             # Print out correction results
             _section = {}
-            if dres.get('scaling') is not None and dres['scaling'].get('statistics') is not None:
+            if dres.get('scaling') and dres['scaling'].get('statistics'):
                 _t = Table(dres['scaling']['statistics'])
             else:
                 _t = Table(dres['correction']['statistics'])
@@ -591,7 +605,7 @@ def get_reports(datasets, options={}):
             _dataset_info['result']['details']['shell_statistics'] = _section
             
             # Print out standard errors
-            if dres['correction'].get('standard_errors') is not None:
+            if dres['correction'].get('standard_errors'):
                 _section = {}
                 _t = Table(dres['correction']['standard_errors'])
                 _section['shell'] = [sum(v)/2.0 for v in _t['resol_range'][:-1]] # don't get 'total' row
@@ -603,42 +617,33 @@ def get_reports(datasets, options={}):
             _dataset_info['result']['details']['correction_factors'] = dres['correction'].get('correction_factors')
 
             # Print out wilson_plot, cum int dist, twinning test
-            if dres['scaling'].get('wilson_plot') is not None:
+            if dres['scaling'].get('wilson_plot'):
                 _section = {}
                 _t = Table(dres['scaling']['wilson_plot'])
-                for k in ['inv_res_sq', 'log_i_sigma']:
+                for k in ['inv_res_sq', 'log_i_sigma', 'BO', 'mean_i']:
                     _section[k] = _t[k]
                 _dataset_info['result']['details']['wilson_plot'] = _section
+            if dres['scaling'].get('wilson_line'):
+                _dataset_info['result']['details']['wilson_line'] = dres['scaling']['wilson_line']           
 
             
-            if dres.get('data_quality') is not None:
-#                if dres['data_quality'].get('wilson_plot') is not None:
-#                    _section = {}
-#                    _t = Table(dres['data_quality']['wilson_plot'])
-#                    for k in ['inv_res_sq', 'log_i_sigma']:
-#                        _section[k] = _t[k]
-#                    _dataset_info['result']['details']['wilson_plot'] = _section
-                if dres['data_quality'].get('cum_int_dist') is not None:
+            if dres.get('data_quality'):
+                if dres['data_quality'].get('twinning_l_test'):
                     _section = {}
-                    _t = Table(dres['data_quality']['cum_int_dist'])
-                    for k in ['z', 'exp_acentric', 'exp_centric', 'obs_acentric', 'obs_centric', 'twin_acentric']:
-                        _section[k] = _t[k]
-                    _dataset_info['result']['details']['cum_int_dist'] = _section
-                if dres['data_quality'].get('twinning') is not None:
-                    _section = {}
-                    _t = Table(dres['data_quality']['twinning'])
+                    _t = Table(dres['data_quality']['twinning_l_test'])
                     for k in ['abs_l', 'observed', 'twinned', 'untwinned']:
                         _section[k] = _t[k]
                     _dataset_info['result']['details']['twinning_l_test'] = _section
-                if dres['data_quality'].get('wilson_line') is not None:
-                    _dataset_info['result']['details']['wilson_line'] = dres['data_quality']['wilson_line']
-                if dres['data_quality'].get('wilson_scale') is not None:
-                    _dataset_info['result']['details']['wilson_scale'] = dres['data_quality']['wilson_scale']
-                if dres['data_quality'].get('twinning_l_statistic') is not None:
+                    
+                if dres['data_quality'].get('twin_laws'):
+                    _dataset_info['result']['details']['twin_laws'] = dres['data_quality']['twin_laws']
+                if dres['data_quality'].get('twinning_l_statistic'):
                     _dataset_info['result']['details']['twinning_l_statistic'] = dres['data_quality']['twinning_l_statistic']
-            
+                if dres['data_quality'].get('twinning_l_zscore'):
+                    _dataset_info['result']['details']['twinning_l_zscore'] = dres['data_quality']['twinning_l_zscore']
+
             # Save converted output files
-            if dres.get('output_files') is not None and len(dres.get('output_files')) > 0:
+            if dres.get('output_files') and len(dres.get('output_files')) > 0:
                 _dataset_info['result']['details']['output_files'] = dres.get('output_files')
       
         info.append(_dataset_info)
@@ -659,7 +664,7 @@ def save_json(result_list, filename, options={}):
                 result_list[pos]['id'] = info['result'].get('id')
                 
     # save json information to file
-    if options.get('errors') is not None:
+    if options.get('errors'):
         error = {'message': options.get('errors') }
     else:
         error = None
@@ -686,7 +691,7 @@ def save_html(result_list, options={}):
             htmlreport.create_screening_report(report, report_directory)
         else:
             htmlreport.create_full_report(report, report_directory)    
-        _logger.info('(%s) HTML report: %s/index.html' % (report['result']['name'], misc.relpath(report_directory, options['command_dir']) ))
+        _logger.info('Report summary: %s/index.html' % (misc.relpath(report_directory, options['command_dir']) ))
 
 def save_log(info, filename):
     fh = open(filename, 'w')

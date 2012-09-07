@@ -216,21 +216,61 @@
 
     <h3>Wilson Plot</h3>
     <img src="wilson.png" />
-    <div class="tablenotes">
-        <h3>Notes</h3>
-        <p>The above clipper-style wilson plot was calculated by CTRUNCATE which is part of the CCP4 Package.</p>
-        <p>See S. French and K. Wilson, Acta Cryst. A34, 517-525 (1978).</p>
-    </div>
     <div class="clear spacer"></div>
 
-    <h3>L Test for twinning</h3>
+    <h3>L-Test for twinning</h3>
     <img src="twinning.png" />
+    <div class="clear spacer"></div>    
     <div class="tablenotes">
         <h3>Notes</h3>
-        <p>The above plot was calculated by CTRUNCATE which is part of the CCP4 Package.</p>
-        <p>All data regardless of I/sigma(I) has been included in the L test. Anisotropy correction has been applied before calculating L.</p>
-        <p>See J. E. Padilla and T. O. Yeates, Acta Cryst. D59, 1124-1130 (2003)</p>
+        <p>L-test: See J. E. Padilla and T. O. Yeates, Acta Cryst. D59, 1124-1130 (2003)</p>
+        <p>The above L-Test was calculated using PHENIX.XTRIAGE. The test uses acentric data only.</p>
+        {% if object.details.twinning_l_zscore %}
+        <p>The L-test multivariate Z-score for this dataset is <b>{{object.details.twinning_l_zscore|floatformat:"-3"}}</b>. 
+        The Z-score should be less than 3.5 for good data.</p>
+        {% endif %}                        
     </div>
+
+    {% if object.details.twin_laws %}
+
+    <h3>Possible twin laws and corresponding twin fractions</h3>
+    <table class="rtable full">
+        <thead>
+            <tr>
+                <th scope="col">Operator</th>
+                <th scope="col">Type</th>
+                <th scope="col">R<sub>obs</sub></th>
+                <th scope="col">Britton fraction</th>
+                <th scope="col">H-test fraction</th>
+                <th scope="col">Max.Likelihood fraction</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in object.details.twin_laws %}
+            <tr>
+            <td>{{row.operator}}</td>
+            <td>{{row.type}}</td>
+            <td>{{row.r_obs|floatformat:"2"}}</td>
+            <td>{{row.britton_alpha|floatformat:"3"}}</td>
+            <td>{{row.H_alpha|floatformat:"3"}}</td>
+            <td>{{row.ML_alpha|floatformat:"3"}}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+        <tr><td colspan=4></td></tr>
+        </tfoot>
+    </table>
+    <div class="clear spacer"></div>
+    <div class="tablenotes">
+        <h3>Notes</h3>
+        <p>The above analysis was calculated using PHENIX.XTRIAGE. See the detailed output in xtriage.log.</p>
+        <p>Twin-law types: PM - Pseudo-merohedral, M - Merohedral</p>                      
+        {% if object.details.twinning_l_zscore < 3.5 %}
+        <p>The intensity statistics appear to be good. A high twin fraction for any of the twin laws above may indicate wrong symmetry.</p>
+        {% endif %}                        
+    </div>
+    {% endif %}
 
 </div>
 </div>

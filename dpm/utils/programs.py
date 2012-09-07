@@ -6,11 +6,11 @@ import dpm.errors
 
 def _execute_command(args, out_file=None):
     if out_file is None:
-        std_out = open('auto.log', 'a')
+        std_out = open('commands.log', 'a')
         std_err = std_out
     else:
         std_out = open(out_file, 'a')
-        std_err = open('auto.log', 'a')
+        std_err = open('commands.log', 'a')
     try:    
         try:
             p = subprocess.Popen(args, shell=False, stdout=std_out, stderr=std_err)
@@ -117,6 +117,19 @@ def best(data_info, options={}):
     except IOError:
         raise dpm.errors.ProcessError('Could not create command file')
     _execute_command(["sh", "best.com"], out_file="best.log")
+
+def xtriage(filename, options={}):
+    command  = "#!/bin/csh \n"
+    command += "pointless -c xdsin %s hklout UNMERGED.mtz > unmerged.log \n" % (filename)
+    command += "phenix.xtriage UNMERGED.mtz log=xtriage.log \n"
+    try:
+        f = open('xtriage.com', 'w')
+        f.write(command)
+        f.close()
+    except IOError:
+        raise dpm.errors.ProcessError('Could not create command file')  
+    _execute_command(["sh", "xtriage.com"])
+    
 
 def distl(filename):
     _execute_command(["labelit.distl", filename], out_file="distl.log")

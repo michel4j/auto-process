@@ -82,21 +82,20 @@ class DataSet(object):
     def score(self, strategy=False, scaled=False):
         
         if scaled:
-            _summary = self.results['scaling']['summary']
+            resolution = self.results['scaling']['summary']['resolution'][0]
+            _summary = self.results['scaling']['statistics'][0]
+            completeness = self.results['data_quality']['completeness']       
         else:
-            _summary = self.results['correction']['summary']
+            resolution = self.results['correction']['summary']['resolution'][0]
+            _summary = self.results['correction']['statistics'][0]
+            completeness = self.results['correction']['summary']['completeness']
             
+        i_sigma = _summary['i_sigma']
+        r_meas = _summary['r_meas']
         mosaicity = self.results['correction']['summary']['mosaicity']
         std_spot = self.results['correction']['summary']['stdev_spot']
         std_spindle= self.results['correction']['summary']['stdev_spindle']
-        resolution = _summary['resolution'][0]
-        i_sigma = _summary['i_sigma']
-        r_meas = _summary['r_meas']
         
-        if scaled:
-            completeness = self.results['data_quality']['sf_check']['data_compl']
-        else:         
-            completeness = self.results['correction']['summary']['completeness']
 
         if self.results.get('image_analysis') is not None:
             ice_rings = self.results['image_analysis'].get('summary', {}).get('ice_rings', 0)
@@ -109,7 +108,7 @@ class DataSet(object):
             if self.results['strategy'].get('prediction_all') is not None:
                 r_meas = self.results['strategy']['prediction_all']['R_factor']
                 i_sigma = self.results['strategy']['prediction_all']['average_i_over_sigma']
-                completeness = self.results['strategy']['prediction_all']['completeness']*100.0
+                completeness = self.results['strategy']['prediction_all']['completeness']
             
         score = xtal.score_crystal(resolution, 
                                    completeness,
@@ -148,11 +147,7 @@ class Manager(object):
                     _suffix = 'scrn'
                 else: 
                     _suffix = 'proc'
-                _prefix = os.path.commonprefix(self.datasets.keys())
-                if _prefix == '':
-                    _prefix = '_'.join(self.datasets.keys())
-                elif _prefix[-1] == '_':
-                    _prefix = _prefix[:-1]
+                _prefix = misc.combine_names(self.datasets.keys())
                     
                 self.options['directory'] = os.path.join(self.options['command_dir'], '%s-%s' % (_prefix, _suffix))
             self.setup_directories()
@@ -243,6 +238,9 @@ class Manager(object):
             (dataset_index, 'step')
         """
         
+        # Create a log file also
+        log.log_to_file(os.path.join(self.options['directory'], 'auto.log'))
+        
         self._start_time = time.time()
         run_steps = ['initialize', 'image_analysis', 'spot_search', 
                      'indexing', 'integration','correction', 'symmetry',
@@ -327,7 +325,7 @@ class Manager(object):
             next_step = 'symmetry'
         
         # Check Spacegroup and scale the datasets
-        if next_step in ['symmetry', 'scaling']:
+        if next_step == 'symmetry':
             self.run_position = (0, 'symmetry')
             if overwrite.get('sg_overwrite') is not None:
                 _sg_number = overwrite['sg_overwrite']
@@ -375,6 +373,9 @@ class Manager(object):
             
             
             self.save_checkpoint()
+            next_step = 'scaling'
+
+        if next_step == 'scaling':
                             
             self.run_position = (0, 'scaling')
             step_ovw = {}
@@ -386,10 +387,11 @@ class Manager(object):
             if not _out['success']:
                 _logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
                 sys.exit()
+            next_step = 'strategy'
 
  
         # Strategy
-        if self.options.get('mode') == 'screen':
+        if self.options.get('mode') == 'screen' and next_step == 'strategy':
             self.run_position = (0, 'strategy')
             for dset in self.datasets.values():
                 self.run_step('strategy', dset, overwrite=overwrite)
@@ -398,8 +400,16 @@ class Manager(object):
         for i, dset in enumerate(self.datasets.values()):
             # Only calculate for first dataset when merging.
             if self.options['mode'] == 'merge' and i > 0: break
+            
+            # data description is different for merged data
+            if self.options['mode'] == 'merge':
+                _data_dscr = misc.combine_names(self.datasets.keys())
+            else:
+                _data_dscr = dset.name
+
             # Run Data Quality Step:
             self.run_position = (i, 'data_quality')
+            _logger.info('Checking quality of dataset `%s` ...' % _data_dscr)
             _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
             dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
             if not _out['success']:
@@ -414,12 +424,6 @@ class Manager(object):
             #_logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
             _score = dset.score(strategy=(self.options.get('mode')=='screening'), scaled=True)
             _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
-
-            # Extra statistics
-            _logger.info("Calculating extra statistics ..." )
-            programs.xdsstat(dset.results['correction']['output_file'])
-            stat_info = xds.parse_xdsstat()
-            dset.results['correction'].update(stat_info)
             
             # file format conversions
             self.run_position = (i, 'conversion')
@@ -430,15 +434,7 @@ class Manager(object):
                 else:
                     _step_options = {}
                     _step_options.update(self.options)
-                    if self.options['mode'] == 'merge':
-                        _prefix = os.path.commonprefix(self.datasets.keys())
-                        if _prefix == '':
-                            _prefix = '_'.join(self.datasets.keys())                       
-                        elif _prefix[-1] == '_':
-                            _prefix = _prefix[:-1]
-                        _step_options['file_root'] = _prefix
-                    else:
-                        _step_options['file_root'] = dset.name
+                    _step_options['file_root'] = _data_dscr
                     
                     _out = conversion.convert_formats(dset, _step_options)
                     dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
@@ -447,7 +443,7 @@ class Manager(object):
                         _logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
                     else:
                         dset.results['output_files'] = _out.get('data')
-                        _logger.info('(%s): %s' % (dset.name, ', '.join(_out['data'])))
+                        _logger.info('%s' % (', '.join(_out['data'])))
                 self.save_checkpoint()
 
         # reporting
@@ -455,7 +451,7 @@ class Manager(object):
         os.chdir(self.options['directory'])
         self.save_checkpoint()
 
-        _logger.info('Saving summaries ... "process.log", "process.json"')
+        # Save summaries
         log_data = reporting.get_log_data(self.datasets, self.options)
         reporting.save_log(log_data, 'process.log')   
         reports = reporting.get_reports(self.datasets, self.options)

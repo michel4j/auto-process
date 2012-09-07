@@ -165,8 +165,6 @@ def auto_index(data_info, options={}):
 
         while info.get('failure_code') > 0 and _retries < 8:
             _logger.warning(info.get('failure'))
-            #_logger.debug('Indexing Quality [%04d]' % (data['quality_code']))
-            #_logger.debug(utils.print_table(data))
             if run_info['spot_range'][0] == run_info['data_range']:
                 _all_images = True
             else:
@@ -177,7 +175,7 @@ def auto_index(data_info, options={}):
     
             if info.get('failure_code') == xds.POOR_SOLUTION:
                 if not _aliens_tried:
-                    _logger.info('...Removing alien spots...')
+                    _logger.info('.. Removing alien spots ...')
                     _filter_spots(unindexed=True)
                     io.write_xds_input(jobs, run_info)
                     programs.xds_par()
@@ -186,18 +184,18 @@ def auto_index(data_info, options={}):
                     _aliens_tried = True
                 elif sigma < 48:
                     sigma *= 2
-                    _logger.info('...Removing weak spots (Sigma < %2.0f)...' % sigma)
+                    _logger.info('.. Removing weak spots (Sigma < %2.0f)...' % sigma)
                     _filter_spots(sigma=sigma)
                     io.write_xds_input(jobs, run_info)
                     programs.xds_par()
                     info = xds.parse_idxref()
                     data = _diagnose_index(info)
                 else:
-                    _logger.critical('...Unable to proceed...')
+                    _logger.critical('.. Unable to proceed.')
                     _retries = 999
             elif info.get('failure_code') == xds.INSUFFICIENT_INDEXED_SPOTS:
                 if data['distinct_subtrees'] == 1:
-                    _logger.info('...Removing alien spots ...')
+                    _logger.info('.. Removing alien spots ...')
                     _filter_spots(unindexed=True)
                     io.write_xds_input(jobs, run_info)
                     programs.xds_par()
@@ -205,7 +203,7 @@ def auto_index(data_info, options={}):
                     data = _diagnose_index(info)
                 elif sigma < 48 and data['index_origin_delta'] <= 6:
                     sigma *= 2
-                    _logger.info('...Removing weak spots (Sigma < %2.0f)...' % sigma)
+                    _logger.info('...Removing weak spots (Sigma < %2.0f) ...' % sigma)
                     _filter_spots(sigma=sigma)
                     io.write_xds_input(jobs, run_info)
                     programs.xds_par()
@@ -213,7 +211,7 @@ def auto_index(data_info, options={}):
                     data = _diagnose_index(info)
                 elif data['quality_code'] in [19]:
                     run_info['beam_center'] = data['new_origin']
-                    _logger.info('...Adjusting beam origin to (%0.0f %0.0f)...'% run_info['beam_center'])
+                    _logger.info('.. Adjusting beam origin to (%0.0f %0.0f) ...'% run_info['beam_center'])
                     io.write_xds_input(jobs, run_info)
                     programs.xds_par()
                     info = xds.parse_idxref()
@@ -226,7 +224,7 @@ def auto_index(data_info, options={}):
                     data = _diagnose_index(info)
                     _aliens_tried = True                    
                 else:
-                    _logger.critical('...Unable to proceed...')
+                    _logger.critical('.. Unable to proceed.')
                     _retries = 999
             elif info.get('failure_code') == xds.INSUFFICIENT_SPOTS or info.get('failure_code') == xds.SPOT_LIST_NOT_3D:
                 if not _all_images:
@@ -238,13 +236,13 @@ def auto_index(data_info, options={}):
                     data = _diagnose_index(info)
                 elif sigma > 3:
                     sigma /= 2
-                    _logger.info('...Including weaker spots (Sigma > %2.0f)...' % sigma)
+                    _logger.info('.. Including weaker spots (Sigma > %2.0f) ...' % sigma)
                     io.write_xds_input('COLSPOT IDXREF', run_info)
                     programs.xds_par()
                     info = xds.parse_idxref()
                     data = _diagnose_index(info)
                 else:
-                    _logger.critical('...Unable to proceed...')
+                    _logger.critical('.. Unable to proceed.')
                     _retries = 999   
             elif _match_code(data['quality_code'], 512) :
                 _logger.info('Adjusting spot parameters ...')
@@ -256,7 +254,7 @@ def auto_index(data_info, options={}):
                 info = xds.parse_idxref()
                 data = _diagnose_index(info)                    
             else:
-                _logger.critical('...Unable to proceed...')
+                _logger.critical('.. Unable to proceed.')
                 _retries = 999
     except dpm.errors.ProcessError, e:
         return {'step': 'indexing', 'success':False, 'reason': str(e)}

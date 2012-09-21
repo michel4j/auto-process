@@ -338,7 +338,7 @@ class Manager(object):
             for dset in self.datasets.values():
                 if self.options.get('mode') in ['simple', 'screen'] and overwrite.get('sg_overwrite') is None:
                     # automatic spacegroup determination
-                    self.run_step('symmetry', dset, overwrite=step_ovw, optional=(step=='image_analysis'))
+                    self.run_step('symmetry', dset, overwrite=step_ovw)
                     ref_sginfo = dset.results['symmetry']
                 else:
                     # tranfer symmetry info from reference to this dataset and update with specific reindex matrix

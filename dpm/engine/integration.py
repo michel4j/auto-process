@@ -73,10 +73,6 @@ def correct(data_info, options={}):
     try:
         programs.xds_par()
         info = xds.parse_correct()
-        if data_info['working_directory'] == options.get('directory'):
-            info['output_file'] = 'XDS_ASCII.HKL'
-        else:
-            info['output_file'] = os.path.join(data_info['name'], 'XDS_ASCII.HKL')
             
         # enable correction factors if anomalous data and repeat correction
         if info.get('correction_factors') is not None and options.get('anomalous', False):
@@ -90,6 +86,11 @@ def correct(data_info, options={}):
                     break
         
         # Extra statistics
+        if data_info['working_directory'] == options.get('directory'):
+            info['output_file'] = 'XDS_ASCII.HKL'
+        else:
+            info['output_file'] = os.path.join(data_info['name'], 'XDS_ASCII.HKL')
+
         programs.xdsstat(info['output_file'])
         stat_info = xds.parse_xdsstat()
         info.update(stat_info)

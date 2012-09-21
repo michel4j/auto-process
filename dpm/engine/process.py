@@ -264,6 +264,7 @@ class Manager(object):
 
         # Fist initialize and index all datasets
         _sub_steps = ['initialize', 'image_analysis', 'spot_search', 'indexing']
+        step_ovw = {}
         if next_step in _sub_steps:
             for i, dset in enumerate(self.datasets.values()):
                 if i < cur_pos: continue  # skip all datasets earlier than specified one

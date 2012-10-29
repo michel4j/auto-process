@@ -54,6 +54,7 @@ def run_distl(img, directory=None, output_file=None):
         if output_file is not None:
             _save_json_output(output_file, results)
         sys.stderr.write(results+'\n')
+    sts, output = commands.getstatusoutput('labelit.reset')
     return
 
 if __name__ == '__main__':

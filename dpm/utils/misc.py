@@ -238,6 +238,7 @@ class Table(object):
     def __init__(self, t):
         self._table = t
         self.size = len(self._table)
+        self.hidden_columns = []
         
     def __repr__(self):
         return "<Table (%d rows)\n%s\n>" % (self.size, str(self))
@@ -259,14 +260,31 @@ class Table(object):
         return x.get_string()
         
     def keys(self):
-        return self._table[0].keys()
+        return [k for k in  self._table[0].keys() if k not in self.hidden_columns]
     
+    def hide(self, *args):
+        self.hidden_columns.extend(args)
+    
+    def show_all(self):
+        self.hidden_columns = []
+        
     def row(self, i):
         if i < len(self._table):
-            return self._table[i].values()
+            return [v for k,v in self._table[i].items() if k not in self.hidden_columns]
     
-    def rows(self):
-        return [self.row(i) for i in range(self.size)]
+    def rows(self, slice=":"):
+        pre, post = slice.split(':')
+        if pre.strip() == '': 
+            pre = 0
+        else:
+            pre = int(pre)
+        if post.strip() == '':
+            post = self.size
+        else:
+            post = int(post)
+            if post < 0: post = self.size + post
+            
+        return [self.row(i) for i in range(self.size) if i >= pre and i < post]
     
     def column(self, key):
         return [r[key] for r in self._table]
@@ -279,7 +297,20 @@ class Table(object):
     def __getitem__(self, s):
         vals = [r[s] for r in self._table]
         return vals
-        
+
+class rTable(Table):
+    def __init__(self, t):
+        self._table = []
+        keys = t.keys()
+        for i in range(len(t[keys[0]])):
+            d = {}
+            for k in keys:
+                d[k] = t[k][i]
+            self._table.append(d)
+        self.size = len(self._table)
+        self.hidden_columns = []
+               
+       
 # Ordered Dict from Django
 
 class SortedDict(dict):

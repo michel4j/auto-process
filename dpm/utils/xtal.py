@@ -272,8 +272,31 @@ def score_penalty(x, best=1, worst=0):
     x = (x-worst)/float(best-worst)
     return numpy.sqrt(1 - x*x)
 
-    
+def logistic_score(x, best=1, fair=0.5):
+    t = 3*(x - fair)/(best - fair)
+    return 1/(1+numpy.exp(-t))
+
 def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings):
+
+    scores = numpy.array([
+        logistic_score(resolution, 1.0, 3.5),
+        logistic_score(completeness, 100.0, 85),
+        logistic_score(r_meas, 1, 15),
+        logistic_score(i_sigma, 50, 10),
+        logistic_score(mosaicity, 0.1, 0.5),
+        logistic_score(std_spindle, 0.0, 0.1),
+        logistic_score(std_spot, 0.0, 2),
+        logistic_score(ice_rings, 0, 10),
+    ])
+    if DEBUG:
+        names = ['Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Ice']
+        vals = [resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, ice_rings]
+        for name, contrib, val in zip(names, scores, vals):
+            print '\t%s : %0.3f (%0.3f)' % (name, contrib, val)
+        
+    return numpy.exp(numpy.log(scores).mean())
+   
+def score_crystal_old(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings):
             
     score = [ 1.0,
         -0.20 * score_penalty(resolution, 1.0, 6.0),

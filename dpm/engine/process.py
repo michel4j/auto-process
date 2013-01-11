@@ -2,6 +2,7 @@
 import os
 import sys
 import time
+import numpy
 
 import dpm.errors
 from dpm.utils.misc import json, SortedDict
@@ -79,42 +80,76 @@ class DataSet(object):
         self.log = info.get('log', [])
         self.results = info.get('results',{})            
 
-    def score(self, strategy=False, scaled=False):
+    def score(self):
         
-        if scaled:
-            resolution = self.results['scaling']['summary']['resolution'][0]
-            _summary = self.results['scaling']['statistics'][0]
-            completeness = self.results['data_quality']['completeness']       
-        else:
-            resolution = self.results['correction']['summary']['resolution'][0]
-            _summary = self.results['correction']['statistics'][0]
-            completeness = self.results['correction']['summary']['completeness']
+        _overall = {}
+        _overall.update(self.results['correction']['summary'])
+        # full data processing
+        if 'scaling' in self.results:
+            _overall.update(self.results['scaling']['summary'])
+                    
+        # screening
+        if 'strategy' in self.results:
+            _overall.update(self.results['strategy']['prediction_all'])
+            _overall['resolution'] = [self.results['strategy']['resolution'], 0]
+
+            # Average out the low resolution to approx the same level ~ 4.0 A
+            t = misc.rTable(self.results['strategy']['details']['shell_statistics'])
+            _shells = numpy.array(map(float, t['max_resolution'][:-1]))
+            _isigma = numpy.array(t['average_i_over_sigma'][:-1])
+            _rmeas = numpy.array(t['R_factor'][:-1])
+            _compl = numpy.array(t['completeness'][:-1])*100.0
             
-        i_sigma = _summary['i_sigma']
-        r_meas = _summary['r_meas']
-        mosaicity = self.results['correction']['summary']['mosaicity']
-        std_spot = self.results['correction']['summary']['stdev_spot']
-        std_spindle= self.results['correction']['summary']['stdev_spindle']
-        
+            sel = (_shells > 4.0)
+            
+            if sel.sum() == len(_shells):
+                low_res = dict(zip(t.keys(), t.row(-1)))
+            elif sel.sum() == 0:
+                low_res = dict(zip(t.keys(), t.row(0)))
+            else:
+                # simple average
+                low_res = {
+                    'i_sigma': _isigma[sel].mean(),
+                    'r_meas': _rmeas[sel].mean(),
+                    'completeness': _compl.mean(),
+                    'shell': _shells[sel][-1],
+                }        
+        else:         
+            t = misc.Table(self.results['scaling']['statistics'])
+            _shells = numpy.array(map(float, t['shell'][:-1]))
+            _isigma = numpy.array(t['i_sigma'][:-1])
+            _rmeas = numpy.array(t['r_meas'][:-1])
+            _compl = numpy.array(t['completeness'][:-1])
+            _nrefl = numpy.array(t['compared'][:-1])
+            _unique = numpy.array(t['unique'][:-1])
+            _possible = numpy.array(t['possible'][:-1])
+            sel = (_shells > 4.0)
+            
+            if sel.sum() == len(_shells) or _nrefl[sel].any() == 0:
+                low_res = dict(zip(t.keys(), t.row(-1)))
+            elif sel.sum() == 0:
+                low_res = dict(zip(t.keys(), t.row(0)))
+            else:
+                # weighted by number of reflections
+                low_res = {
+                    'i_sigma': (_isigma[sel]*_nrefl[sel]).mean() / _nrefl[sel].mean(),
+                    'r_meas': (_rmeas[sel]*_nrefl[sel]).mean() / _nrefl[sel].mean(),
+                    'completeness': 100.0 * _unique[sel].sum() / _possible[sel].sum(),
+                    'shell': _shells[sel][-1],
+                }
 
         if self.results.get('image_analysis') is not None:
-            ice_rings = self.results['image_analysis'].get('summary', {}).get('ice_rings', 0)
+            ice_rings = self.results['image_analysis'].get('summary', {}).get('ice_rings', -1)
         else:
-            ice_rings = 0
-            
-        #use predicted values for resolution, r_meas, i_sigma if we are screening
-        if strategy:
-            resolution = self.results['strategy']['resolution']
-            if self.results['strategy'].get('prediction_all') is not None:
-                r_meas = self.results['strategy']['prediction_all']['R_factor']
-                i_sigma = self.results['strategy']['prediction_all']['average_i_over_sigma']
-                completeness = self.results['strategy']['prediction_all']['completeness']
-            
-        score = xtal.score_crystal(resolution, 
-                                   completeness,
-                                   r_meas, i_sigma,
-                                   mosaicity, 
-                                   std_spot, std_spindle,
+            ice_rings = -1
+                        
+        score = xtal.score_crystal(_overall['resolution'][0], 
+                                   low_res['completeness'],
+                                   low_res['r_meas'],
+                                   low_res['i_sigma'],
+                                   _overall['mosaicity'], 
+                                   _overall['stdev_spot'],
+                                   _overall['stdev_spindle'],
                                    ice_rings)
         self.results['crystal_score'] = score
         return score
@@ -423,7 +458,7 @@ class Manager(object):
             # Scoring and experiment setup check
             #ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
             #_logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
-            _score = dset.score(strategy=(self.options.get('mode')=='screening'), scaled=True)
+            _score = dset.score()
             _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
             
             # file format conversions

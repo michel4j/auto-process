@@ -135,7 +135,7 @@ def get_log_data(datasets, options={}):
         elif dataset_name == "*combined*":
             _ice_rings = 'N/A'
             _summary = dres['scaling']
-            _score = dset.score(scaled=True)
+            _score = dset.score()
             _std_pix = "N/A"
             _std_deg = "N/A"
             _mos = "N/A"

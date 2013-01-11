@@ -22,15 +22,16 @@ def _diagnose_index(info):
     #   1 = index origin delta > 6
     data = {}
     data['quality_code'] = 0
-    if info['failure_code'] == 1:
+    failure_code = info.get('failure_code', 256)
+    if failure_code == 1:
         data['quality_code'] |=  64
-    elif info['failure_code'] == 2:
+    elif failure_code == 2:
         data['quality_code'] |=  16
-    elif info['failure_code'] == 3:
+    elif failure_code == 3:
         data['quality_code'] |=  128
-    elif info['failure_code'] == 4:
+    elif failure_code == 4:
         data['quality_code'] |=  32
-    elif info['failure_code'] in [5,6]:
+    elif failure_code in [5,6]:
         data['quality_code'] |=  256
         
     _refl = _spots = None
@@ -109,7 +110,7 @@ def _diagnose_index(info):
                 #data['index_deviation'] = _org.get('deviation')
                 break    
     if data['index_origin_delta'] > 6 : data['quality_code'] |= 1
-    data['failure_code'] = info['failure_code']
+    data['failure_code'] = failure_code
     
     return data
 

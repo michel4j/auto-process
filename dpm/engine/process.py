@@ -286,11 +286,10 @@ class Manager(object):
                               self.options['mode'].upper(), len(self.datasets))
         _separator = len(_header)*'-'
         _logger.info(_header)
-        _num_cores = int(os.environ.get('DPM_CORES', misc.get_cpu_count))
         _env_hosts = os.environ.get('DPM_HOSTS', 'localhost')
         _num_nodes = len(_env_hosts.split(' '))
 
-        _logger.debug('Computer system: %d cores in %d nodes' % (_num_cores, _num_nodes))
+        _logger.debug('Computer system: %d nodes' % (_num_nodes))
         _logger.debug('Computer nodes: "%s"' % _env_hosts )
         if resume_from is not None:
             cur_pos, next_step = resume_from

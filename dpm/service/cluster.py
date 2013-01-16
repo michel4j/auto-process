@@ -106,11 +106,12 @@ class IntegrateServer(object):
         active_clients = []
         for client, ccores in self.clients.items():
             share = round(float(ccores)*self.num_tasks/self.total_cores)
+            njobs = min(share, numpy.ceil(ccores/(share*self.min_batch_size)))
             if share < 1: continue
-            cmd = self.command % (client, share)
+            cmd = self.command % (client, njobs)
             args = shlex.split(cmd)
             p = subprocess.Popen(args, stdin=subprocess.PIPE)
-            print "Starting %0.0f job(s) on remote client: '%s'" % (share, client)
+            print "Starting %0.0f job(s) on remote client: '%s'" % (njobs, client)
             active_clients.append(p)
         
         # monitor results and exit when done.

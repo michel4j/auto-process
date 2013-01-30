@@ -133,6 +133,7 @@ class ColspotServer(IntegrateServer):
     def __init__(self, total, max_cpu, folder):
         self.jobs = total
         self.max_cpu = max_cpu
+        self.min_batch_size = max_cpu
         self.cur_dir = folder        
         self.create_manager()
         self.command = "ssh -x %%s 'cd %s ; source ~/.login; colspotclient %s %d %s %%d'" % (
@@ -203,7 +204,7 @@ class JobClient(object):
             procs.append(p)
             p.start()
             num_jobs += 1
-            time.sleep(2)  # don't be greedy, let others have a chance too!
+            #time.sleep(2)  # don't be greedy, let others have a chance too!
 
         for p in procs:
             p.join()    

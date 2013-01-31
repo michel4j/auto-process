@@ -5,7 +5,9 @@
 import sys
 import os
 from dpm.service import cluster
-    
+
+os.nice(20)    
+
 if __name__ == '__main__':
     
     if len(sys.argv) != 5:

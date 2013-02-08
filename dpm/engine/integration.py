@@ -42,6 +42,10 @@ def integrate(data_info, options={}):
         _pd.stop()
         _pc.stop()   
         return {'step': 'integration', 'success':False, 'reason': str(e)}
+    except:
+        _pd.stop()
+        _pc.stop()
+        return {'step': 'integration', 'success':False, 'reason': "Could not parse integrate output file"}      
     else:
         _pd.stop()
         _pc.stop()

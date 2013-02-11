@@ -204,7 +204,7 @@ class JobClient(object):
             procs.append(p)
             p.start()
             num_jobs += 1
-            #time.sleep(2)  # don't be greedy, let others have a chance too!
+            time.sleep(2)  # don't be greedy, let others have a chance too!
 
         for p in procs:
             p.join()    

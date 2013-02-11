@@ -37,6 +37,13 @@ def num_chunks(N, n):
         else:
             yield base_size
 
+def get_load():
+    loadFile = file("/proc/loadavg", "r")
+    info = loadFile.readline().split()
+    loadFile.close()
+    load = float(info[0])/multiprocessing.cpu_count()
+    return load
+    
 class IntegrateServer(object):
     def __init__(self, first, total, jobs, min_batch, max_cpu, folder):
         self.first_frame = first
@@ -175,8 +182,9 @@ class JobClient(object):
        
     def worker(self, job_q, result_q):
         myname = multiprocessing.current_process().name
-        while True:
+        while True and get_load() < 0.20:
             try:
+                time.sleep(2)  # don't be greedy, let others have a chance too!
                 job = job_q.get_nowait()
                 job_args =  " ".join(["%s" % v for v in job ])
                 p = subprocess.Popen([self.command], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -204,7 +212,6 @@ class JobClient(object):
             procs.append(p)
             p.start()
             num_jobs += 1
-            time.sleep(2)  # don't be greedy, let others have a chance too!
 
         for p in procs:
             p.join()    

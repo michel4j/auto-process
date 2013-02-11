@@ -182,7 +182,7 @@ class JobClient(object):
        
     def worker(self, job_q, result_q):
         myname = multiprocessing.current_process().name
-        while True and get_load() < 0.20:
+        while True:
             try:
                 time.sleep(2)  # don't be greedy, let others have a chance too!
                 job = job_q.get_nowait()

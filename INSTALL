@@ -1,0 +1,33 @@
+AutoProcess Installation
+------------------------
+
+1. Pre-requisites
+    ** Python modules available for most Linux distributions
+    - Python 2.6 and above is required
+    - numpy
+    - scipy
+    - matplotlib
+    - Django
+    
+    ** Crystallography packages
+    - XDS
+    - Phenix
+    - CCP4 packages (especially POINTLESS and F2MTZ)
+    - BEST (http://www.embl-hamburg.de/BEST/) (only needed for screening) version 3.2 works, 3.4 may work but has a few issues
+    - (optional) python-twisted (8.0 and above) for data processing server. Usually not required.
+    - An up-to-date Linux kernel on all machines on which you will be running XDS. 
+      Some unpatched kernel versions have a deadlock bug which causes XDS to hang during integrate
+ 
+2. Installation
+    - unpack the tar archive in a directory of your choice such as /usr/local/AutoProcess-3 or any folder of your choice. It doesn't matter.
+    - edit the 'dpm.csh' and 'dpm.sh' files in the subfolder 'deploy' to match the installation. See the comments in those files.
+    - copy those files to a location such that they are sourced at login, or source them from your shell login scripts.
+    - Make sure all the required packages are in your path.
+    - Setup ssh password-less login on all machines you want to use as data processing slaves, as configured in dpm.csh or dpm.sh. 
+      Adding more machines with multiple cores speeds up data processing. See the example for a 96 core cluster. 
+    - rename the versions of forkintegrate and forkcolspot which come with XDS so that the versions in AutoProcess are used instead.
+    
+3. Run AutoProcess
+    - type 'auto.process -h' for help. You can also check our web site here (http://cmcf.lightsource.ca/user-guide/autoprocess/) for more information. 
+      Other tools available include auto.analyse, auto.inputs, auto.integrate, auto.report, auto.scale, auto.strategy, auto.symmetry.
+      

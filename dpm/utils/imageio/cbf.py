@@ -13,11 +13,11 @@ import re
 
 from utils import calc_gamma
 from dpm.utils.log import get_module_logger
+from dpm.parser import utils as parse_tools
 from common import *
 
 # Configure Logging
 _logger = get_module_logger('imageio.cbf')
-
 
 # Define CBF Error Code constants
 CBF_FORMAT         = 0x00000001  #      1
@@ -165,10 +165,8 @@ class CBFImageFile(object):
         res |= cbflib.cbf_read_template(self.handle, fp)
         res |= cbflib.cbf_construct_goniometer(self.handle, byref(self.goniometer))
         res |= cbflib.cbf_require_reference_detector(self.handle, byref(self.detector), 0)
-        if res != 0:
-            _logger.warning('Incomplete CBF header, probably miniCBF!')
-
         self._read_header()
+        
         if not header_only:
             self._read_image()
 
@@ -272,8 +270,35 @@ class CBFImageFile(object):
             header['detector_type'] = 'Unknown'
         header['file_format'] = 'CBF'
 
+        if header['distance'] == 999.0 and header['delta_angle'] == 0.0 and header['exposure_time'] == 0.0:
+            res = cbflib.cbf_select_datablock(self.handle, c_uint(0))
+            res |= cbflib.cbf_find_category(self.handle, "array_data")
+            res |= cbflib.cbf_find_column(self.handle, "header_convention")
+            hdr_type = c_char_p()
+            res |= cbflib.cbf_get_value(self.handle, byref(hdr_type))   
+            res |= cbflib.cbf_find_column(self.handle, "header_contents")   
+            hdr_contents = c_char_p()
+            res |= cbflib.cbf_get_value(self.handle, byref(hdr_contents))
+            if res == 0 and hdr_type.value != 'XDS special':  
+                _logger.info('miniCBF header type found: %s' % hdr_type.value)
+                config = '%s.ini' % hdr_type.value.lower()
+                info = parse_tools.parse_data(hdr_contents.value, config)
+                header['detector_type'] = info['detector'].split(',')[0].strip().replace(' ', '_')
+                header['two_theta'] = info['two_theta']
+                header['pixel_size'] = info['pixel_size'][0] * 1000
+                header['exposure_time'] = info['exposure_time']
+                header['wavelength'] = info['wavelength']
+                header['distance'] = info['distance']*1000
+                header['beam_center'] = info['beam_center']
+                header['start_angle'] = info['start_angle']
+                header['delta_angle'] = info['delta_angle']
+                header['saturated_value'] = info['saturated_value']
+                header['sensor_thickness'] = info['sensor_thickness']*1000
+            else:
+                _logger.warning('miniCBF with no header')
         self.header = header
 
+        
     def _read_image(self):
         num_el = self.header['detector_size'][0] * self.header['detector_size'][1]
         el_params = DECODER_DICT[self.mime_header.get('X-Binary-Element-Type', 'signed 32-bit integer')]
@@ -292,7 +317,7 @@ class CBFImageFile(object):
             res |= cbflib.cbf_get_integerarray(self.handle, byref(binary_id), byref(data), el_size,
                 1, c_size_t(num_el), byref(num_el_read))
             if res != 0:
-                _logger.error('MimiCBF Image data error: %s' % (_format_error(res),))
+                _logger.error('MiniCBF Image data error: %s' % (_format_error(res),))
                         
         self.image = Image.fromstring('F', self.header['detector_size'], data, 'raw', el_params[1])
         self.image = self.image.convert('I')
@@ -301,11 +326,10 @@ class CBFImageFile(object):
         self.header['min_intensity'], self.header['max_intensity'] = arr.min(), arr.max()
         self.header['gamma'] = calc_gamma(self.header['average_intensity'])
         self.header['overloads'] = len(numpy.where(arr >= self.header['saturated_value'])[0])
-                   
+                    
     def __del__(self):
         res = self._cbflib.cbf_free_handle(self.handle)
         res |= self._cbflib.cbf_free_goniometer(self.goniometer)
         res |= self._cbflib.cbf_free_detector(self.detector)
-
 
 __all__ = ['CBFImageFile']

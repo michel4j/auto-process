@@ -61,7 +61,7 @@ def get_parameters(img_file):
     """
     directory, filename = os.path.split(os.path.abspath(img_file))
 
-    file_pattern = re.compile('^(?P<base>[\w-]+\.?)(?<!\d)(?P<num>\d{3,4})(?P<ext>\.?[\w.]+)?$')
+    file_pattern = re.compile('^(?P<base>[\w-]+\.?)(?<!\d)(?P<num>\d{3,6})(?P<ext>\.?[\w.]+)?$')
     fm = file_pattern.match(filename)
     if fm:
         if fm.group('ext') is not None:

@@ -268,7 +268,7 @@ def parse_file(filename, config):
     return info
 
 def parse_data(data, config):
-    conf = ConfigObj(os.path.join(INI_DIR, config))    
+    conf = ConfigObj(os.path.join(INI_DIR, config))
     info = _process_sections(data, conf)
     return info
     

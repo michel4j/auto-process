@@ -17,6 +17,13 @@ AutoProcess Installation
     - (optional) python-twisted (8.0 and above) for data processing server. Usually not required.
     - An up-to-date Linux kernel on all machines on which you will be running XDS. 
       Some unpatched kernel versions have a deadlock bug which causes XDS to hang during integrate
+    
+    ** Others
+    - CBFlib in order to work with cbf formated files such as those produced by PILATUS
+    
+    ** On Fedora Linux with RPMFusion repositories enabled, the following should install all pre-requisites except for the Crystallography packages
+       
+       yum -y install numpy scipy python-matplotlib python-django
  
 2. Installation
     - unpack the tar archive in a directory of your choice such as /usr/local/AutoProcess-3 or any folder of your choice. It doesn't matter.

@@ -13,28 +13,50 @@ AutoProcess Installation
     - XDS
     - Phenix
     - CCP4 packages (especially POINTLESS and F2MTZ)
-    - BEST (http://www.embl-hamburg.de/BEST/) (only needed for screening) version 3.2 works, 3.4 may work but has a few issues
-    - (optional) python-twisted (8.0 and above) for data processing server. Usually not required.
-    - An up-to-date Linux kernel on all machines on which you will be running XDS. 
-      Some unpatched kernel versions have a deadlock bug which causes XDS to hang during integrate
+    - BEST (http://www.embl-hamburg.de/BEST/) (only needed for screening) 
+      version 3.2 works, 3.4 may work but has a few issues
+    - (optional) python-twisted (8.0 and above) for data processing server. 
+      Usually not required.
+    - An up-to-date Linux kernel on all machines used for running XDS. 
+      Some unpatched kernel versions have a deadlock bug which causes hang-ups
+      during integrate.
     
     ** Others
-    - CBFlib in order to work with cbf formated files such as those produced by PILATUS
+    - CBFlib in order to work with cbf formated files such as those produced by
+      PILATUS
     
-    ** On Fedora Linux with RPMFusion repositories enabled, the following should install all pre-requisites except for the Crystallography packages
+    ** On Fedora Linux with RPMFusion repositories enabled, the following should
+       install all pre-requisites except for the Crystallography packages
        
-       yum -y install numpy scipy python-matplotlib python-django
+             yum -y install numpy scipy python-matplotlib python-django
  
 2. Installation
-    - unpack the tar archive in a directory of your choice such as /usr/local/AutoProcess-3 or any folder of your choice. It doesn't matter.
-    - edit the 'dpm.csh' and 'dpm.sh' files in the subfolder 'deploy' to match the installation. See the comments in those files.
-    - copy those files to a location such that they are sourced at login, or source them from your shell login scripts.
+    - unpack the tar archive in a directory of your choice such as 
+      /usr/local/AutoProcess-3 or any folder of your choice. It doesn't matter.
+    - edit the 'dpm.csh' and 'dpm.sh' files in the subfolder 'deploy' to match 
+      the installation. See the comments in those files.
+    - copy those files to a location such that they are sourced at login, or 
+      source them from your shell login scripts.
     - Make sure all the required packages are in your path.
-    - Setup ssh password-less login on all machines you want to use as data processing slaves, as configured in dpm.csh or dpm.sh. 
-      Adding more machines with multiple cores speeds up data processing. See the example for a 96 core cluster. 
-    - rename the versions of forkintegrate and forkcolspot which come with XDS so that the versions in AutoProcess are used instead.
+    - Setup ssh password-less login (http://www.linuxproblem.org/art_9.html) on 
+      all machines you want to use as data processing slaves (including your 
+      local machine), as configured in dpm.csh or dpm.sh. Adding more machines 
+      with multiple cores speeds up data processing. See the example for a 96 
+      core cluster.
+    - Make sure the directories in which you'll be processing data from/in have
+      exactly the same path on all machines configured (Use NFS). Also make sure
+      all the machines are the same architecture and preferably the same 
+      operating system version. You can not mix x86 and AMD64.
+    - rename the versions of forkintegrate and forkcolspot which come with XDS 
+      so that the versions in AutoProcess are used instead.
+    - You can use a single machine to run AutoProcess but it might be very slow
+      unless you have a lot of cores in it. If you want integration to happen 
+      elsewhere while other tasks run locally, omit your local host from 
+      dpm.csh & dpm.sh
     
 3. Run AutoProcess
-    - type 'auto.process -h' for help. You can also check our web site here (http://cmcf.lightsource.ca/user-guide/autoprocess/) for more information. 
-      Other tools available include auto.analyse, auto.inputs, auto.integrate, auto.report, auto.scale, auto.strategy, auto.symmetry.
+    - type 'auto.process -h' for help. You can also check our web site here 
+      (http://cmcf.lightsource.ca/user-guide/autoprocess/) for more information. 
+      Other tools available include auto.analyse, auto.inputs, auto.integrate, 
+      auto.report, auto.scale, auto.strategy, auto.symmetry.
       

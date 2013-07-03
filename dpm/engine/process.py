@@ -87,6 +87,10 @@ class DataSet(object):
         # full data processing
         if 'scaling' in self.results:
             _overall.update(self.results['scaling']['summary'])
+            t = misc.Table(self.results['scaling']['statistics'])
+        else:
+            t = misc.Table(self.results['correction']['statistics'])
+
                     
         # screening
         if 'strategy' in self.results:
@@ -115,7 +119,6 @@ class DataSet(object):
                     'shell': _shells[sel][-1],
                 }        
         else:         
-            t = misc.Table(self.results['scaling']['statistics'])
             _shells = numpy.array(map(float, t['shell'][:-1]))
             _isigma = numpy.array(t['i_sigma'][:-1])
             _rmeas = numpy.array(t['r_meas'][:-1])
@@ -153,7 +156,6 @@ class DataSet(object):
                                    ice_rings)
         self.results['crystal_score'] = score
         return score
-
     
 class Manager(object):
     def __init__(self, options=None, checkpoint=None, overwrites={}):

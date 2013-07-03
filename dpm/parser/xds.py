@@ -66,7 +66,7 @@ def parse_correct(filename='CORRECT.LP'):
     if not os.path.exists(filename):
         return {'failure': 'Correction step failed'}
     info = utils.parse_file(filename, config='correct.ini')
-    
+
     if info.get('statistics') is not None:
         if len(info['statistics']) > 1:
             info['summary'].update( info['statistics'][-1] )

@@ -50,7 +50,7 @@ def f2mtz(filename):
 
 def xdsstat(filename):
     file_text = "#!/bin/csh \n"
-    file_text += "xdsstat <<EOF > XDSSTAT.LP\n" 
+    file_text += "xdsstat 100 3 <<EOF > XDSSTAT.LP\n" 
     file_text += "%s\n" % filename 
     file_text += "EOF\n"
     try:

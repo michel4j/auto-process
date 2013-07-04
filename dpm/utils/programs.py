@@ -1,36 +1,19 @@
 
 import subprocess
-import os
 import dpm.errors
-
 
 def _execute_command(args, out_file=None):
     if out_file is None:
         std_out = open('commands.log', 'a')
-        std_err = std_out
     else:
         std_out = open(out_file, 'a')
-        std_err = open('commands.log', 'a')
     try:    
-        try:
-            p = subprocess.Popen(args, shell=False, stdout=std_out, stderr=std_err)
-            sts = os.waitpid(p.pid, 0)
-            assert sts[1] == 0
-        except OSError:
-            if type(args) in [tuple, list]: 
-                prog = args[0]
-            else: 
-                prog = args
-            raise dpm.errors.ProcessError('Program not found `%s`' % (prog,))
-        except ValueError:
-            raise dpm.errors.ProcessError('Invalid arguments `%s`' % (args,))
-        except AssertionError:
-            #FIXME: temporary hack to avoid harmless Fortran run-time error with BEST
-            if args[1] == 'best.com' and sts[1] != 512: 
-                raise dpm.errors.ProcessError('Program died prematurely')
-    finally:
-        std_out.close()
-        std_err.close()
+        output = subprocess.check_output(args, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError, e:
+        raise dpm.errors.ProcessError(e.output.strip())
+    
+    std_out.write(output)
+    std_out.close()
         
 
 def xds():

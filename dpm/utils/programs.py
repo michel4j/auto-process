@@ -59,7 +59,10 @@ def xdsstat(filename):
     except IOError:
         raise dpm.errors.ProcessError('Could not create command file')
     outfile.close()
-    _execute_command(["sh", "xdsstat.com"])
+    try:
+        _execute_command(["sh", "xdsstat.com"])
+    except:
+        pass
 
        
 def pointless(retry=False, filename="INTEGRATE.HKL"):

@@ -44,7 +44,7 @@ def scale_datasets(dsets, options={}, message="Scaling"):
         for dset in dsets.values():
             dres = dset.results
             resol = options.get('resolution', dres['correction']['summary']['resolution'][0])
-            in_file = os.path.join(dset.name, dres['correction']['output_file'])
+            in_file = dres['correction']['output_file']
             out_file = os.path.join(dset.name, "XSCALE.HKL")
             sections.append(
                 {'anomalous': options.get('anomalous', False),
@@ -65,7 +65,7 @@ def scale_datasets(dsets, options={}, message="Scaling"):
         for dset in dsets.values():
             dres = dset.results
             resol = options.get('resolution', dres['correction']['summary']['resolution'][0])
-            in_file = os.path.join(dset.name, dres['correction']['output_file'])
+            in_file = dres['correction']['output_file']
             inputs.append({'input_file': in_file, 'resolution': resol})
         sections = [{
             'anomalous': options.get('anomalous', False),
@@ -127,14 +127,14 @@ def prepare_reference(dsets, options={}):
     minimum_correlation = 0.0
     if len(dsets) < 4 or best[0] >= 30.0:
         _logger.info('Using the most complete dataset `%s`(%0.1f%%) as reference.' % (best[1], best[0]))
-        reference_file = os.path.join(reference_name, dsets[reference_name].results['correction']['output_file'])
+        reference_file = dsets[reference_name].results['correction']['output_file']
     else:       
         dset_names = [dset.name for dset in dsets.values()]
         dset_options = []
         for name in dset_names:
             dset_options.append(
                 {'name': name, 
-                 'input_file': os.path.join(name, dsets[name].results['correction']['output_file']), 
+                 'input_file': dsets[name].results['correction']['output_file'], 
                  'resolution': 0,
                  'reference': name == reference_name})
             

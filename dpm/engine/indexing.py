@@ -120,29 +120,22 @@ def _match_code(src, tgt):
 
 
 def _filter_spots(sigma=0, unindexed=False, filename='SPOT.XDS'):
-    new_list = numpy.loadtxt(filename)
-    def _indexed(a):
-        if len(a) < 5:
-            return False
-        elif sum([abs(v) for v in a[4:]])>0.01:
-            return True
-        else:
-            return False
-            
-    if sigma > 0:
-        new_list = [sp for sp in new_list if sp[3] > sigma ]
-    if unindexed:
-        new_list = [sp for sp in new_list if _indexed(sp)]
-    f = open(filename, 'w')
-    for spot in new_list:
-        if len(spot)>4:
-            txt = '%10.2f%10.2f%10.2f%9.0f.%8d%8d%8d\n' % tuple(spot)
-        else:
-            txt = '%10.2f%10.2f%10.2f%9.0f.\n' % tuple(spot)
-        f.write(txt)
-    f.close()
     
+    new_list = numpy.loadtxt(filename)
+    if new_list.shape[1] < 5:
+        return
+    fmt = [" %0.2f"] + ["%0.2f"]*2 + ["%0.0f."]
+    if new_list.shape[1] > 7:
+        fmt += ["%d"]*4
+    else:
+        fmt += ["%d"]*3
+        
+    new_sel = (new_list[:,3] > sigma)
+    if unindexed:
+        new_sel = new_sel & (new_list[:,-3] != 0) & (new_list[:,-3] != 0) & (new_list[:,-3] != 0)
 
+    numpy.savetxt(filename, new_list[new_sel,:], fmt=fmt)
+    
 def auto_index(data_info, options={}):
     os.chdir(data_info['working_directory'])
     _logger.info('Determining lattice orientation and parameters ...')

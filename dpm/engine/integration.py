@@ -90,10 +90,10 @@ def correct(data_info, options={}):
                     break
         
         # Extra statistics
-        #if data_info['working_directory'] == options.get('directory'):
-        info['output_file'] = 'XDS_ASCII.HKL'
-        #else:
-        #    info['output_file'] = os.path.join(data_info['name'], 'XDS_ASCII.HKL')
+        if data_info['working_directory'] == options.get('directory'):
+            info['output_file'] = 'XDS_ASCII.HKL'
+        else:
+            info['output_file'] = os.path.join(data_info['name'], 'XDS_ASCII.HKL')
 
         programs.xdsstat(info['output_file'])
         stat_info = xds.parse_xdsstat()

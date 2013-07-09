@@ -7,6 +7,7 @@ import numpy
 import dpm.errors
 from dpm.utils.misc import json, SortedDict
 from dpm.utils import dataset, misc, log, xtal, programs
+from dpm.utils import kappa
 from dpm.engine import indexing, spots, integration, scaling
 from dpm.engine import reporting, symmetry, strategy, conversion
 from dpm.parser import xds
@@ -397,16 +398,22 @@ class Manager(object):
                 if self.options.get('mode') == 'screen':
                     # calculate and report the angles of the spindle from
                     # the three axes  
-                    _dat = dset.results['correction']['parameters']
-                    _output = misc.optimize_xtal_offset(_dat)
-                    deg = u"\u00b0"            
-                    _logger.info('Optimum offset (%0.1f%s) of longest axis (%s) can be achieved with:' % (
-                                    _output['best_offset'], deg,
-                                    ['A','B','C'][_output['longest_axis']],
-                                    ))
-                    _logger.info('... Kappa = %5.1f%s' %(_output['kappa'], deg)) 
-                    _logger.info('... Phi   = %5.1f%s' %(_output['phi'], deg))
-
+                    _logger.info('Goniometer parameters for re-orienting crystal:')
+                    info = dset.results['correction']['parameters']
+                    isols, pars = kappa.get_solutions(info)
+                    parallel_symb = u"\u2225"
+                    perpend_symb = u"\u27C2"
+                    if pars['mode'] == 'MAIN':
+                        descr = 'v1 %s omega, v2 %s omega-beam plane' % (parallel_symb, parallel_symb)
+                    else:
+                        descr = 'v1 %s omega-beam plane, v2 %s omega-beam plane' % (perpend_symb, parallel_symb)
+                    _logger.info(descr)
+                    _logger.info("%6s %6s  %s (%s)" % ("Kappa", "Phi", "v1>v2 ", descr))
+                    _logger.info("-"*58)
+                    for isol in isols:
+                        txt = ", ".join([">".join(p) for p in isols[isol]])
+                        _logger.info("%s  %s" % (isol, txt))
+                    _logger.info("-"*58)
             
             
             self.save_checkpoint()

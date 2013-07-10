@@ -1,3 +1,5 @@
-#!/bin/csh
+#!/usr/bin/env python
 
-/usr/bin/env python $DPM_PATH/dpm/auto_strategy.py $*
+from dpm import auto_strategy as command_step
+if __name__ == "__main__":
+    command_step.run()

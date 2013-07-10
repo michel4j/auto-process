@@ -1,3 +1,5 @@
-#!/bin/csh
+#!/usr/bin/env python
 
-/usr/bin/env python $DPM_PATH/dpm/auto_symmetry.py $*
+from dpm import auto_symmetry as command_step
+if __name__ == "__main__":
+    command_step.run()

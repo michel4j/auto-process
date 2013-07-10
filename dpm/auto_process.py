@@ -33,7 +33,7 @@ def main():
             print options.PROCESS_USAGE
             sys.exit(1)
           
-if __name__ == "__main__":
+def run():
     try:
         log.log_to_console()
         main()

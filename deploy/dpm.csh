@@ -16,3 +16,5 @@ if ($?PYTHONPATH) then
 else
 	setenv PYTHONPATH ${DPM_PATH}
 endif
+setenv LC_ALL=en_US.UTF8
+

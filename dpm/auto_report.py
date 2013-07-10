@@ -43,7 +43,7 @@ def main():
         print REPORT_USAGE
         sys.exit(1)  
      
-if __name__ == "__main__":
+def run():
     try:
         log.log_to_console()
         main()

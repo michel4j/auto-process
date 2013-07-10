@@ -98,7 +98,7 @@ def get_solutions(info, orientations=("",""), mode='MAIN'):
     _do_PG_permutations = True
 
     # Default orientation
-    _v1, _v2 = orientations
+    _v1, _v2 = map(str, orientations)
     XOparser = CustomParser(info)
     _space_group_numb =XOparser.dict['symmetry']
 
@@ -131,17 +131,16 @@ def get_solutions(info, orientations=("",""), mode='MAIN'):
         for sol in all_solutions[sols]:
             key = "%6.1f %6.1f" % (sol[1],sol[0])
             if key not in independent_solutions:
-                independent_solutions[key] = [sols]
+                independent_solutions[key] = [(sol[1], sol[0]), sols]
             else:
                 if sols not in independent_solutions[key]:
                     independent_solutions[key].append(sols)
 
-    return independent_solutions, {'mode': mode, 'goniometer': GONIOMETER_NAME}
+    return independent_solutions.values(), {'mode': mode, 'goniometer': GONIOMETER_NAME}
 
 
 if __name__ == '__main__':
     info = xds.parse_xparm('GXPARM.XDS')
     isols, pars = get_solutions(info)
-
     for n, isol in enumerate(isols):
-        print "%4d   %s   %s" % (n+1, isol, isols[isol])
+        print "%4d %6.1f %6.1f  %s" % (n+1, isol[0][0], isol[0][1], isol[1:])

@@ -2,7 +2,6 @@
 
 
 import sys
-import os
 import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
     
@@ -28,10 +27,13 @@ def main():
         app.options['anomalous'] = options.get('anomalous')
     app.options['backup'] = options.get('backup', False)
     app.run( resume_from=(chkpt['run_position'][0],'strategy'), overwrite=options)
-     
-if __name__ == "__main__":
+
+def run():
     try:
         log.log_to_console()
         main()
     except KeyboardInterrupt:
         sys.exit(1)
+         
+if __name__ == "__main__":
+    run()

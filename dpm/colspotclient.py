@@ -3,7 +3,6 @@
 # runs one instance of a distributed INTEGRATE client 
 
 import sys
-import os
 from dpm.service import cluster
     
 if __name__ == '__main__':

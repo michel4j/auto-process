@@ -529,6 +529,7 @@ def get_reports(datasets, options={}):
                 _st_details =_strategy.get('details', {})
                 _dataset_info['result']['details']['overlap_analysis'] = _st_details.get('delta_statistics')
                 _dataset_info['result']['details']['wedge_analysis'] = _st_details.get('completeness_statistics')
+                _dataset_info['result']['details']['crystal_alignment'] = _st_details.get('crystal_alignment') 
                                 
                 # shell_statistics
                 _st_shell = _st_details.get('shell_statistics', {})

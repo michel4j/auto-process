@@ -16,4 +16,4 @@ if [ $PYTHONPATH ]; then
 else
 	export PYTHONPATH=${DPM_PATH}
 fi
-
+export LC_ALL=en_US.UTF8

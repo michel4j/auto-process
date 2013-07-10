@@ -222,6 +222,21 @@ Options:
     --res=<res>, -r <res> : Manually set the high resolution limit for strategy.
     --anom, -a : Calculate strategy with Friedel's law False
     --backup, -b : Backup previous output if it exists
+    --xalign="<v1>,<v2>", -x "<v1>,<v2>": Calculate Phi and Kappa angles for re-orienting crystal in
+        coordinate system. If this option is omitted, the calculations will be
+        done for all combinations of principal reciprocal axes. 
+        Two crystal vectors are required and could be provided in any one of the
+        following forms and their combinations:
+            principal cell axes: "a", "b", "c", "a*", "b*", or "c*"
+            reciprocal vectors in parenthesis: "(h k l)"
+            real-space vectors in square brackets: "[x y z]"
+        Examples:
+            --xalign="a*,b*", --xalign="[1 0 0],[0 1 1]"
+    --method=<0|1>, -m <0|1> : The method to be used for re-orienting the crystal.
+        0: This is the default. v1 is aligned parallel to the omega axis, and v2 
+           is placed in the plane containing the omega axis and the beam.
+        1: v1 is perpendicular to both the beam and the omega axis, and v2 is
+           placed in the plane containing the v1 and the omega axis.
     --help, -h : display this message
     Default (no option): Resume previous processing from strategy step.
     
@@ -231,14 +246,15 @@ Examples:
     auto.strategy -a -r 2.3
     
 """
-def strategy_options(params):
+def strategy_options(params):    
     try:
-        opts, _ = getopt.gnu_getopt(params, "r:abih", ["res=", "anom", "backup", "inputs","help"])
+        opts, args = getopt.gnu_getopt(params, "r:x:m:abih", ["res=", "xalign=", "method=", "anom", "backup", "inputs","help"])
     except:
         print STRATEGY_USAGE
             
     # Parse options
-    options = {}    
+    options = {}
+    xalign_options = {'vectors': ("",""), 'method': 0}
     for o, a in opts:
         if o in ("-h","--help"):
             print STRATEGY_USAGE
@@ -248,12 +264,23 @@ def strategy_options(params):
             options['anomalous'] = True
         if o in ('-b', '--backup'):
             options['backup'] = True
+        if o in ('-x', '--xalign'):
+            xalign_options['vectors'] = tuple([v.strip() for v in a.split(',')])
+        if o in ('-m', '--method'):
+            try:
+                xalign_options['method'] = int(a)
+                assert xalign_options['method'] in (0, 1)
+            except:
+                raise dpm.errors.InvalidOption('Invalid method specified. Values must be "0" or "1": `%s%s`' % (o, a))
+                sys.exit(0)                
+            
         if o in ('-r', '--res'):
             try:
                 options['resolution'] = float(a)
             except:
                 print STRATEGY_USAGE
                 sys.exit(0)
+    options['xalign'] = xalign_options
     return options
 
 SYMMETRY_USAGE = """

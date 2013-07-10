@@ -33,7 +33,7 @@ def main():
     app.options['backup'] = options.get('backup', False)
     app.run(resume_from=(chkpt['run_position'][0],'integration'), overwrite=ow)
      
-if __name__ == "__main__":
+def run():
     try:
         log.log_to_console()
         main()

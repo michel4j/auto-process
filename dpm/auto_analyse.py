@@ -57,7 +57,7 @@ def run_distl(img, directory=None, output_file=None):
     sts, output = commands.getstatusoutput('labelit.reset')
     return
 
-if __name__ == '__main__':
+def run():
     if len(sys.argv) > 1:
         img = os.path.abspath(sys.argv[1])
     else:

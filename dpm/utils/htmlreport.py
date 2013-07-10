@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
 import os
@@ -6,7 +8,6 @@ import numpy
 from dpm.utils import misc
 from dpm.utils.misc import json
 from dpm.utils.xtal import SPACE_GROUP_NAMES
-
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.ticker import Formatter, FormatStrFormatter, Locator

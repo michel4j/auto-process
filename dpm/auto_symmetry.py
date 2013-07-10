@@ -2,7 +2,6 @@
 
 
 import sys
-import os
 import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
 
@@ -31,7 +30,7 @@ def main():
     app = Manager(checkpoint=chkpt)
     app.run(resume_from=(chkpt['run_position'][0],'symmetry'), overwrite=options)      
      
-if __name__ == "__main__":
+def run():
     try:
         log.log_to_console()
         main()

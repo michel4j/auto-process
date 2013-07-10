@@ -59,19 +59,18 @@
             <dl class="note-list">
             <dt>[1] -<dt>
             <dd>
-                Data Quality Score for comparing similar data sets. Typically, values >
-                0.8 are excellent, > 0.6 are good, > 0.5 are acceptable, > 0.4
+                Data Quality Score.Typically, values > 0.8 are excellent, > 0.6 are good, > 0.5 are acceptable, > 0.4
                 marginal, and &lt; 0.4 are Barely usable
             </dd>
             <dt>[2] -<dt>
             <dd>
-                This space group was automatically assigned using POINTLESS (see P.R.Evans,
-                Acta Cryst. D62, 72-82, 2005). This procedure is unreliable for incomplete datasets
-                such as those used for screening. Please Inspect the detailed results below.
+                Space group automatically assigned with POINTLESS (see P.R.Evans,
+                Acta Cryst. D62, 72-82, 2005). Unreliable for incomplete datasets
+                such as screening. Detailed results below.
             </dd>
             <dt>[3] -<dt>
             <dd>
-                Data collection strategy and predicted quality was calculated using BEST. See 
+                Data collection strategy and predicted quality calculated with BEST. See 
             A.N. Popov and G.P. Bourenkov Acta Cryst. (2003). D59, 1145-1153, G.P. Bourenkov and A.N. Popov Acta Cryst. (2006). D62, 58-64.
             </dd>
             <dt>[4] -<dt>
@@ -81,7 +80,39 @@
         </dl>
         </div>
     </div>
-
+    {% with object.details.crystal_alignment as alignment %}
+    <div class="clear spacer"></div>
+    <h3>Kappa and Phi angles for re-orienting the crystal</h3>
+    <table class="rtable full">
+        <thead>
+            <tr>
+                <th scope="col">Kappa<sup class="footnote">[*]</sup></th>
+                <th scope="col">Phi</th>
+                <th scope="col">Vectors (v1, v2)<sup class="footnote">[*]</sup></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for rows in alignment.solutions %}
+        <tr>
+            <td>{{rows.0|floatformat:"-1"}}</td>
+            <td>{{rows.1|floatformat:"-1"}}</td>
+            <td>{{rows.2}}</td>
+        </tr>
+        </tbody>
+        {% endfor %}
+    </table>
+    <div class="tablenotes">
+        <h3>Notes</h3>
+            <dl class="note-list">
+            <dt>[*] -<dt>
+            <dd>
+                Alignment is calculated for the goniometer '{{alignment.goniometer}}'. 
+                The alignment method is {{alignment.method}}
+            </dd>
+        </dl>
+    </div><div class="clear spacer pagebreak"></div>
+    {% endwith %}
+    
     <div class="clear spacer"></div>
 
     <h3>Compatible bravais lattice types</h3>

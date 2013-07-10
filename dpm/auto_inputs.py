@@ -2,14 +2,11 @@
 
 
 import sys
-import os
 import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
     
 from dpm.engine.process import DataSet
 from dpm.utils import options, log, io
-from dpm.utils import misc
-import dpm.errors
 
 _logger = log.get_module_logger('auto.process')
 
@@ -26,7 +23,7 @@ def main():
         print options.INPUTS_USAGE
         sys.exit(1)
           
-if __name__ == "__main__":
+def run():
     try:
         log.log_to_console()
         main()

@@ -463,20 +463,21 @@ class Manager(object):
                 _data_dscr = dset.name
 
             # Run Data Quality Step:
-            self.run_position = (i, 'data_quality')
-            _logger.info('Checking quality of dataset `%s` ...' % _data_dscr)
-            _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
-            dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-            if not _out['success']:
-                _logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
-                sys.exit()
-            else:
-                dset.results['data_quality'] = _out.get('data')
-            self.save_checkpoint()
-                   
-            # Scoring and experiment setup check
-            #ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-            #_logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
+            if self.options.get('mode') != 'screen':
+                self.run_position = (i, 'data_quality')
+                _logger.info('Checking quality of dataset `%s` ...' % _data_dscr)
+                _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
+                dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
+                if not _out['success']:
+                    _logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
+                    sys.exit()
+                else:
+                    dset.results['data_quality'] = _out.get('data')
+                self.save_checkpoint()
+                       
+                # Scoring and experiment setup check
+                #ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+                #_logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
             _score = dset.score()
             _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
             

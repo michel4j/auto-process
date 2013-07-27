@@ -2,25 +2,22 @@
 
 import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
+
+from dpm.utils import misc, xtal
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+from matplotlib.ticker import Formatter, FormatStrFormatter, Locator
+import numpy
 import os
 import sys
-import numpy
-from dpm.utils import misc
-from dpm.utils.misc import json
-from dpm.utils.xtal import SPACE_GROUP_NAMES
 
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.ticker import Formatter, FormatStrFormatter, Locator
-from matplotlib.figure import Figure
-from matplotlib.colors import LogNorm, Normalize
-import matplotlib.cm as cm
 
 from django.conf import settings
 settings.configure(TEMPLATE_DIRS=(os.path.join(os.path.dirname(__file__),'templates'),),
                    DEBUG=False,
                    TEMPLATE_DEBUG=False)
 from django import template
-from django.template import Template, loader, Context
+from django.template import loader, Context
 
 class ZipNode(template.Node):
     def __init__(self, vals, var_name):
@@ -87,9 +84,17 @@ class ResLocator(Locator):
         locs = numpy.linspace(0.0156, 1, self.steps)
         return locs
 
-def get_min_max(a, dev=0.1):
-    mn, mx = min(a), max(a)
+def get_min_max(a, dev=0.1, houtlier=10000, loutlier=-10000):
+    a = numpy.array(a)
+    _no_out = (a < houtlier) & (a > loutlier) 
+    _std = a[_no_out].std()
+    _avg = a[_no_out].mean()
+    mn, mx = a[_no_out].min(), a[_no_out].max()
     dev = (mx-mn)*dev
+    if (_avg - mn) > 3*_std:
+        mn = _avg - 3*_std
+    if (mx - _avg) > 3*_std:
+        mx = _avg + 3*_std    
     return mn-dev, mx+dev
 
 def plot_shell_stats(results, filename):
@@ -136,10 +141,9 @@ def plot_shell_stats(results, filename):
 
     ax1.xaxis.set_major_formatter(ResFormatter())
     ax1.xaxis.set_minor_formatter(ResFormatter())
-    ax1.xaxis.set_major_locator(ResLocator())
+
     ax2.xaxis.set_major_formatter(ResFormatter())
     ax2.xaxis.set_minor_formatter(ResFormatter())
-    ax2.xaxis.set_major_locator(ResLocator())
 
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
@@ -188,12 +192,12 @@ def plot_pred_quality(results, filename):
     ax2.set_ylim(get_min_max(data['i_sigma'], 0.1))
     ax21.set_ylim(get_min_max(data['multiplicity'],0.1))
 
+
     ax1.xaxis.set_major_formatter(ResFormatter())
     ax1.xaxis.set_minor_formatter(ResFormatter())
-    ax1.xaxis.set_major_locator(ResLocator())
+
     ax2.xaxis.set_major_formatter(ResFormatter())
     ax2.xaxis.set_minor_formatter(ResFormatter())
-    ax2.xaxis.set_major_locator(ResLocator())
 
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
@@ -333,6 +337,7 @@ def plot_diff_stats(results, filename):
     ax1.plot(data['frame_diff'], data['rd_friedel'], 'm-', label="friedel")
     ax1.plot(data['frame_diff'], data['rd_non_friedel'], 'k-', label="non_friedel")
     ax1.set_xlabel('Frame Difference')
+    ax1.set_ylim(-1, None)
     ax1.legend()
 
     canvas = FigureCanvas(fig)
@@ -348,36 +353,32 @@ def plot_wilson_stats(results, filename):
 
     fig = Figure(figsize=(PLOT_WIDTH, PLOT_HEIGHT * 0.7), dpi=PLOT_DPI)
     ax1 = fig.add_subplot(111)
-    plot_data = zip(data['inv_res_sq'], data['log_i_sigma'])
-    plot_data.sort()
-    plot_data = numpy.array(plot_data)
-    ax1.plot(plot_data[:,0], plot_data[:,1], 'r-+')
+    obs_data = zip(data['inv_res_sq'], data['mean_i'])
+    obs_data.sort()
+    obs_data = numpy.array(obs_data)
+    ax1.plot(obs_data[:,0], obs_data[:,1], 'r-+', label='<I> observed')
+    
+    if data.get('expected_i'):
+        exp_data = zip(data['inv_res_sq'], data['expected_i'])
+        exp_data.sort()
+        exp_data = numpy.array(exp_data)
+        ax1.plot(exp_data[:,0], exp_data[:,1], 'b-', label='<I> expected')
+        
     ax1.set_xlabel('Resolution')
-    ax1.set_ylabel('log(<I>)')
+    ax1.set_ylabel('<I>')
     ax1.grid(True)
     ax1.xaxis.set_major_formatter(ResFormatter())
+
+    ax1.legend()
     #ax1.xaxis.set_major_locator(ResLocator(40))
     
-    # set font parameters for the ouput table
-    wilson_line = results['details'].get('wilson_line')
-    wilson_scale = results['details'].get('wilson_scale')
-    if wilson_line is not None:
-        fontpar = {}
-        fontpar["family"]="monospace"
-        fontpar["size"]=9
-        info =  "B:    %6.2f\n" % wilson_line[0]
-        info += "A:    %6.2f\n" % wilson_line[1]
-        info += "Corr: %6.2f\n" % wilson_line[2]
-        if wilson_scale is not None:
-            info += "Scale factor: %0.3f\n" % wilson_scale    
-        fig.text(0.55,0.65, info, fontdict=fontpar, color='k')
-    #ax1.set_ylim(min(data['log_i_sigma']), max(data['log_i_sigma']))
-
     canvas = FigureCanvas(fig)
     #response = HttpResponse(content_type='image/png')
     #canvas.print_png(response)
     canvas.print_png(filename)
     return os.path.basename(filename)
+
+
 
 def plot_twinning_stats(results, filename):
     
@@ -430,7 +431,7 @@ def plot_frame_stats(results, filename):
         tl.set_color('g')
     for tl in ax1.get_yticklabels():
         tl.set_color('r')
-    ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    ax1.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
     ax11.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
     ax1.set_ylim(get_min_max(data['scale'], 0.2))
     ax11.set_ylim(get_min_max(data['mosaicity'], 0.2))
@@ -457,15 +458,17 @@ def plot_frame_stats(results, filename):
         ax3.set_ylabel('R-meas', color='k')
         ax31 = ax3.twinx()
         ax31.plot(data['frame_no'], data['unique'], 'c.')
+        ax3.set_ylim(get_min_max(data['divergence'], 0.5, houtlier=10))
+        ax31.set_ylim(-0.1, None)
+
         ax3.grid(True)
         ax31.set_ylabel('Unique Reflections', color='c')
         for tl in ax31.get_yticklabels():
             tl.set_color('c')
         for tl in ax3.get_yticklabels():
             tl.set_color('k')
-        ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+        ax21.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
         ax3.yaxis.set_major_formatter(FormatStrFormatter('%0.3f'))
-        ax31.yaxis.set_major_formatter(FormatStrFormatter('%0.0f'))
         bot_ax = ax3
     bot_ax.set_xlabel('Frame')
     
@@ -555,7 +558,8 @@ def create_full_report(data, directory):
 
     try:
         results = data['result']
-        results['space_group_name'] = SPACE_GROUP_NAMES[results['space_group_id']]
+        results['space_group_name'] = xtal.SPACE_GROUP_NAMES[results['space_group_id']]
+        results['centric'] = '-X,-Y,-Z' in xtal.XTAL_TABLES[results['space_group_id']]['symmetry_operators']
     except KeyError:
         sys.exit(1)
 
@@ -586,7 +590,8 @@ def create_screening_report(data, directory):
 
     try:
         results = data['result']
-        results['space_group_name'] = SPACE_GROUP_NAMES[results['space_group_id']]
+        results['space_group_name'] = xtal.SPACE_GROUP_NAMES[results['space_group_id']]
+        results['centric'] = '-X,-Y,-Z' in xtal.XTAL_TABLES[results['space_group_id']]['symmetry_operators']
     except KeyError:
         sys.exit(1)
 

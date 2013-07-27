@@ -95,7 +95,7 @@ def correct(data_info, options={}):
         else:
             info['output_file'] = os.path.join(data_info['name'], 'XDS_ASCII.HKL')
 
-        programs.xdsstat(info['output_file'])
+        programs.xdsstat('XDS_ASCII.HKL')
         stat_info = xds.parse_xdsstat()
         info.update(stat_info)
 

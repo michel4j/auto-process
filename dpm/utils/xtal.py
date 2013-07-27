@@ -1,9 +1,17 @@
-import numpy
-import math
-import bisect
 from dpm.utils.misc import Table
+import bisect
+import json
+import math
+import numpy
+import os
 
 DEBUG = False
+XTAL_TABLE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'xtal_tables.json')
+XTAL_TABLES = dict(json.load(file(XTAL_TABLE_FILE)))
+
+SPACE_GROUP_NAMES = dict([(k,v['space_group_name']) for k,v in XTAL_TABLES.items()])
+SPACE_GROUP_NUMBERS = dict([(v['space_group_name'], k) for k,v in XTAL_TABLES.items()])
+CHIRAL_SPACE_GROUPS = [k for k,v in XTAL_TABLES.items() if v['chiral']]
 
 # each rule is a list of 9 boolean values representing
 # a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120
@@ -15,50 +23,6 @@ _lattice_rules = {
     'h':[True, False, False, False, True, True, False, False, False, True],
     'c':[False, False, False, True, True, True, True, False, False, False]
     }
-
-SPACE_GROUP_NAMES = {
-    1:'P1', 3:'P2', 4:'P2(1)', 5:'C2', 16:'P222', 
-    17:'P222(1)', 18:'P2(1)2(1)2',
-    19:'P2(1)2(1)2(1)', 21:'C222', 20:'C222(1)', 22:'F222', 23:'I222',
-    24:'I2(1)2(1)2(1)', 75:'P4', 76:'P4(1)', 77:'P4(2)', 78:'P4(3)', 89:'P422',
-    90:'P42(1)2', 91:'P4(1)22', 92:'P4(1)2(1)2', 93:'P4(2)22', 94:'P4(2)2(1)2',
-    95:'P4(3)22', 96:'P4(3)2(1)2', 79:'I4', 80:'I4(1)', 97:'I422', 98:'I4(1)22',
-    143:'P3', 144:'P3(1)', 145:'P3(2)', 149:'P312', 150:'P321', 151:'P3(1)12',
-    152:'P3(1)21', 153:'P3(2)12', 154:'P3(2)21', 168:'P6', 169:'P6(1)',
-    170:'P6(5)', 171:'P6(2)', 172:'P6(4)', 173:'P6(3)', 177:'P622', 178:'P6(1)22',
-    179:'P6(5)22', 180:'P6(2)22', 181:'P6(4)22', 182:'P6(3)22', 146:'R3',
-    155:'R32', 195:'P23', 198:'P2(1)3', 207:'P432', 208:'P4(2)32', 212:'P4(3)32',
-    213:'P4(1)32', 196:'F23', 209:'F432', 210:'F4(1)32', 197:'I23', 199:'I2(1)3',
-    211:'I432', 214:'I4(1)32'             
-    }
-
-POINT_GROUPS = {
-    'cI':[197, 199, 211, 214],
-    'cF':[196, 209, 210],
-    'cP':[195, 198, 207, 208, 212, 213],
-    'hR':[146, 155],
-    'hP':[143, 144, 145, 149, 150, 151, 152, 153, 154, 168, 
-          169, 170, 171, 172, 173, 177, 178, 179, 180, 181, 182],
-    'tI':[79, 80, 97, 98],
-    'tP':[75, 76, 77, 78, 89, 90, 91, 92, 93, 94, 95, 96],
-    'oI':[23, 24],
-    'oF':[22],
-    'oC':[21, 20],
-    'oP':[16, 17, 18, 19],
-    'mC':[5],
-    'mI':[5],
-    'mP':[3, 4],
-    'aP':[1]            
-    }
-
-CRYSTAL_SYSTEMS = {
-    'a':'triclinic',
-    'm':'monoclinic',
-    'o':'orthorombic',
-    't':'tetragonal',
-    'h':'rhombohedral',
-    'c':'cubic'
-    }                    
 
 def resolution_shells(resolution, num=10.0):
     
@@ -75,16 +39,43 @@ def resolution_shells(resolution, num=10.0):
 
 
 def get_character(sg_number=1):
-    return [k for k, v in POINT_GROUPS.items() if sg_number in v][0]
+    return XTAL_TABLES[sg_number]['lattice_character']
 
 def get_number(sg_name):
-    return [number for number, name in SPACE_GROUP_NAMES.items() if name == sg_name.upper()][0]
+    return SPACE_GROUP_NUMBERS[sg_name]
 
-def get_pg_list(lattices):     
+def get_pg_list(lattices, chiral=True):     
     """Takes a list of lattice characters and returns a unique list of the
     names of the lowest symmetry pointgroup."""
-    pgnums = sorted(set([ POINT_GROUPS[l][0] for l in lattices ]))
+    pgset = set([ SPACE_GROUP_NUMBERS[v['point_group']] for v in XTAL_TABLES.values() if v['lattice_character'] in lattices ])
+    if chiral:
+        pgset = pgset.intersection(set(CHIRAL_SPACE_GROUPS))
+    pgnums = sorted(pgset)
     return [ SPACE_GROUP_NAMES[n] for n in pgnums ]
+
+def get_sg_table(chiral=True):     
+    """Generate a table of all spacegroups for each given crystal system."""
+    tab = {}
+    for k,v in XTAL_TABLES.items():
+        if (chiral and not v['chiral']): continue
+        if v['lattice_character'] in tab.keys():
+            tab[v['lattice_character']].append("%d:%s" % (k, v['space_group_name']))
+        else:
+            tab[v['lattice_character']] = ["%d:%s" % (k, v['space_group_name'])]
+    txt = 'Table of space group numbers for each Bravais lattice type\n'
+    txt += '-------------------------------------------------------------------------------\n'   
+    for k in ['aP','mP','mC','oP','oC','oA','oF','oI','tP','tI','hP','hR','cP','cF','cI']:
+        if k in tab:
+            v = tab[k]
+            chunks = [v[i:i+5] for i in range(0, len(v), 5)]
+            for i, chunk in enumerate(chunks):
+                if i == 0:
+                    lchr = k
+                else:
+                    lchr = ""
+                txt += ' %4s \t%s\n' % (lchr, ', '.join(chunk))
+    txt += '-------------------------------------------------------------------------------\n'   
+    return txt
      
 def tidy_cell(unit_cell, character):
     """
@@ -137,48 +128,6 @@ def cell_volume(unit_cell):
     return v 
 
 
-def select_resolution_OLD(table, method=2):
-    """
-    Takes a table of statistics and determines the optimal resolutions
-    The table is a list of dictionaries each with at least the following fields
-    record = {
-        'shell': string convertible to float
-            or  'resol_range': a pair of floats
-        'r_meas': float
-        'cc_half': float
-        'i_sigma' : float
-        'signif' : '*' or ' '
-    }
-    
-    returns a tuple the first value of which is the selected resolution,
-    and the second value of which is the selectio method where:
-    0 : Detector edge
-    1 : I/sigma > 0.5
-    2 : cc_half == '*'
-    3 : DISTL 
-    4 : Manualy chosen    
-    """
-    
-    shells = table[:-1]
-    _rmet = 0
-    _resol_i = 0
-    for shell in shells:
-        if 'shell' in shell:
-            res = float(shell['shell'])
-        elif 'resol_range' in shell:
-            res = shell['resol_range'][1]
-
-        resol_i = res
-        if (method == 1) and shell['i_sigma'] < 0.5:
-            _rmet = method
-            break
-        elif (method == 2) and shell.get('signif', '*') != "*":
-            _rmet = method
-            break
-            
-    return (resol_i, _rmet)
-
-
 def select_resolution(table, method=2, optimistic=False):
     """
     Takes a table of statistics and determines the optimal resolutions
@@ -226,34 +175,6 @@ def select_resolution(table, method=2, optimistic=False):
     return (resol[idx], method)
 
 
-
-def select_lattices(table):
-    """
-    Takes a table of lattice statistics and returns the sorted short-list 
-    The table is a list of dictionaries each with at least the following fields
-    record = {
-        'type': str
-        'quality': float
-        'unit_cell' : tuple of 6 float
-        'reindex_matrix': tuple of 12 ints
-    }
-    
-    """
-    
-    split_point = 10
-    while table[split_point]['quality'] < 30:
-        split_point += 1
-    result = table[:split_point]
-
-    def _cmp(x,y):
-        a,b = x['character'], y['character']
-        return cmp(POINT_GROUPS[b], POINT_GROUPS[a])
-    
-    result.sort(_cmp)
-    return result
-    
-
-    
 
 def score_penalty(x, best=1, worst=0):
     """Calculate an exponential score penalty for any value given the limits [best, worst]

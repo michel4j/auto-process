@@ -36,6 +36,11 @@ Options:
     --dir=/path : Directory to store processed results. Default is to create a  
             new one in the current directory.
     --zap, -z : Abandon saved state and start all over.
+    --nonchiral, -x: Allow processing non-chiral spacegroups such as some small
+            molecules. Default assumes only chiral molecules such as proteins.
+    --solve-small=<formula> : Attempt to solve the small molecule structure 
+            using the provided formula. Formula examples are C6H12O6, Mg1O6H12. 
+            No spaces and note the lower case second letter for 2-letter symbols.
     --help, -h : display this message
     Default (no option): Process each set, scale together and merge into one 
         reflection file.
@@ -53,9 +58,9 @@ Examples:
 def process_options(params, usage=PROCESS_USAGE):
     try:
         opts, args = getopt.gnu_getopt(params, 
-                                       "msahbt:z", 
-                                       ["help", "dir=", "mad","screen","anom",
-                                        "backup", "zap","task=", "prefix="])
+                        "msahbt:xz", 
+                        ["help", "dir=", "mad","screen","anom", "nonchiral",
+                         "backup", "zap","task=", "prefix=", "solve-small="])
     except:
         print usage
             
@@ -64,6 +69,7 @@ def process_options(params, usage=PROCESS_USAGE):
         'anomalous' : False,
         'mode': 'simple',
         'backup': False,
+        'chiral': True,
         }
     # expand filenames and remove duplicates maintaning ordering
     options['images'] = []
@@ -77,7 +83,13 @@ def process_options(params, usage=PROCESS_USAGE):
             
         if o in ("-a","--anom"):
             options['anomalous'] = True
+            
+        if o in ("-x","--nonchiral"):
+            options['chiral'] = False
         
+        if o in ("--solve-small",):
+            options['solve-small'] = a
+            
         if o in ('-s','--screen'):
             options['mode'] = 'screen'
         elif o in ("-m", "--mad"):
@@ -189,7 +201,6 @@ def integrate_options(params):
         if o in ("-h","--help"):
             print INTEGRATE_USAGE
             sys.exit(0)
-            
         if o in ("-a","--anom"):
             options['anomalous'] = True
         if o in ('-b', '--backup'):
@@ -296,6 +307,8 @@ Options:
     --spacegroup=<num>, -g <num>:  Manually set space group by number (see 
             below for valid spacegroup numbers)
     --backup, -b : Backup previous output if it exists
+    --nonchiral, -x: Allow processing non-chiral spacegroups such as some small
+            molecules. Default assumes only chiral molecules such as proteins.
     --help, -h : display this message
     Default (no option): Resume previous processing from scaling step.
 
@@ -303,50 +316,32 @@ Examples:
     auto.symmetry -g 19
     auto.symmetry --spacegroup=19
 
-Table of spacegroup numbers:
--------------------------------------------------------------------------------
-BRAVAIS-
-  TYPE                     [SPACE GROUP NUMBER,SYMBOL]
-  aP      [1,P1]
-  mP      [3,P2] [4,P2(1)]
- mC,mI    [5,C2]
-  oP      [16,P222] [17,P222(1)] [18,P2(1)2(1)2] [19,P2(1)2(1)2(1)]
-  oC      [21,C222] [20,C222(1)]
-  oF      [22,F222]
-  oI      [23,I222] [24,I2(1)2(1)2(1)]
-  tP      [75,P4] [76,P4(1)] [77,P4(2)] [78,P4(3)] [89,P422] [90,P42(1)2]
-          [91,P4(1)22] [92,P4(1)2(1)2] [93,P4(2)22] [94,P4(2)2(1)2]
-          [95,P4(3)22] [96,P4(3)2(1)2]
-  tI      [79,I4] [80,I4(1)] [97,I422] [98,I4(1)22]
-  hP      [143,P3] [144,P3(1)] [145,P3(2)] [149,P312] [150,P321] [151,P3(1)12]
-          [152,P3(1)21] [153,P3(2)12] [154,P3(2)21] [168,P6] [169,P6(1)]
-          [170,P6(5)] [171,P6(2)] [172,P6(4)] [173,P6(3)] [177,P622]
-          [178,P6(1)22] [179,P6(5)22] [180,P6(2)22] [181,P6(4)22] [182,P6(3)22]
-  hR      [146,R3] [155,R32]
-  cP      [195,P23] [198,P2(1)3] [207,P432] [208,P4(2)32] [212,P4(3)32]
-          [213,P4(1)32]
-  cF      [196,F23] [209,F432] [210,F4(1)32]
-  cI      [197,I23] [199,I2(1)3] [211,I432] [214,I4(1)32]
--------------------------------------------------------------------------------   
 """
 def symmetry_options(params):
     try:
-        opts, _ = getopt.gnu_getopt(params, "r:g:bih", ["res=", "spacegroup=", "backup", "inputs","help"])
+        opts, _ = getopt.gnu_getopt(params, "r:g:bihx", ["res=", "spacegroup=", "backup", "inputs","help","nonchiral"])
     except:
         print SYMMETRY_USAGE
         raise dpm.errors.InvalidOption(' '.join(params))
             
     # Parse options
-    options = {}    
+    options = {} 
+    for o, a in opts:
+        if o in ("-x","--nonchiral"):
+            options['chiral'] = False
+       
     for o, a in opts:
         if o in ("-h","--help"):
             print SYMMETRY_USAGE
+            print xtal.get_sg_table(options.get('chiral', True))
             sys.exit(0)
-            
+                       
         if o in ("-g","--spacegroup"):
             try:
                 sg_num = int(a)
                 assert sg_num in xtal.SPACE_GROUP_NAMES.keys()
+                if sg_num not in xtal.CHIRAL_SPACE_GROUPS:
+                    options['chiral'] = False
                 options['sg_overwrite'] = sg_num
             except ValueError:
                 if o == '--spacegroup':
@@ -354,10 +349,12 @@ def symmetry_options(params):
                 else:
                     op = '%s ' % o
                 print SYMMETRY_USAGE
+                print xtal.get_sg_table(options.get('chiral', True))
                 raise dpm.errors.InvalidOption('Invalid SpaceGroup Option: `%s%s`' % (op, a))
 
             except AssertionError:
                 print SYMMETRY_USAGE
+                print xtal.get_sg_table(options.get('chiral', True))
                 raise dpm.errors.InvalidOption('Invalid SpaceGroup Number: %s' % (a))
 
                 

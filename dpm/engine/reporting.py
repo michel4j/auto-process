@@ -269,10 +269,8 @@ def get_log_data(datasets, options={}):
             for l in dres['correction']['symmetry']['lattices']:
                 if l['star'] != '*': continue  #incompatible lattices
                 id, lat_type = l['id']
-                sg = xtal.POINT_GROUPS[ lat_type ][0]
-                sg_name = xtal.SPACE_GROUP_NAMES[ sg ]
                 row = [id, 
-                    '%6s %3d %2s' % (sg_name, sg, lat_type), 
+                    lat_type, 
                     '%5.1f %5.1f %5.1f %5.1f %5.1f %5.1f' % xtal.tidy_cell(l['unit_cell'], lat_type),
                     l['quality'], "%0.1f" % xtal.cell_volume( l['unit_cell'] ),
                     '%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d' % tuple(l['reindex_matrix']) ]
@@ -560,8 +558,8 @@ def get_reports(datasets, options={}):
             _dataset_info['result']['kind'] = AUTOXDS_PROCESSING
             # Print out integration results
             _section = {}
-            scale_factors = dres['integration']['scale_factors']
             # combine integration statistics if merging
+            scale_factors = dres['integration']['scale_factors']
             if options.get('mode') == 'merge':
                 max_frame = max([v['frame'] for v in scale_factors])
                 for dat in datasets.values()[1:] :
@@ -576,14 +574,38 @@ def get_reports(datasets, options={}):
             for k in ['frame','scale','overloads','reflections','mosaicity','unexpected','divergence']:
                 _section[k] = _t[k]
                 
-            if dres['correction'].get('frame_statistics'):                     
-                _t = Table(dres['correction']['frame_statistics'])
+            if dres['correction'].get('frame_statistics'):
+                frame_stats =  dres['correction']['frame_statistics']
+                if options.get('mode') == 'merge':
+                    max_frame = max([v['frame'] for v in frame_stats])
+                    for dat in datasets.values()[1:] :
+                        _dat = []
+                        _dat.extend(dat.results['correction']['frame_statistics'])
+                        next_start = _next_10th(max_frame)
+                        for v in _dat:
+                            v['frame'] = v['frame'] + next_start
+                            max_frame = v['frame']
+                        frame_stats.extend(dat.results['correction']['frame_statistics'])
+                                   
+                _t = Table(frame_stats)
                 _section['frame_no'] = _t['frame']
                 for k in ['i_obs', 'n_misfit', 'r_meas', 'i_sigma', 'unique', 'corr']:
                     _section[k] = _t[k]
                     
             if dres['correction'].get('diff_statistics'):
-                _t = Table(dres['correction']['diff_statistics'])
+                diff_stats =  dres['correction']['diff_statistics']
+                if options.get('mode') == 'merge':
+                    max_frame = max([v['frame_diff'] for v in diff_stats])
+                    for dat in datasets.values()[1:] :
+                        _dat = []
+                        _dat.extend(dat.results['correction']['diff_statistics'])
+                        next_start = _next_10th(max_frame)
+                        for v in _dat:
+                            v['frame_diff'] = v['frame_diff'] + next_start
+                            max_frame = v['frame_diff']
+                        diff_stats.extend(dat.results['correction']['diff_statistics'])
+                                   
+                _t = Table(diff_stats)
                 _dataset_info['result']['details']['diff_statistics'] = {}
                 for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
                     _dataset_info['result']['details']['diff_statistics'][k] = _t[k]
@@ -622,14 +644,19 @@ def get_reports(datasets, options={}):
             if dres['scaling'].get('wilson_plot'):
                 _section = {}
                 _t = Table(dres['scaling']['wilson_plot'])
-                for k in ['inv_res_sq', 'log_i_sigma', 'BO', 'mean_i']:
+                for k in ['inv_res_sq', 'mean_i']:
                     _section[k] = _t[k]
                 _dataset_info['result']['details']['wilson_plot'] = _section
             if dres['scaling'].get('wilson_line'):
                 _dataset_info['result']['details']['wilson_line'] = dres['scaling']['wilson_line']           
 
-            
             if dres.get('data_quality'):
+                if dres['data_quality'].get('intensity_plots'):
+                    _section = {}
+                    _t = Table(dres['data_quality']['intensity_plots'])
+                    for k in ['inv_res_sq', 'expected_i', 'mean_i_binned', 'mean_i']:
+                        _section[k] = _t[k]
+                    _dataset_info['result']['details']['wilson_plot'] = _section
                 if dres['data_quality'].get('twinning_l_test'):
                     _section = {}
                     _t = Table(dres['data_quality']['twinning_l_test'])

@@ -202,7 +202,8 @@ def prepare_reference(dsets, options={}):
                 _logger.info('Using single %s as reference ... ' % reference_file)
     
     # Verify Spacegroup of reference
-    programs.pointless(filename=reference_file)
+    _logger.info("Automaticaly Determining Symmetry of reference ...")
+    programs.pointless(filename=reference_file, chiral=options.get('chiral', True))
     sg_info = pointless.parse_pointless()
 
     _info = symmetry.get_symmetry_params(sg_info['sg_number'], dsets[reference_name])

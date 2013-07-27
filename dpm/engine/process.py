@@ -6,11 +6,11 @@ import numpy
 
 import dpm.errors
 from dpm.utils.misc import json, SortedDict
-from dpm.utils import dataset, misc, log, xtal, programs
+from dpm.utils import dataset, misc, log, xtal
 from dpm.utils import kappa
-from dpm.engine import indexing, spots, integration, scaling
+from dpm.engine import indexing, spots, integration, scaling, solver
 from dpm.engine import reporting, symmetry, strategy, conversion
-from dpm.parser import xds
+
 
 
 _logger = log.get_module_logger(__name__)
@@ -34,6 +34,7 @@ _STEP_FUNCTIONS = {
     'correction': integration.correct,
     'scaling': scaling.scale_datasets,
     'strategy': strategy.calc_strategy,
+    'solve-small': solver.solve_small_molecule
 }
 
 class DataSet(object):
@@ -331,7 +332,7 @@ class Manager(object):
                         _logger.log(log.IMPORTANT, "Reduced Cell: %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f" % tuple(
                                             dset.results['indexing']['parameters']['unit_cell']))
                         _xter_list = [ v['character'] for v in dset.results['indexing']['lattices'] ]
-                        _pg_txt = ", ".join(xtal.get_pg_list(_xter_list))
+                        _pg_txt = ", ".join(xtal.get_pg_list(_xter_list, chiral=self.options.get('chiral', True)))
                         _logger.log(log.IMPORTANT, "Possible Point Groups: %s" % _pg_txt)
                             
             next_step = 'integration'
@@ -369,7 +370,10 @@ class Manager(object):
                 _sg_number = overwrite['sg_overwrite']
                 ref_info = None              
             elif self.options.get('mode') in ['merge', 'mad']:
-                ref_info = scaling.prepare_reference(self.datasets, self.options)
+                ref_opts = {}
+                ref_opts.update(self.options)
+                ref_opts.update(overwrite)
+                ref_info = scaling.prepare_reference(self.datasets, ref_opts)
                 _sg_number = ref_info['sg_number']
                 
             for dset in self.datasets.values():
@@ -502,6 +506,20 @@ class Manager(object):
                         _logger.info('%s' % (', '.join(_out['data'])))
                 self.save_checkpoint()
 
+
+            if self.options.get('solve-small'):
+                self.run_position = (i, 'solve-small')
+                if self.options.get('mode') == 'merge' and i > 0: 
+                    pass # do not solve 
+                else:
+                    _step_info = {
+                        'unit_cell': dset.results['symmetry']['unit_cell'],
+                        'name': _data_dscr,
+                        'formula': self.options.get('solve-small'),
+                    }
+                    _out = solver.solve_small_molecule(_step_info, self.options)
+                self.save_checkpoint()
+
         # reporting
         self.run_position = (0, 'reporting')
         os.chdir(self.options['directory'])
@@ -514,7 +532,7 @@ class Manager(object):
         reporting.save_json(reports, 'process.json', self.options)
         _logger.info('Generating HTML reports ...')
         reporting.save_html(reports, self.options)      
-
+            
         used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
         _logger.info("Done in: %s"  % (used_time))
   

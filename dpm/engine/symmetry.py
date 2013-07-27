@@ -30,13 +30,12 @@ def get_symmetry_params(spacegroup, dset):
 
 def determine_sg(data_info, dset, options={}):
     os.chdir(data_info['working_directory'])
-    
     _logger.info("Automaticaly Determining Symmetry ...")
     if not misc.file_requirements('INTEGRATE.HKL'):
         return {'step': 'symmetry', 'success': False, 'reason': 'Required files from integration missing'}
     
     try:
-        programs.pointless()
+        programs.pointless(chiral=options.get('chiral', True))
         sg_info = pointless.parse_pointless()
     except (dpm.errors.ProcessError, dpm.errors.ParserError, IOError), e:
         return {'step': 'symmetry', 'success': False, 'reason': str(e)}

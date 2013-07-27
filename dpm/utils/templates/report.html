@@ -217,7 +217,12 @@
     <h3>Wilson Plot</h3>
     <img src="wilson.png" />
     <div class="clear spacer"></div>
-
+    <div class="tablenotes">
+        <h3>Notes</h3>
+        <p>Mean intensity versus resolution for each shell.</p>
+    </div>
+    
+    {% if object.details.twinning_l_test %}
     <h3>L-Test for twinning</h3>
     <img src="twinning.png" />
     <div class="clear spacer"></div>    
@@ -271,7 +276,7 @@
         {% endif %}                        
     </div>
     {% endif %}
-
+    {% endif %}
 </div>
 </div>
 <!-- end maincol -->

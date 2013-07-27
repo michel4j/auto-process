@@ -337,7 +337,7 @@ def plot_diff_stats(results, filename):
     ax1.plot(data['frame_diff'], data['rd_friedel'], 'm-', label="friedel")
     ax1.plot(data['frame_diff'], data['rd_non_friedel'], 'k-', label="non_friedel")
     ax1.set_xlabel('Frame Difference')
-    ax1.set_ylim(-1, None)
+    ax1.set_ylim(get_min_max(data['rd_friedel'], 0.1))
     ax1.legend()
 
     canvas = FigureCanvas(fig)

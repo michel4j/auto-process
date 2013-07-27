@@ -57,7 +57,7 @@ def parse_pointless(filename="pointless.xml"):
     #summary for the best solution
     if summary_el.getAttribute('Type') == 'pointgroup':
         summary = {
-            'type': 'PointGroup',
+            'type': 'point group',
             'sg_name': best_candidate['name'],
             'sg_number': best_candidate['number'],
             'reindex_operator': best_candidate['reindex_operator'],
@@ -72,7 +72,7 @@ def parse_pointless(filename="pointless.xml"):
         rdx_matrix = ( rt[0], rt[3], rt[6], 0, rt[1], rt[4], rt[7], 0, rt[2], rt[5], rt[8], 0 )
         #rdx_matrix = ( rt[1], rt[4], rt[7], 0, rt[0], rt[3], rt[6], 0, -rt[2], -rt[5], -rt[8], 0)
         summary = {
-            'type': 'SpaceGroup',
+            'type': 'space group',
             'sg_name': name,
             'sg_number': sg_dict[ name ],
             'reindex_operator': summary_el.getElementsByTagName('ReindexOperator')[0].firstChild.nodeValue,

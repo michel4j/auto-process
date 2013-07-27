@@ -397,7 +397,9 @@ class Manager(object):
                     'reference_data': ref_sginfo.get('reference_data'), # will be none for single data sets
                     'message': 'Reindexing & refining',
                     })
-                self.run_step('correction', dset, overwrite=step_ovw)            
+                self.run_step('correction', dset, overwrite=step_ovw)
+                cell_str = "%0.6g %0.6g %0.6g %0.6g %0.6g %0.6g" % tuple(dset.results['correction']['summary']['unit_cell'])
+                _logger.info('Refined cell: %s' % cell_str)         
             
             self.save_checkpoint()
             next_step = 'scaling'
@@ -513,7 +515,7 @@ class Manager(object):
                     pass # do not solve 
                 else:
                     _step_info = {
-                        'unit_cell': dset.results['symmetry']['unit_cell'],
+                        'unit_cell': dset.results['correction']['summary']['unit_cell'],
                         'name': _data_dscr,
                         'formula': self.options.get('solve-small'),
                     }

@@ -6,7 +6,7 @@ Created on Nov 25, 2010
 import numpy
 import re
 import ctypes
-import Image
+from PIL import Image
 from utils import calc_gamma
 from common import *
 

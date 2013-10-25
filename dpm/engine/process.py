@@ -3,9 +3,10 @@ import os
 import sys
 import time
 import numpy
+import json
 
 import dpm.errors
-from dpm.utils.misc import json, SortedDict
+from dpm.utils.misc import SortedDict
 from dpm.utils import dataset, misc, log, xtal
 from dpm.utils import kappa
 from dpm.engine import indexing, spots, integration, scaling, solver

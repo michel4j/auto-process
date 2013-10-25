@@ -8,16 +8,9 @@ import os
 import shutil
 import math
 import numpy
-import scipy
-import scipy.optimize
 import posixpath
 from dpm.utils.prettytable import PrettyTable
-
-
-try:
-    import json
-except:
-    import simplejson as json
+import json
 
 # Physical Constants
 _h = 4.13566733e-15 # eV.s

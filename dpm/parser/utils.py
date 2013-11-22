@@ -36,6 +36,8 @@ scanf_translate = [
     ("%([xX])", "(0%s[\dA-Za-f]+)", lambda x:int(x, 16)),
     ("%o", "(0[0-7]*)", lambda x:int(x, 7)),
     ("%\{\{(.+)\}\}", "%s", lambda x:x),
+    ("%\{\{(.+)\}f\}", "%s", float),
+    ("%\{\{(.+)\}d\}", "%s", int),
     ]]
 
 
@@ -261,13 +263,17 @@ def _process_sections(data, conf):
     return info
             
 
-def parse_file(filename, config):
-    conf = ConfigObj(os.path.join(INI_DIR, config))    
+def parse_file(filename, config, fallback=None):
+    if not os.path.exists(os.path.join(INI_DIR, config)):
+        config = fallback
+    conf = ConfigObj(os.path.join(INI_DIR, config))  
     data = load_file(filename)
     info = _process_sections(data, conf)
     return info
 
-def parse_data(data, config):
+def parse_data(data, config, fallback=None):
+    if not os.path.exists(os.path.join(INI_DIR, config)):
+        config = fallback
     conf = ConfigObj(os.path.join(INI_DIR, config))
     info = _process_sections(data, conf)
     return info

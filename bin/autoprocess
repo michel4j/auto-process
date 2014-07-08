@@ -1,1 +1,5 @@
-auto.process
+#!/usr/bin/env python
+
+from dpm import auto_process as command_step
+if __name__ == "__main__":
+    command_step.run()

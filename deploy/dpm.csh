@@ -4,6 +4,11 @@
 
 setenv DPM_PATH /cmcf_apps/dpm-3
 
+# Set the name of the .login or .profile file which prepares the environment to 
+#be able to find all  programs required and set up the paths as appropriate
+
+setenv DPM_ENVIRONMENT ${HOME}/.login
+
 # Configure a list nodes in data processing cluster <hostname-or-ip>:<number of cores>
 # Each machine in this list must support password-less private key ssh authentication for the user"
 
@@ -16,5 +21,4 @@ if ($?PYTHONPATH) then
 else
 	setenv PYTHONPATH ${DPM_PATH}
 endif
-setenv LC_ALL=en_US.UTF8
-
+setenv LC_ALL en_US.UTF8

@@ -482,11 +482,11 @@ class Manager(object):
                     dset.results['data_quality'] = _out.get('data')
                 self.save_checkpoint()
                        
-                # Scoring and experiment setup check
-                #ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-                #_logger.info('(%s) Asymptotic I/Sigma(I): %0.1f' % (dset.name, ISa))
+            # Scoring and experiment setup check
             _score = dset.score()
             _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
+            ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+            _logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
             
             # file format conversions
             self.run_position = (i, 'conversion')

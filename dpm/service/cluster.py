@@ -13,6 +13,7 @@ import multiprocessing
 from multiprocessing.managers import SyncManager
 import Queue
 
+ENVIRON_SCRIPT = os.environ.get('DPM_ENVIRONMENT', '~/.login')
 
 class Timer(object):
     def __init__(self, name=None):
@@ -53,8 +54,11 @@ class IntegrateServer(object):
         self.max_cpu = max_cpu
         self.cur_dir = folder        
         self.create_manager()
-        self.command = "ssh -x %%s 'cd %s ; source ~/.login; integrateclient %s %d %s %%d'" % (
-                            self.cur_dir, self.server_address, 
+        self.command = "ssh -x %%s 'cd %s ; source %s; integrateclient %s %d %s %%d'" % (
+                            self.cur_dir, ENVIRON_SCRIPT, self.server_address, 
+                            self.server_port, self.auth_key)
+        self.local_command = "cd %s ; source %s; integrateclient %s %d %s %%d" % (
+                            self.cur_dir, ENVIRON_SCRIPT, self.server_address, 
                             self.server_port, self.auth_key)
 
     def get_tasks(self):
@@ -115,10 +119,13 @@ class IntegrateServer(object):
             share = round(float(ccores)*self.num_tasks/self.total_cores)
             njobs = min(share, numpy.ceil(ccores/(share*self.min_batch_size)))
             if share < 1: continue
-            cmd = self.command % (client, njobs)
+            if client == 'localhost':
+                cmd = self.local_command % (njobs)
+            else:
+                cmd = self.command % (client, njobs)
             args = shlex.split(cmd)
             p = subprocess.Popen(args, stdin=subprocess.PIPE)
-            print "Starting %0.0f job(s) on remote client: '%s'" % (njobs, client)
+            print "Starting %0.0f job(s) on client: '%s'" % (njobs, client)
             active_clients.append(p)
         
         # monitor results and exit when done.
@@ -143,8 +150,11 @@ class ColspotServer(IntegrateServer):
         self.min_batch_size = max_cpu
         self.cur_dir = folder        
         self.create_manager()
-        self.command = "ssh -x %%s 'cd %s ; source ~/.login; colspotclient %s %d %s %%d'" % (
-                            self.cur_dir, self.server_address, 
+        self.command = "ssh -x %%s 'cd %s ; source %s; colspotclient %s %d %s %%d'" % (
+                            self.cur_dir, ENVIRON_SCRIPT, self.server_address, 
+                            self.server_port, self.auth_key)
+        self.local_command = "cd %s ; source %s; colspotclient %s %d %s %%d" % (
+                            self.cur_dir, ENVIRON_SCRIPT, self.server_address, 
                             self.server_port, self.auth_key)
 
     def get_tasks(self):

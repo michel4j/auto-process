@@ -11,51 +11,41 @@ _logger = log.get_module_logger(__name__)
 
 def _diagnose_index(info):
     # quality_code is integer factors
-    # 256 = irrecoverable failure 
-    # 128 = not enough spots 
-    #  64 = cluster dimension < 3 
-    #  32 = spot deviation > 3.0
-    #  16 = percent indexed < 70
-    #   8 = cluster index error > 0.05
-    #   4 = no distinct subtree
-    #   2 = more than one distinct subtree
-    #   1 = index origin delta > 6
+    qcodes = {
+        256 : "irrecoverable failure",
+        128: "not enough spots",
+        64: "cluster dimension is not 3D ",
+        32: "spot positions not predicted accurately",
+        16: "insufficient percent of spots indexed",
+        8: "indices deviate significantly from integers",
+        4: "no distinct subtree",
+        2: "more than one distinct subtree",
+        1: "index origin not optimal",
+    }
+
     data = {}
     data['quality_code'] = 0
     failure_code = info.get('failure_code', 256)
-    if failure_code == 1:
+    if failure_code == xds.SPOT_LIST_NOT_3D:
         data['quality_code'] |=  64
-    elif failure_code == 2:
+    elif failure_code == xds.INSUFFICIENT_INDEXED_SPOTS:
         data['quality_code'] |=  16
-    elif failure_code == 3:
+    elif failure_code == xds.INSUFFICIENT_SPOTS:
         data['quality_code'] |=  128
-    elif failure_code == 4:
+    elif failure_code == xds.POOR_SOLUTION:
         data['quality_code'] |=  32
-    elif failure_code in [5,6]:
+    elif failure_code in [xds.REFINE_ERROR,xds.INDEX_ERROR]:
         data['quality_code'] |=  256
-        
-    _refl = _spots = None
+       
+    _refl = info.get('reflections')
+    _spots = info.get('spots')
     _st = info.get('subtrees')
     _local_spots = info.get('local_indexed_spots')
-
-    _reflx = info.get('reflections')
-    if _reflx is not None:
-        _spots = _reflx.get('selected_spots')
-        _refl = _reflx.get('indexed_spots')
-        data['indexed_spots'] = _refl
-        data['percent_overlap'] = 100.0 * _reflx.get('rejects_overlap')/_refl
-        data['percent_too_far'] = 100.0 * _reflx.get('rejects_far')/_refl
-
-    # get percent of indexed reflections
-    data['percent_indexed'] = 0.0
-    data['primary_subtree'] = 0.0
-    if _refl is not None and _st is not None and len(_st)>0:
-        data['primary_subtree'] = 100.0 * _st[0].get('population')/float(_local_spots)
     
-    if _spots is not None:
-        data['percent_indexed'] = 100.0 * _spots/_refl
-    if data['percent_indexed'] < 70 : data['quality_code'] |= 16
-    
+    # not enough spots
+    if _spots['selected_spots'] < 300:
+        data['quality_code'] |= 128
+            
     # get number of subtrees
     data['distinct_subtrees'] = 0
     data['satellites'] = 0
@@ -103,20 +93,19 @@ def _diagnose_index(info):
     data['index_origin_delta'] = 999.
     data['new_origin'] = None
     if _sel_org is not None and _origins is not None and len(_origins)>0:
+        _origins.sort(key=lambda k: k['delta_angle'])
         for _org in _origins:
             if _org['index_origin'] == _sel_org:
                 data['index_origin_delta'] = _org.get('delta')
-                data['new_origin'] = _org.get('position')
-                #data['index_deviation'] = _org.get('deviation')
-                break    
-    if data['index_origin_delta'] > 6 : data['quality_code'] |= 1
+                data['index_origin_quality'] = _org.get('quality')
+                data['new_origin'] = _org.get('position')  
+                break
+        if data['index_origin_delta'] > 6 or data['index_origin_quality'] > 10: 
+            data['quality_code'] |= 1
     data['failure_code'] = failure_code
+    data['messages'] = [v for k,v in qcodes.items() if (data['quality_code']|k == data['quality_code'])]
     
     return data
-
-def _match_code(src, tgt):
-    # bitwise compare two integers
-    return src|tgt == src
 
 
 def _filter_spots(sigma=0, unindexed=False, filename='SPOT.XDS'):
@@ -150,98 +139,67 @@ def auto_index(data_info, options={}):
         programs.xds_par()
         info = xds.parse_idxref()
         data = _diagnose_index(info)
+
         _retries = 0
-        sigma = 3
+        sigma = 6
         spot_size = 3
         _all_images = False
-        _aliens_tried = False
-        _sigma_tried = False
-
+        _aliens_removed = False
+        _weak_removed = False
+        _refined_dist = False
+        _weak_added = False 
+        _spot_adjusted = False
+        
         while info.get('failure_code') > 0 and _retries < 8:
-            _logger.warning(info.get('failure'))
+            _logger.warning('Indexing failed:')
+            for msg in data['messages']: _logger.warning('... {0}'.format(msg))
             if run_info['spot_range'][0] == run_info['data_range']:
                 _all_images = True
             else:
                 _all_images = False
             _retries += 1
+            
             if options.get('backup', False):
                 misc.backup_files('SPOT.XDS', 'IDXREF.LP')
-    
-            if info.get('failure_code') == xds.POOR_SOLUTION:
-                if not _aliens_tried:
-                    _logger.info('.. Removing alien spots ...')
-                    _filter_spots(unindexed=True)
-                    io.write_xds_input(jobs, run_info)
-                    programs.xds_par()
-                    info = xds.parse_idxref()
-                    data = _diagnose_index(info)
-                    _aliens_tried = True
-                elif sigma < 48:
-                    sigma *= 2
-                    _logger.info('.. Removing weak spots (Sigma < %2.0f)...' % sigma)
-                    _filter_spots(sigma=sigma)
-                    io.write_xds_input(jobs, run_info)
-                    programs.xds_par()
-                    info = xds.parse_idxref()
-                    data = _diagnose_index(info)
-                else:
-                    _logger.critical('.. Unable to proceed.')
-                    _retries = 999
-            elif info.get('failure_code') == xds.INSUFFICIENT_INDEXED_SPOTS:
-                if data['distinct_subtrees'] == 1:
-                    _logger.info('.. Removing alien spots ...')
-                    _filter_spots(unindexed=True)
-                    io.write_xds_input(jobs, run_info)
-                    programs.xds_par()
-                    info = xds.parse_idxref()
-                    data = _diagnose_index(info)
-                elif sigma < 48 and data['index_origin_delta'] <= 6:
-                    sigma *= 2
-                    _logger.info('...Removing weak spots (Sigma < %2.0f) ...' % sigma)
-                    _filter_spots(sigma=sigma)
-                    io.write_xds_input(jobs, run_info)
-                    programs.xds_par()
-                    info = xds.parse_idxref()
-                    data = _diagnose_index(info)
-                elif data['quality_code'] in [19]:
-                    run_info['beam_center'] = data['new_origin']
-                    _logger.info('.. Adjusting beam origin to (%0.0f %0.0f) ...'% run_info['beam_center'])
-                    io.write_xds_input(jobs, run_info)
-                    programs.xds_par()
-                    info = xds.parse_idxref()
-                    data = _diagnose_index(info)
-                elif not _aliens_tried:
-                    _filter_spots(unindexed=True)
-                    io.write_xds_input(jobs, run_info)
-                    programs.xds_par()
-                    info = xds.parse_idxref()
-                    data = _diagnose_index(info)
-                    _aliens_tried = True                    
-                else:
-                    _logger.critical('.. Unable to proceed.')
-                    _retries = 999
-            elif info.get('failure_code') == xds.INSUFFICIENT_SPOTS or info.get('failure_code') == xds.SPOT_LIST_NOT_3D:
-                if not _all_images:
-                    run_info['spot_range'] = [run_info['data_range']]
-                    _logger.info('Increasing spot search range to [%d..%d] ...' % tuple(run_info['spot_range'][0]))
-                    io.write_xds_input('COLSPOT IDXREF', run_info)
-                    programs.xds_par()
-                    info = xds.parse_idxref()
-                    data = _diagnose_index(info)
-                elif sigma > 3:
-                    sigma /= 2
-                    _logger.info('.. Including weaker spots (Sigma > %2.0f) ...' % sigma)
-                    io.write_xds_input('COLSPOT IDXREF', run_info)
-                    programs.xds_par()
-                    info = xds.parse_idxref()
-                    data = _diagnose_index(info)
-                else:
-                    _logger.critical('.. Unable to proceed.')
-                    _retries = 999   
-            elif _match_code(data['quality_code'], 512) :
+            
+            if misc.code_matches_any(data['quality_code'], 2,4,8,32) and not _spot_adjusted:
+                run_info.update(min_spot_size=3, spot_range=[run_info['data_range']])
+                _logger.info('-> Adjusting spot size and range parameters ...')
+                io.write_xds_input('COLSPOT IDXREF', run_info)
+                programs.xds_par()
+                info = xds.parse_idxref()
+                data = _diagnose_index(info)
+                _spot_adjusted = True
+            elif misc.code_matches_all(data['quality_code'], 16) and not _weak_removed:
+                sigma += 3
+                _weak_removed = sigma >= 12
+                _logger.info('.. Removing weak spots (Sigma < %2.0f)...' % sigma)
+                _filter_spots(sigma=sigma)
+                run_info.update(sigma=sigma)
+                io.write_xds_input('IDXREF', run_info)
+                programs.xds_par()
+                info = xds.parse_idxref()
+                data = _diagnose_index(info)
+            elif misc.code_matches_all(data['quality_code'], 16) and not _aliens_removed:
+                _logger.info('-> Removing alien spots ...')
+                _filter_spots(unindexed=True)
+                io.write_xds_input(jobs, run_info)
+                programs.xds_par()
+                info = xds.parse_idxref()
+                data = _diagnose_index(info)
+                _aliens_removed = True                    
+            elif misc.code_matches_all(data['quality_code'], 19):
+                run_info['beam_center'] = data['new_origin']
+                _logger.info('-> Adjusting beam origin to (%0.0f %0.0f) ...'% run_info['beam_center'])
+                io.write_xds_input(jobs, run_info)
+                programs.xds_par()
+                info = xds.parse_idxref()
+                data = _diagnose_index(info)
+            elif misc.code_matches_all(data['quality_code'], 8) :
                 _logger.info('Adjusting spot parameters ...')
                 spot_size *= 1.5
-                new_params = {'min_spot_size':spot_size}
+                sigma = 6
+                new_params = {'sigma': sigma, 'min_spot_size':spot_size, 'refine_index': "ORIENTATION BEAM"}
                 run_info.update(new_params)
                 io.write_xds_input('COLSPOT IDXREF', run_info)
                 programs.xds_par()
@@ -250,6 +208,7 @@ def auto_index(data_info, options={}):
             else:
                 _logger.critical('.. Unable to proceed.')
                 _retries = 999
+                
     except dpm.errors.ProcessError, e:
         return {'step': 'indexing', 'success':False, 'reason': str(e)}
         

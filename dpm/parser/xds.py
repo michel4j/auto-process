@@ -20,13 +20,13 @@ PROGRAM_ERROR ) = range(8)
 
 _IDXREF_FAILURES = {
     0: None,
-    1: 'Dimension of difference vector set too low',
-    2: 'Insufficient percentage of spots indexed',
-    3: 'Insufficient number of spots',
-    4: 'Solution is not good enough',
-    5: 'Could not refine solution',
-    6: 'Could not index reflections',
-    7: 'Program died prematurely'
+    1: 'Dimension of clusters not 3D',
+    2: 'Percentage of indexed spots too low',
+    3: 'Not enough spots to index',
+    4: 'Solution is poor',
+    5: 'Unable to refine solution',
+    6: 'Unable to index reflections',
+    7: 'Program died'
 }
 def parse_idxref(filename='IDXREF.LP'):
     if not misc.file_requirements(filename,'XPARM.XDS'):

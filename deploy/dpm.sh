@@ -4,6 +4,11 @@
 
 export DPM_PATH=/cmcf_apps/dpm-3
 
+# Set the name of the .bash_profile or .profile file which prepares the environment to 
+# be able to find all  programs required and set up the paths as appropriate
+
+export DPM_ENVIRONMENT=${HOME}/.bash_profile
+
 # Configure a list nodes in data processing cluster <hostname-or-ip>:<number of cores>
 # Each machine in this list must support password-less private key ssh authentication for the user"
 

@@ -66,7 +66,7 @@ class SMVImageFile(object):
         info['exposure_time'] = float(tmp_info['time'])
         info['pixel_size'] = float(tmp_info['pixel_size'])
         orgx = float(tmp_info['beam_center_x'])/info['pixel_size']
-        orgy =float(tmp_info['beam_center_y'])/info['pixel_size']
+        orgy =float(tmp_info['beam_center_x'])/info['pixel_size']
         info['detector_size'] = (int(tmp_info['size1']), int(tmp_info['size2']))
         info['beam_center'] = (orgx, info['detector_size'][1] - orgy)
 

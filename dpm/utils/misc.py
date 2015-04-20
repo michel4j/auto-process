@@ -19,6 +19,19 @@ _c = 299792458e10   # A/s
 #direction vector of kappa axis on 08B1-1 when omega is at 0.0 deg
 KAPPA_AXIS = numpy.array([ 0.91354546,  0.3468    ,  0.21251931])
 
+
+def code_matches_all(code, *args):
+    return all([code|v == code for v in args])
+
+def code_matches_any(code, *args):
+    return any([code|v == code for v in args])
+
+def code_matches_only(code, *args):
+    return code == reduce(lambda x,y: x|y, args)
+
+def code_matches_none(code, *args):
+    return not(any([code|v == code for v in args]))
+
 def get_cpu_count():
     return os.sysconf('SC_NPROCESSORS_ONLN')
 

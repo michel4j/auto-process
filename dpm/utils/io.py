@@ -117,7 +117,7 @@ def write_xds_input(jobs, params):
         
     file_text += "NAME_TEMPLATE_OF_DATA_FRAMES=%s\n" % (_file_template)
     file_text += "DATA_RANGE=%d %d \n" % (params['data_range'][0], params['data_range'][1])
-    file_text += "BACKGROUND_RANGE=%d %d \n" % params.get('background_range', (params['data_range'][0], max(params['data_range'][1]//2, 45)))
+    file_text += "BACKGROUND_RANGE=%d %d \n" % params.get('background_range', (params['data_range'][0], min(params['data_range'][1]//2, 45)))
     
     for r_s, r_e in params['spot_range']:
         file_text += "SPOT_RANGE=%d %d \n" % (r_s, r_e)

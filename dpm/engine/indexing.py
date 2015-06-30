@@ -153,8 +153,10 @@ def auto_index(data_info, options={}):
         while info.get('failure_code') > 0 and _retries < 8:
             _logger.warning('Indexing failed:')
             for msg in data['messages']: _logger.warning('... {0}'.format(msg))
-            #if run_info['spot_range'][0] == run_info['data_range']:
-            _all_images = True
+            if run_info['spot_range'][0] == run_info['data_range']:
+                _all_images = True
+            else:
+                _all_images = False
             _retries += 1
             
             if options.get('backup', False):

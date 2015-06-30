@@ -15,12 +15,12 @@ def get_job_params(num_frames, delta):
         return numpy.ceil(v/n)*n
     
     batch_size = ceiling(DEFAULT_DELPHI/delta, 4)
-    num_jobs = numpy.ceil(num_frames/batch_size)
+    #num_jobs = numpy.ceil(num_frames/batch_size)
     
     #determine number of CPUS based on batch_size and cpu_count
     _min_cpus = min(batch_size, misc.get_cpu_count())
-    
-    return num_jobs, batch_size, _min_cpus
+    _max_jobs = len(os.environ.get('DPM_HOSTS', '').split())
+    return _max_jobs, batch_size, _min_cpus
 
 def write_xds_input(jobs, params):
     """
@@ -117,7 +117,7 @@ def write_xds_input(jobs, params):
         
     file_text += "NAME_TEMPLATE_OF_DATA_FRAMES=%s\n" % (_file_template)
     file_text += "DATA_RANGE=%d %d \n" % (params['data_range'][0], params['data_range'][1])
-    file_text += "BACKGROUND_RANGE=%d %d \n" % params.get('background_range', (params['data_range'][0], min(params['data_range'][1]//2, 45)))
+    file_text += "BACKGROUND_RANGE=%d %d \n" % params.get('background_range', (params['data_range'][0], max(params['data_range'][1]//10, 10)))
     
     for r_s, r_e in params['spot_range']:
         file_text += "SPOT_RANGE=%d %d \n" % (r_s, r_e)

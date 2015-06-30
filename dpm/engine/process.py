@@ -364,6 +364,7 @@ class Manager(object):
                     self.run_step(step, dset, overwrite=step_ovw)
             next_step = 'symmetry'
         
+        
         # Check Spacegroup and scale the datasets
         if next_step == 'symmetry':
             self.run_position = (0, 'symmetry')
@@ -380,7 +381,7 @@ class Manager(object):
             for dset in self.datasets.values():
                 if self.options.get('mode') in ['simple', 'screen'] and overwrite.get('sg_overwrite') is None:
                     # automatic spacegroup determination
-                    self.run_step('symmetry', dset, overwrite=step_ovw)
+                    self.run_step('symmetry', dset)
                     ref_sginfo = dset.results['symmetry']
                 else:
                     # tranfer symmetry info from reference to this dataset and update with specific reindex matrix
@@ -395,7 +396,7 @@ class Manager(object):
                     'space_group': ref_sginfo['sg_number'],
                     'unit_cell': ref_sginfo['unit_cell'],
                     'reindex_matrix': ref_sginfo['reindex_matrix'],
-                    'reference_data': ref_sginfo.get('reference_data'), # will be none for single data sets
+                    #'reference_data': ref_sginfo.get('reference_data'), # will be none for single data sets
                     'message': 'Reindexing & refining',
                     })
                 self.run_step('correction', dset, overwrite=step_ovw)

@@ -43,7 +43,7 @@ def _diagnose_index(info):
     _local_spots = info.get('local_indexed_spots')
     
     # not enough spots
-    if _spots['selected_spots'] < 300:
+    if _spots.get('selected_spots', _refl.get('selected_spots', 0)) < 300:
         data['quality_code'] |= 128
             
     # get number of subtrees

@@ -12,7 +12,7 @@ _logger = log.get_module_logger(__name__)
 def _diagnose_index(info):
     # quality_code is integer factors
     qcodes = {
-        256 : "irrecoverable failure",
+        256 : "serious indexing failure",
         128: "not enough spots",
         64: "cluster dimension is not 3D ",
         32: "spot positions not predicted accurately",
@@ -36,7 +36,7 @@ def _diagnose_index(info):
         data['quality_code'] |=  32
     elif failure_code in [xds.REFINE_ERROR,xds.INDEX_ERROR]:
         data['quality_code'] |=  256
-       
+        
     _refl = info.get('reflections')
     _spots = info.get('spots')
     _st = info.get('subtrees')
@@ -139,7 +139,7 @@ def auto_index(data_info, options={}):
         programs.xds_par()
         info = xds.parse_idxref()
         data = _diagnose_index(info)
-
+        
         _retries = 0
         sigma = 6
         spot_size = 3

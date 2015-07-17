@@ -29,10 +29,7 @@ _IDXREF_FAILURES = {
     7: 'Program died'
 }
 def parse_idxref(filename='IDXREF.LP'):
-    if not misc.file_requirements(filename,'XPARM.XDS'):
-        return {'failure': 'Indexing step failed'}
     info = utils.parse_file(filename, config='idxref.ini')
-    
     if info['failure_message'] is None:
         if os.path.getsize(filename) < 15000:
             info['failure_code'] = 7
@@ -56,8 +53,9 @@ def parse_idxref(filename='IDXREF.LP'):
         info['failure_code'] = 6
     else:
         info['failure_code'] = 7
-        
-    info['parameters'] = parse_xparm('XPARM.XDS')
+    
+    if misc.file_requirements(filename,'XPARM.XDS'):
+        info['parameters'] = parse_xparm('XPARM.XDS')
     info['failure'] = _IDXREF_FAILURES[info['failure_code']]
     return info
         

@@ -94,7 +94,7 @@ def write_xds_input(jobs, params):
 
     num_frames = params['data_range'][1] - params['data_range'][0] + 1
     num_jobs, batch_size, delphi = get_job_params(
-        num_frames, params['delta_angle'], params.get('max_delphi', DEFAULT_DELPHI)
+        num_frames, params['delta_angle'], min(params.get('max_delphi', 6), DEFAULT_DELPHI)
     )
 
 

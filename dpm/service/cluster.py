@@ -147,12 +147,12 @@ class IntegrateServer(object):
             else:
                 client_tasks[client] += 1
                 num_results += 1
-            time.sleep(1)
+            time.sleep(.1)
 
         # Wait for clients to complete
         _out = [p.wait() for p in active_clients.values()]
-        for client_name in active_clients.values():
-            print "Client '%s' completed %d task(s)" % (client_name, client_tasks[client_name])
+        for client_name, num_tasks in client_tasks.items():
+            print "Client '%s' completed %d task(s)" % (client_name, num_tasks)
 
         self.manager.shutdown()
 

@@ -1,11 +1,12 @@
 import sys
 import magic
 from common import *
-import marccd, smv
+import marccd, smv, raxis
 
 _image_type_map = {
     'marCCD Area Detector Image' : marccd.MarCCDImageFile,
     'SMV Area Detector Image' : smv.SMVImageFile,
+    'R-Axis Area Detector Image': raxis.RAXISImageFile,
 }
 
 try:

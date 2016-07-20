@@ -132,12 +132,13 @@ def auto_index(data_info, options={}):
     os.chdir(data_info['working_directory'])
     _logger.info('Determining lattice orientation and parameters ...')
     jobs = 'IDXREF'
-    run_info = {}
+    run_info = {'mode': options.get('mode')}
     info = {}
     run_info.update(data_info)
     if not misc.file_requirements('XDS.INP','SPOT.XDS'):
         return {'step': 'indexing', 'success':False, 'reason': "Required files not found"}
     try:
+
         io.write_xds_input(jobs, run_info)
         programs.xds_par()
         info = xds.parse_idxref()

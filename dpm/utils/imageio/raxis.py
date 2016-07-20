@@ -12,7 +12,7 @@ from PIL import Image
 from utils import calc_gamma
 
 
-class MarCCDImageFile(object):
+class RAXISImageFile(object):
     def __init__(self, filename, header_only=False):
         self.filename = filename
         self._read_header()
@@ -87,4 +87,4 @@ class MarCCDImageFile(object):
         self.image = raw_img.convert('I')
 
 
-__all__ = ['MarCCDImageFile']
+__all__ = ['RAXISImageFile']

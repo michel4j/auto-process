@@ -5,3 +5,6 @@
 .settings
 *.bak
 dpm/VERSION
+.idea/
+*.tar
+*.gz

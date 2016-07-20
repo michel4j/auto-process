@@ -11,7 +11,7 @@ def initialize(data_info, options={}):
     os.chdir(data_info['working_directory'])
     _logger.info('Creating correction tables ...')
 
-    run_info = {}
+    run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
     
     io.write_xds_input('XYCORR INIT', run_info)
@@ -46,7 +46,7 @@ def find_spots(data_info, options={}):
     os.chdir(data_info['working_directory'])
     _logger.info('Searching for strong spots ...')
 
-    run_info = {}
+    run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
     
     io.write_xds_input('COLSPOT', run_info)

@@ -10,7 +10,7 @@ _logger = log.get_module_logger(__name__)
 
 def integrate(data_info, options={}):
     os.chdir(data_info['working_directory'])
-    run_info = {}
+    run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
     if options.get('backup', False):
         misc.backup_files('INTEGRATE.LP', 'INTEGRATE.HKL')
@@ -64,7 +64,7 @@ def correct(data_info, options={}):
     os.chdir(data_info['working_directory'])
     message = options.get('message', "Applying corrections to")
     _logger.info('%s `%s` in `%s` ... ' % (message, data_info['name'], xtal.SPACE_GROUP_NAMES[data_info['space_group']]))
-    run_info = {}
+    run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
 
     if not misc.file_requirements('INTEGRATE.HKL','X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf'):

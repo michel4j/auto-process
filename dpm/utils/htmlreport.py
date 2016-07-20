@@ -49,7 +49,10 @@ def do_zip(parser, token):
     vals = map(template.Variable, args[1:-2])
     
     return ZipNode(vals, var_name)
-template.builtins.append(register)
+try:
+    template.builtins.append(register)
+except:
+    template.base.builtins.append(register)
 
 
 # Adjust Legend parameters

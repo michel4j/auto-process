@@ -10,7 +10,7 @@ from dpm.utils.misc import SortedDict
 from dpm.utils import dataset, misc, log, xtal
 from dpm.utils import kappa
 from dpm.engine import indexing, spots, integration, scaling, solver
-from dpm.engine import reporting, symmetry, strategy, conversion
+from dpm.engine import symmetry, strategy, conversion
 
 
 
@@ -530,6 +530,7 @@ class Manager(object):
         self.save_checkpoint()
 
         # Save summaries
+        import reporting
         log_data = reporting.get_log_data(self.datasets, self.options)
         reporting.save_log(log_data, 'process.log')   
         reports = reporting.get_reports(self.datasets, self.options)

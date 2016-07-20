@@ -146,9 +146,25 @@ def get_parameters(img_file):
             if len(_range) > 0:
                 spot_range.append((min(_range), max(_range)))
     last_frame = wedges[-1][0] + wedges[-1][1] - 1
+
+    missing = []
+    for i, wedge in enumerate(wedges):
+        if i > 0:
+            _re = wedge[0]-1
+            missing.append([_rs, _re])
+        _rs = wedge[0] + wedge[1]
+
+    biggest_wedge = sorted(wedges, key=lambda x: x[1], reverse=True)[0]
+
+
+
+
     info['spot_range'] = spot_range
     info['data_range'] = (first_frame, last_frame)
     info['reference_image'] = reference_image
-            
+    info['background_range'] = (biggest_wedge[0], biggest_wedge[0] + biggest_wedge[1] - 1)
+    info['skip_range'] = missing
+    info['max_delphi'] = info['delta_angle'] * min([w[1] for w in wedges])
+
     return info
 

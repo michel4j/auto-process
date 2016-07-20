@@ -213,11 +213,11 @@ class JobClient(object):
             out, err = p.communicate()
             p.wait()
             if p.returncode == 0:
-                result_q.put('')
+                result_q.put(('', self.client_name))
                 print "Client '%s': task (%s) done" % (self.client_name, job_args)
             else:
                 print "Client '%s': task (%s) failed! Returning task to Queue." % (self.client_name, job_args)
-                result_q.put(job)
+                result_q.put((job, self.client_name))
         except Queue.Empty:
             return
 

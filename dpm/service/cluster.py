@@ -41,17 +41,10 @@ def num_chunks(N, n):
             yield base_size
 
 
-def get_load():
-    loadFile = file("/proc/loadavg", "r")
-    info = loadFile.readline().split()
-    loadFile.close()
-    load = float(info[0]) / multiprocessing.cpu_count()
-    return load
-
 
 def get_available_cores():
     load = file("/proc/loadavg").readline().split()[0]
-    return multiprocessing.cpu_count() - int(load)
+    return multiprocessing.cpu_count() - int(float(load))
 
 
 class IntegrateServer(object):
@@ -114,8 +107,7 @@ class IntegrateServer(object):
         self.manager = JobQueueManager(address=('', 0), authkey=self.auth_key)
         self.manager.start()
         _, self.server_port = self.manager.address
-        print 'Server Started at %s:%d' % (self.server_address, self.server_port)
-        print "List of tasks in Queue:", self.task_list
+        print 'Server Started at %s:%d with %s tasks to do' % (self.server_address, self.server_port, len(self.task_list))
 
     def run(self):
         # add tasks to queue
@@ -125,7 +117,8 @@ class IntegrateServer(object):
             shared_job_q.put(task)
 
         # launch remote clients  
-        active_clients = []
+        active_clients = {}
+        client_tasks = defaultdict(int)
         for client, ccores in self.clients.items():
             if client.lower() == 'localhost' or client.lower() == socket.gethostname().lower():
                 cmd = self.local_command % (self.min_batch_size)
@@ -134,27 +127,33 @@ class IntegrateServer(object):
             args = shlex.split(cmd)
             p = subprocess.Popen(args, stdin=subprocess.PIPE)
             print "Starting Worker Client: '%s'" % (client)
-            active_clients.append(p)
+            active_clients[client] = p
 
         # monitor results and exit when done.
         num_results = 0
         shared_job_q = self.manager.get_job_q()
         shared_result_q = self.manager.get_result_q()
         while num_results < len(self.task_list):
-            output = shared_result_q.get()
+            output, client = shared_result_q.get()
             if output != '':
                 print "Tasks %s failed" % output,
                 if self.retries[output] > 1:
                     print "already retried %s time(s), can't proceed." % self.retries[output]
+                    num_results += 1
                 else:
                     print "will retry at most 2 times."
                     shared_job_q.put(output)
                     self.retries[output] += 1
             else:
+                client_tasks[client] += 1
                 num_results += 1
+            time.sleep(1)
 
         # Wait for clients to complete
-        _out = [p.wait() for p in active_clients]
+        _out = [p.wait() for p in active_clients.values()]
+        for client_name in active_clients.values():
+            print "Client '%s' completed %d task(s)" % (client_name, client_tasks[client_name])
+
         self.manager.shutdown()
 
 
@@ -193,7 +192,6 @@ class JobClient(object):
         self.server_port = port
         self.task_effort = task_effort
         self.create_manager()
-        self.jobs_done = []
 
     def create_manager(self):
         class ServerQueueManager(SyncManager):
@@ -216,10 +214,9 @@ class JobClient(object):
             p.wait()
             if p.returncode == 0:
                 result_q.put('')
-                print "Client: '%s' task (%s) done" % (self.client_name, job_args)
-                self.jobs_done.append(job)
+                print "Client '%s': task (%s) done" % (self.client_name, job_args)
             else:
-                print "Client: '%s' task (%s) failed! Returning task to Queue." % (self.client_name, job_args)
+                print "Client '%s': task (%s) failed! Returning task to Queue." % (self.client_name, job_args)
                 result_q.put(job)
         except Queue.Empty:
             return
@@ -240,4 +237,3 @@ class JobClient(object):
 
         for p in procs:
             p.join()
-        print "Client: '%s' done after completing %d task(s)" % (self.client_name, len(procs))

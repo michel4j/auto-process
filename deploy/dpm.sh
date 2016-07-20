@@ -2,7 +2,7 @@
 
 # Set DPM_PATH to the top-level directory containing the DPM modules
 
-export DPM_PATH=/cmcf_apps/dpm-3
+export DPM_PATH=/cmcf_apps/autoprocess-3.3.1
 
 # Set the name of the .bash_profile or .profile file which prepares the environment to 
 # be able to find all  programs required and set up the paths as appropriate

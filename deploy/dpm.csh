@@ -2,7 +2,7 @@
 
 # Set DPM_PATH to the top-level directory containing the DPM modules
 
-setenv DPM_PATH /cmcf_apps/dpm-3
+setenv DPM_PATH /cmcf_apps/autoprocess-3.3.1
 
 # Set the name of the .login or .profile file which prepares the environment to 
 #be able to find all  programs required and set up the paths as appropriate

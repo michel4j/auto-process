@@ -11,7 +11,7 @@ import getpass
 from collections import defaultdict
 from multiprocessing.managers import SyncManager
 
-import numpy
+
 
 ENVIRON_SCRIPT = os.environ.get('DPM_ENVIRONMENT', '~/.login')
 

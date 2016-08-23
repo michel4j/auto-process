@@ -103,6 +103,7 @@ def write_xds_input(jobs, params):
     file_text += "JOB=%s \n" % (jobs)
     file_text += "MAXIMUM_NUMBER_OF_PROCESSORS=%d \n" % (batch_size)
     file_text += "MAXIMUM_NUMBER_OF_JOBS=%d \n" % num_jobs
+    file_text += "NUMBER_OF_IMAGES_IN_CACHE=0 \n"
     file_text += "!-------------------Dataset parameters------- \n"
     file_text += "X-RAY_WAVELENGTH=%7.5f \n" % (params['wavelength'])
     file_text += "DETECTOR_DISTANCE=%5.1f \n" % (params['distance'])

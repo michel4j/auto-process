@@ -161,7 +161,6 @@ def get_parameters(img_file):
     info['reference_image'] = reference_image
     info['background_range'] = (biggest_wedge[0], biggest_wedge[0] + min(10, biggest_wedge[1]) - 1)
     info['skip_range'] = missing
-    info['max_delphi'] = info['delta_angle'] * min([w[1] for w in wedges])
-
+    info['max_delphi'] = info['delta_angle'] * biggest_wedge[1]
     return info
 

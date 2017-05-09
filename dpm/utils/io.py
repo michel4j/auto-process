@@ -86,7 +86,7 @@ def write_xds_input(jobs, params):
         detector = 'ADSC'
     elif params.get('detector_type') in ['mar165', 'mx300', 'mx300he', 'mar225', 'mar325']:
         detector = 'CCDCHESS'
-    elif params.get('detector_type') in ['PILATUS_6M']:
+    elif params.get('detector_type') in ['PILATUS_6M', 'PILATUS3_6M', '6m']:
         detector = 'PILATUS'
         params['min_spot_size'] = numpy.ceil(params.get('min_spot_size', 9) / (params['pixel_size'] / .05))
     else:

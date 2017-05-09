@@ -58,9 +58,6 @@ Qmos2dnz = mat3( ey, ez, ex).transpose()
 
 DNZAxes = ey, -ex, -ez
 
-if sys.version_info[:3] < (2,2,0):
-    True = 1
-    False = 0
 
 _debug = False
 #_debug = True

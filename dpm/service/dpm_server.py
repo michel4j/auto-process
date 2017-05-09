@@ -5,7 +5,6 @@ from twisted.internet import protocol, reactor, threads, defer
 from twisted.application import internet, service
 from twisted.spread import pb
 from twisted.python import components
-from twisted.conch import manhole, manhole_ssh
 from twisted.cred import portal, checkers
 from twisted.python import log
 from twisted.python.failure import Failure, DefaultException
@@ -233,33 +232,15 @@ def run_command_output(command, args, path='/tmp', uid=0, gid=0, output=None):
         )
     return prot.deferred
 
-    
-# generate ssh factory which points to a given service
-def getShellFactory(service, **passwords):
-    realm = manhole_ssh.TerminalRealm()
-    def getManhole(_):
-        namespace = {'service': service, '_': None }
-        fac = manhole.Manhole(namespace)
-        fac.namespace['factory'] = fac
-        return fac
-    realm.chainedProtocolFactory.protocolFactory = getManhole
-    p = portal.Portal(realm)
-    p.registerChecker(
-        checkers.InMemoryUsernamePasswordDatabaseDontUse(**passwords))
-    f = manhole_ssh.ConchFactory(p)
-    return f
-
 
 
 application = service.Application('DPM')
 f = DPMService()
-sf = getShellFactory(f, admin='admin')
 
 # publish DPM service on network
 dpm_provider = mdns.Provider('Data Processing Module', '_cmcf_dpm._tcp', 8881, {})
-dpm_ssh_provider = mdns.Provider('Data Processing Module Console', '_cmcf_dpm_ssh._tcp', 2221, {})
 
 serviceCollection = service.IServiceCollection(application)
 internet.TCPServer(8881, pb.PBServerFactory(IPerspectiveDPM(f))).setServiceParent(serviceCollection)
-internet.TCPServer(2221, sf).setServiceParent(serviceCollection)        
+
 

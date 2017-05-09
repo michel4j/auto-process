@@ -8,6 +8,8 @@ import dpm.errors
 
 _logger = log.get_module_logger(__name__)
 
+def diagnose_index(info):
+    pass
 
 def _diagnose_index(info):
     # quality_code is integer factors

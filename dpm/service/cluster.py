@@ -175,7 +175,7 @@ class IntegrateServer(object):
                 ))
                 self.progress = float(num_results)/len(self.task_list)
                 self.update_progress()
-                time.sleep(1)
+                time.sleep(.01)
             except Queue.Empty:
                 self.logger.info("Waiting for results ...")
                 time.sleep(5)

@@ -35,9 +35,9 @@ scanf_translate = [
     ("%s", "(\S+)", lambda x:x),
     ("%([xX])", "(0%s[\dA-Za-f]+)", lambda x:int(x, 16)),
     ("%o", "(0[0-7]*)", lambda x:int(x, 7)),
-    ("%\{\{(.+)\}\}", "%s", lambda x:x),
     ("%\{\{(.+)\}f\}", "%s", float),
     ("%\{\{(.+)\}d\}", "%s", int),
+    ("%\{\{(.+)\}\}", "%s", lambda x:x),
     ]]
 
 

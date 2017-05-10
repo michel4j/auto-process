@@ -132,7 +132,7 @@ def best(data_info, options={}):
 def xtriage(filename, options={}):
     command  = "#!/bin/csh \n"
     command += "pointless -c xdsin %s hklout UNMERGED.mtz > unmerged.log \n" % (filename)
-    command += "phenix.xtriage UNMERGED.mtz log=xtriage.log \n"
+    command += "phenix.xtriage UNMERGED.mtz log=xtriage.log loggraphs=True\n"
     try:
         f = open('xtriage.com', 'w')
         f.write(command)

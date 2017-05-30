@@ -208,7 +208,7 @@ def get_log_data(datasets, options={}):
         dres = dset.results
         
         # Print out strategy information
-        if dres.get('strategy') and dres['strategy'].get('runs'):
+        if dres.get('strategy'):
             _strategy = {}
             _strategy['summary'] = {}
             _strategy['summary']['title'] = 'Recommended Strategy for %s Data Collection' % adj
@@ -218,7 +218,7 @@ def get_log_data(datasets, options={}):
                   'Overlaps?', '-- Expected Quality --', 'Resolution',
                   'Completeness (%)', 'Multiplicity',
                   'I/sigma(I) [b]', 'R-factor (%) [b]' ]
-            for run in dres['strategy']['runs']:
+            for run in dres['strategy'].get('runs', []):
                 _name = run['name']
                 if run['number'] == 1:
                     _res = '%0.2f [c]' % (dres['strategy']['resolution'],)

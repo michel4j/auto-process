@@ -2,11 +2,9 @@
 Input/Output routines for XDS and file conversion utilities
 
 """
-import math
+
 import os
-
 import numpy
-
 from dpm.utils import misc
 
 DEFAULT_DELPHI = 8.0
@@ -162,8 +160,9 @@ def write_xds_input(jobs, params):
     DIRECTION_OF_DETECTOR_Y-AXIS= 0.000 %0.3f %0.3f
     \n""" % (detector,
              params.get('saturated_value', 65535),
-             math.cos(params['two_theta']),
-             -1 * math.sin(params['two_theta']))
+             numpy.cos(numpy.radians(params['two_theta'])),
+             -1 * numpy.sin(numpy.radians(params['two_theta']))
+    )
     file_text += '    STRONG_PIXEL= %d \n' % params.get('sigma', 5)
     if params.get('min_spot_separation') is not None:
         file_text += '    SEPMIN= %d \n' % params['min_spot_separation']

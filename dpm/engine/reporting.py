@@ -246,7 +246,7 @@ def get_log_data(datasets, options={}):
 
             _strategy['summary']['notes'] = """[a] NOTE: Recommended exposure time does not take into account overloads at low resolution!
 [b] Values in parenthesis represent the high resolution shell.
-[c] %s \n"""  %  dres['strategy']['resolution_reasoning']
+[c] %s \n"""  %  dres['strategy'].get('resolution_reasoning','N/A')
                         
             _section = {}
             _section['title'] = 'Maximum Delta Angle to Prevent Angular Overlap'
@@ -514,7 +514,7 @@ def get_reports(datasets, options={}):
                     'delta_angle': run['phi_width'],
                     'total_angle': run['phi_width'] * run['number_of_images'],
                     'exposure_time': run['exposure_time'],
-                    'resolution_reasoning': _strategy['resolution_reasoning'],                  
+                    'resolution_reasoning': _strategy.get('resolution_reasoning', 'N/A'),
                     'completeness':    _strategy['completeness'],
                     'r_factor':  _strategy['prediction_all']['R_factor'],
                     'i_sigma': _strategy['prediction_all']['average_i_over_sigma'],

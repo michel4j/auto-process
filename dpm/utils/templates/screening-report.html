@@ -129,11 +129,11 @@
         <tbody>
         {% for lattice in object.details.compatible_lattices|transpose %}
             <tr>
-                <td>{{lattices.id}}</td>
-                <td>{{lattices.type}}</td>
-                <td>{{lattices.unit_cell}}</td>
-                <td>{{lattices.quality}}</td>
-                <td>{{lattices.volume|floatformat:"-1"}}</td>
+                <td>{{lattice.id}}</td>
+                <td>{{lattice.type}}</td>
+                <td>{{lattice.unit_cell}}</td>
+                <td>{{lattice.quality}}</td>
+                <td>{{lattice.volume|floatformat:"-1"}}</td>
             </tr>
         {% endfor %}
         </tbody>

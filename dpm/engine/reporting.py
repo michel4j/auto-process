@@ -484,7 +484,7 @@ def get_reports(datasets, options={}):
         # Harvest screening details
         if options.get('mode', None) == 'screen':
             _dataset_info['result']['kind'] = AUTOXDS_SCREENING
-            _dataset_info['result']['details']['crystal_alignment'] = _st_details.get('crystal_alignment')
+
             if dres.get('strategy') and dres['strategy'].get('runs'):
                 _strategy = dres['strategy']
                 # harvest old strategy
@@ -528,7 +528,8 @@ def get_reports(datasets, options={}):
                 _st_details =_strategy.get('details', {})
                 _dataset_info['result']['details']['overlap_analysis'] = _st_details.get('delta_statistics')
                 _dataset_info['result']['details']['wedge_analysis'] = _st_details.get('completeness_statistics')
-                                
+                _dataset_info['result']['details']['crystal_alignment'] = _st_details.get('crystal_alignment')
+
                 # shell_statistics
                 _st_shell = _st_details.get('shell_statistics', {})
                 _res_shells = [(x+y)/2.0 for x,y in zip(_st_shell.get('min_resolution',[]), _st_shell.get('max_resolution',[]))]

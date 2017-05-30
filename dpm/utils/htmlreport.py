@@ -49,9 +49,10 @@ def do_zip(parser, token):
     vals = map(template.Variable, args[1:-2])
     
     return ZipNode(vals, var_name)
+
 try:
     template.builtins.append(register)
-except:
+except AttributeError:
     template.base.builtins.append(register)
 
 

@@ -6,7 +6,7 @@ import numpy
 import json
 
 import dpm.errors
-from dpm.utils.misc import SortedDict
+from collections import OrderedDict
 from dpm.utils import dataset, misc, log, xtal
 from dpm.utils import kappa
 from dpm.engine import indexing, spots, integration, scaling, solver
@@ -163,7 +163,7 @@ class DataSet(object):
 class Manager(object):
     def __init__(self, options=None, checkpoint=None, overwrites={}):
         
-        self.datasets = SortedDict()  
+        self.datasets = OrderedDict()
         
         if checkpoint is not None:
             self.run_position = checkpoint['run_position']

@@ -56,7 +56,7 @@ def transpose(table):
     if not table:
         return []
     keys = table.keys()
-    values = zip(table.values())
+    values = zip(*table.values())
     return [
         dict(zip(keys, v)) for v in values
     ]

@@ -96,7 +96,7 @@ class DataSet(object):
 
                     
         # screening
-        if 'strategy' in self.results:
+        if 'strategy' in self.results and self.results['strategy'].get('prediction_all'):
             _overall.update(self.results['strategy']['prediction_all'])
             _overall['resolution'] = [self.results['strategy']['resolution'], 0]
 

@@ -127,18 +127,15 @@
             </tr>
         </thead>
         <tbody>
-        {% with object.details.compatible_lattices as lattices %}
-        {% zip lattices.id  lattices.type  lattices.unit_cell lattices.quality lattices.volume as tbl %}
-        {% for rows in tbl %}
+        {% for lattice in object.details.compatible_lattices|transpose %}
             <tr>
-                <td>{{rows.0}}</td>
-                <td>{{rows.1}}</td>
-                <td>{{rows.2}}</td>
-                <td>{{rows.3}}</td>
-                <td>{{rows.4|floatformat:"-1"}}</td>
+                <td>{{lattices.id}}</td>
+                <td>{{lattices.type}}</td>
+                <td>{{lattices.unit_cell}}</td>
+                <td>{{lattices.quality}}</td>
+                <td>{{lattices.volume|floatformat:"-1"}}</td>
             </tr>
         {% endfor %}
-        {% endwith %}
         </tbody>
     </table>
 
@@ -154,21 +151,18 @@
             </tr>
         </thead>
         <tbody>
-        {% with object.details.spacegroup_selection as spacegroups %}
-        {% zip spacegroups.name  spacegroups.space_group  spacegroups.probability as tbl %}
-        {% for rows in tbl %}
+        {% for spacegroup in object.details.spacegroup_selection|transpose %}
             <tr>
             <td>
             {% ifequal forloop.counter 1 %}
             *
             {% endifequal %}
             </td>
-                <td>{{rows.0}}</td>
-                <td>{{rows.1}}</td>
-                <td>{{rows.2|floatformat:"-1"}}</td>
+                <td>{{spacegroup.name}}</td>
+                <td>{{spacegroup.space_group}}</td>
+                <td>{{spacegroup.probability|floatformat:"-1"}}</td>
             </tr>
         {% endfor %}
-        {% endwith %}
         </tbody>
         <tfoot>
         <tr><td colspan=4></td></tr>
@@ -195,16 +189,16 @@
             </tr>
         </thead>
         <tbody>
-        {% with object.details.predicted_quality as stats %}
-        {% zip stats.shell  stats.completeness  stats.r_factor stats.i_sigma stats.multiplicity stats.frac_overload as tbl %}
-        {% for rows in tbl %}
+        {% for stat in object.details.predicted_quality|transpose %}
             <tr>
-            {% for col in rows %}
-                <td>{{col|floatformat:"2"}}</td>
-            {% endfor %}
+                <td>{{stat.shell|floatformat:"2"}}</td>
+                 <td>{{stat.completeness|floatformat:"2"}}</td>
+                 <td>{{stat.r_factor|floatformat:"2"}}</td>
+                 <td>{{stat.i_sigma|floatformat:"2"}}</td>
+                 <td>{{stat.multiplicity|floatformat:"2"}}</td>
+                 <td>{{stat.frac_overload|floatformat:"2"}}</td>
             </tr>
         {% endfor %}
-        {% endwith %}
         </tbody>
         <tfoot>
         <tr><td colspan=6></td></tr>

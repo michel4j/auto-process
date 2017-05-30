@@ -50,6 +50,15 @@ def do_zip(parser, token):
     
     return ZipNode(vals, var_name)
 
+
+@register.filter(name='transpose')
+def transpose(table):
+    keys = table.keys()
+    values = zip(table.values())
+    return [
+        dict(zip(keys, v)) for v in values
+    ]
+
 try:
     template.builtins.append(register)
 except AttributeError:
@@ -602,7 +611,9 @@ def create_screening_report(data, directory):
     t = loader.get_template("screening-report.html")
     c = Context({
             'object': results,
-            })
+    })
+
+    print c
     
     html.write(t.render(c))
     html.close()

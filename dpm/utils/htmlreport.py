@@ -53,6 +53,8 @@ def do_zip(parser, token):
 
 @register.filter(name='transpose')
 def transpose(table):
+    if not table:
+        return []
     keys = table.keys()
     values = zip(table.values())
     return [

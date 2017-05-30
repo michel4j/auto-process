@@ -614,8 +614,6 @@ def create_screening_report(data, directory):
     c = Context({
             'object': results,
     })
-
-    print c
     
     html.write(t.render(c))
     html.close()

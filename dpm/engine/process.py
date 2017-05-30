@@ -457,7 +457,6 @@ class Manager(object):
                     'solutions': sols,
                     'goniometer': pars['goniometer']
                 }
-                print '#####################', dset.results['strategy']
             self.save_checkpoint()
         
         # check quality and covert formats     

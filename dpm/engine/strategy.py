@@ -35,24 +35,11 @@ def calc_strategy(data_info, options={}):
     io.write_xds_input("XPLAN", run_info)
     
     try:
-        info = {
-            'runs': [],
-            'prediction_all': {},
-            'prediction_hi': {},
-            'details': {}
-        }
-
         programs.xds_par()
-        xplan = xds.parse_xplan()
-        idxinfo = xds.parse_idxref()
-        xplan['max_delta'] = {
-            'resolution': [entry['resolution'] for entry in idxinfo['oscillation_ranges']],
-            'delta': [entry['delta_angle'] - idxinfo['summary']['mosaicity'] for entry in idxinfo['oscillation_ranges']],
-        }
-        info['xplan'] = xplan
+        info = xds.parse_xplan()
 
-        programs.best(data_info, options)
-        info.update(best.parse_best())
+        #programs.best(data_info, options)
+        #info.update(best.parse_best())
     except dpm.errors.ProcessError, e:
         return {'step': 'strategy', 'success': True, 'reason': str(e), 'data': info}
     

@@ -7,7 +7,7 @@ import numpy
 import os
 import utils
 import shutil
-from dpm.utils import misc
+from dpm.utils import misc, xtal
 
 (NO_FAILURE,
 SPOT_LIST_NOT_3D,
@@ -80,7 +80,61 @@ def parse_correct(filename='CORRECT.LP'):
     return info
 
 def parse_xplan(filename='XPLAN.LP'):
-    return utils.parse_file(filename, config='xplan.ini')
+    raw_info = utils.parse_file(filename, config='xplan.ini')
+    index_info = parse_idxref()
+    correct_info = parse_correct()
+
+    start_plan = {}
+    for start_plan in raw_info['summary']:
+        if start_plan['completeness'] > 90:
+            break
+
+    cmpl_plan = {}
+    for cmpl_plan in raw_info['summary']:
+        if cmpl_plan['total_angle'] >= 180.:
+            break
+
+    stats = correct_info['statistics'][-2]
+    res_reason = 'N/A'
+    for stats in correct_info['statistics'][:-1]:
+        if stats['i_sigma'] < 0.5:
+            res_reason = 'Resolution limit is based on I/Sigma(I) > 0.5'
+            break
+        res_reason = 'Resolution limit is based on detector edge'
+    resolution = float(stats['shell'])
+    mosaicity = correct_info['summary']['mosaicity']
+
+    distance = xtal.resol_to_dist(
+        resolution, correct_info['parameters']['pixel_size'][0], correct_info['parameters']['detector_size'][0],
+        correct_info['parameters']['wavelength']
+    )
+
+    osc = index_info['oscillation_ranges'][-1]
+    for osc in  index_info['oscillation_ranges']:
+        if osc['resolution'] <= resolution:
+            break
+    delta = max(0.2, osc['delta_angle'] - mosaicity)
+    info = {
+        'distance': distance,
+        'completeness': cmpl_plan.get('completeness', -99),
+        'redundancy': cmpl_plan['multiplicity'],
+        'i_sigma': correct_info['summary']['i_sigma'],
+        'resolution': resolution,
+        'resolution_reasoning': res_reason,
+        'runs': [{
+            'name': 'Run 1',
+            'number': 1,
+            'phi_start': start_plan.get('start_angle', 0),
+            'phi_width': delta,
+            'overlaps': {True: 'Yes', False: 'No'}[delta > osc['delta_angle']],
+            'number_of_images': int(180/delta)
+        }],
+        'prediction_all': {},
+        'prediction_hi': {},
+        'details': {
+        }
+    }
+    return info
 
 def parse_xdsstat(filename='XDSSTAT.LP'):
     return utils.parse_file(filename, config='xdsstat.ini')
@@ -173,3 +227,4 @@ def get_profile(raw_data):
             slice_str[sl+j] += section[j]
     
     return numpy.array(map(_str2arr, slice_str))
+

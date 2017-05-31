@@ -133,9 +133,7 @@ class DPMService(service.Service):
             gid = self.settings['gid']
         
         # prepare arguments for autoprocess
-        if isinstance(info['file_names'], (list, tuple)):
-            info['file_names'] = ' '.join(info['file_names'])
-        args = [info['file_names'], '--dir=%s' % (directory)]
+        args = list(info['file_names']) + ['--dir=%s' % (directory)]
         if info.get('anomalous', False):
             args.append('--anom')
         if info.get('mad', False):

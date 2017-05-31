@@ -125,7 +125,7 @@ def scanf(format, s, position=0):
     if found:
         groups = found.groups()
         try:
-            result = tuple([casts[i](groups[i]) for i in range(len(groups))])
+            result = tuple([casts[i % len(casts)](value) for i, value in enumerate(groups)])
         except:
             return  None, position
         return result, found.end()
@@ -248,7 +248,6 @@ def _process_sections(data, conf):
                 entry = []
                 params = sconf['keys'].items()
                 _v, _p = scanf(sconf['body'], chunk)
-                
                 while _v:
                     entry.append( cast_params(params, _v) )
                     _v, _p = scanf(sconf['body'], chunk, _p)

@@ -265,4 +265,35 @@ _l_array = _calc_L(_a_array)
 def L2twin(l):
     idx = bisect.bisect_left(_l_array, l)
     return _a_array[idx]
-    
+
+
+def dist_to_resol(distance, pixel_size, detector_size, wavelength, two_theta=0):
+    """Convert from distance in mm to resolution in angstroms.
+
+    Arguments:
+    pixel_size      --  pixel size of detector
+    detector_size   --  width of detector
+    distance   -- detector distance
+    energy          --  X-ray energy
+
+    """
+
+    theta = 0.5 * math.atan(0.5 * pixel_size * detector_size / distance)
+    theta = theta + two_theta
+    return 0.5 * wavelength / math.sin(theta)
+
+
+def resol_to_dist(resolution, pixel_size, detector_size, wavelength, two_theta=0):
+    """Convert from resolution in angstroms to distance in mm.
+
+    Arguments:
+    resolution    -- desired resolution
+    pixel_size      --  pixel size of detector
+    detector_size   --  width of detector
+    energy          --  X-ray energy
+
+    """
+
+    theta = math.asin(0.5 * wavelength / resolution)
+    theta = max(0, (theta - two_theta))
+    return 0.5 * pixel_size * detector_size / math.tan(2 * theta)

@@ -129,8 +129,28 @@ def parse_xplan(filename='XPLAN.LP'):
             'overlaps': {True: 'Yes', False: 'No'}[delta > osc['delta_angle']],
             'number_of_images': int(180/delta)
         }],
-        'prediction_all': {},
-        'prediction_hi': {},
+        'prediction_all': {
+             'R_factor': correct_info['statistics'][-1]['r_exp'],
+             'average_error': -0.99,
+             'average_i_over_sigma': correct_info['statistics'][-1]['i_sigma'],
+             'average_intensity': -99,
+             'completeness': cmpl_plan.get('completeness', -99)/100.,
+             'fract_overload': 0.0,
+             'max_resolution': resolution,
+             'min_resolution': 50,
+             'redundancy': cmpl_plan['multiplicity']
+        },
+        'prediction_hi': {
+            'R_factor': stats['r_exp'],
+            'average_error': -0.99,
+            'average_i_over_sigma': stats['i_sigma'],
+            'average_intensity': -99,
+            'completeness': cmpl_plan.get('completeness', -99) / 100.,
+            'fract_overload': 0.0,
+            'max_resolution': resolution,
+            'min_resolution': resolution - 0.03,
+            'redundancy': cmpl_plan['multiplicity']
+        },
         'details': {
         }
     }

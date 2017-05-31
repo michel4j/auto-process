@@ -104,16 +104,16 @@ def parse_xplan(filename='XPLAN.LP'):
     resolution = float(stats['shell'])
     mosaicity = correct_info['summary']['mosaicity']
 
-    distance = xtal.resol_to_dist(
+    distance = round(xtal.resol_to_dist(
         resolution, correct_info['parameters']['pixel_size'][0], correct_info['parameters']['detector_size'][0],
         correct_info['parameters']['wavelength']
-    )
+    ))
 
     osc = index_info['oscillation_ranges'][-1]
     for osc in  index_info['oscillation_ranges']:
         if osc['resolution'] <= resolution:
             break
-    delta = max(0.2, osc['delta_angle'] - mosaicity)
+    delta = round(max(0.2, osc['delta_angle'] - mosaicity), 2)
     info = {
         'distance': distance,
         'completeness': cmpl_plan.get('completeness', -99),
@@ -121,9 +121,12 @@ def parse_xplan(filename='XPLAN.LP'):
         'i_sigma': correct_info['summary']['i_sigma'],
         'resolution': resolution,
         'resolution_reasoning': res_reason,
+        'attenuation': 0,
         'runs': [{
             'name': 'Run 1',
             'number': 1,
+            'distance': distance,
+            'exposure_time': -1,
             'phi_start': start_plan.get('start_angle', 0),
             'phi_width': delta,
             'overlaps': {True: 'Yes', False: 'No'}[delta > osc['delta_angle']],

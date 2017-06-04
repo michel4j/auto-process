@@ -35,7 +35,7 @@ def get_job_params(num_frames, delta, delphi=DEFAULT_DELPHI):
     delphi = batch_size * delta
     max_jobs = cores // batch_size
 
-    return max_jobs, batch_size, delphi
+    return max_jobs//2, batch_size, delphi
 
 
 def write_xds_input(jobs, params):

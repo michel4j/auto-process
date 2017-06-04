@@ -106,7 +106,7 @@ def diagnose_index(info):
 
     return {
         'problems': set(problems),
-        'params': options
+        'options': options
     }
 
 

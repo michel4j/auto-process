@@ -1,4 +1,5 @@
 import os
+import re
 import textwrap
 
 from dpm.utils.prettytable import PrettyTable
@@ -388,9 +389,8 @@ def get_reports(datasets, options={}):
         data_id = None
         crystal_id = None
         exp_id = None
-        dataset_file = os.path.join(os.path.dirname(dset.parameters['file_template']),
-                          '%s.SUMMARY' % (dataset_name))
 
+        dataset_file = re.sub('_[?]*\.[^.]*$', '.SUMMARY', dset.parameters['file_template'])
         if os.path.exists(dataset_file):
             dataset_info = json.load(file(dataset_file))
             data_id = dataset_info.get('id')

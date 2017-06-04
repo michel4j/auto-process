@@ -11,6 +11,7 @@ import numpy
 import posixpath
 from dpm.utils.prettytable import PrettyTable
 import json
+from choices import Choices
 
 # Physical Constants
 _h = 4.13566733e-15 # eV.s

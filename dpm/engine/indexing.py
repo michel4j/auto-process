@@ -1,6 +1,5 @@
 import os
 import numpy
-
 from dpm.utils.misc import Table
 from dpm.parser import xds
 from dpm.utils import log, misc, programs, io
@@ -8,8 +7,108 @@ import dpm.errors
 
 _logger = log.get_module_logger(__name__)
 
+PROBLEMS = misc.Choices(
+    (1, 'index_origin', 'Detector origin not optimal.'),
+    (2, 'multiple_subtrees', 'Indexed reflections belong to multiple subtrees.'),
+    (4, 'poor_solution', 'Poor solution, indexing refinement problems.'),
+    (8, 'non_integral', 'Indices deviate significantly from integers.'),
+    (16, 'unindexed_spots', 'Too many un-indexed spots.'),
+    (32, 'spot_accuracy', 'Spots deviate significantly from expected positions.'),
+    (64, 'dimension_2d', 'Clusters are not 3-Dimensional.'),
+    (128, 'few_spots', 'Insufficient spots available.'),
+    (256, 'failed', 'Indexing failed for unknown reason.')
+)
+
+CODES = {
+    xds.SPOT_LIST_NOT_3D: PROBLEMS.dimension_2d,
+    xds.INSUFFICIENT_INDEXED_SPOTS: PROBLEMS.unindexed_spots,
+    xds.INSUFFICIENT_SPOTS: PROBLEMS.few_spots,
+    xds.POOR_SOLUTION: PROBLEMS.spot_accuracy,
+    xds.REFINE_ERROR: PROBLEMS.poor_solution,
+    xds.INDEX_ERROR: PROBLEMS.failed,
+    256: PROBLEMS.failed
+}
+
 def diagnose_index(info):
-    pass
+
+    failure_code = info.get('failure_code', 256)
+    problems = [CODES.get(failure_code, 0)]
+    options = {}
+
+    _refl = info.get('reflections')
+    subtrees = info.get('subtrees')
+    _local_spots = info.get('local_indexed_spots')
+
+    # not enough spots
+    if info.get('spots') and 'selected_spots' in info.get('spots', {}):
+        if info['spots'].get('selected_spots', 0) < 300:
+            problems.append(PROBLEMS.few_spots)
+
+    # get number of subtrees
+    distinct = 0
+    satelites = 0
+    for subtree in subtrees:
+        pct = subtree['population']/float(_local_spots)
+        if pct > 0.3:
+            distinct += 1
+        elif pct > 1:
+            satelites += 1
+        else:
+            break
+
+    if distinct > 1:
+        problems.append(PROBLEMS.multiple_subtrees)
+    elif distinct == 0:
+        problems.append(PROBLEMS.poor_solution)
+
+
+    # get max, std deviation of integral indices
+    _indices = info.get('cluster_indices')
+    if _indices is not None and len(_indices) > 0:
+        t = Table(_indices)
+        _index_array = numpy.array(t['hkl'])
+        _index_err = abs(_index_array - _index_array.round())
+        avg_error = _index_err.mean()
+        if avg_error > 0.05:
+            problems.append(PROBLEMS.non_integral)
+
+    # get spot deviation
+    if info.get('summary') is not None:
+        if info['summary'].get('stdev_spot') > 3:
+            problems.append(PROBLEMS.spot_accuracy)
+
+    # get rejects
+    if info.get('cluster_dimension', 0) < 3:
+        problems.append(PROBLEMS.dimension_2d)
+
+    # get quality of selected index origin
+    _origins = info.get('index_origins')
+    selected_quality = 0
+    selected_deviation = 0
+    best_quality = 999.
+    best_deviation = 999.
+    origin_deviation = _origins[0].get('position')
+
+    for i, _org in enumerate(_origins):
+        deviation = sum(_org.get('deviation',0))
+        quality = _org.get('quality', 0)
+        if deviation < best_deviation:
+            selected_deviation = i
+            best_deviation = deviation
+            origin_deviation = _org.get('position')
+        if quality < best_quality:
+            selected_quality = i
+            best_quality = i
+
+    if best_quality != 0 or best_deviation != 0 or selected_quality != selected_deviation:
+        problems.append(PROBLEMS.index_origin)
+        options['beam_center'] = origin_deviation
+
+    return {
+        'problems': set(problems),
+        'params': options
+    }
+
 
 def _diagnose_index(info):
     # quality_code is integer factors
@@ -24,6 +123,7 @@ def _diagnose_index(info):
         2: "more than one distinct subtree",
         1: "index origin not optimal",
     }
+
 
     data = {}
     data['quality_code'] = 0
@@ -40,7 +140,6 @@ def _diagnose_index(info):
         data['quality_code'] |=  256
         
     _refl = info.get('reflections')
-    _spots = info.get('spots')
     _st = info.get('subtrees')
     _local_spots = info.get('local_indexed_spots')
     
@@ -144,73 +243,70 @@ def auto_index(data_info, options={}):
         io.write_xds_input(jobs, run_info)
         programs.xds_par()
         info = xds.parse_idxref()
-        data = _diagnose_index(info)
+        diagnosis = diagnose_index(info)
         
         _retries = 0
         sigma = 6
         spot_size = 3
-        _all_images = False
         _aliens_removed = False
         _weak_removed = False
-        _refined_dist = False
-        _weak_added = False 
         _spot_adjusted = False
         
         while info.get('failure_code') > 0 and _retries < 8:
-            _logger.warning('Indexing failed:')
-            for msg in data['messages']: _logger.warning('... {0}'.format(msg))
-            if run_info['spot_range'][0] == run_info['data_range']:
-                _all_images = True
-            else:
-                _all_images = False
+            _all_images = (run_info['spot_range'][0] == run_info['data_range'])
             _retries += 1
+            _logger.warning('Indexing failed:')
+            for prob in diagnosis['problems']:
+                _logger.warning('... {0}'.format(PROBLEMS[prob]))
             
             if options.get('backup', False):
                 misc.backup_files('SPOT.XDS', 'IDXREF.LP')
-            
-            if misc.code_matches_any(data['quality_code'], 2,4,8,32) and not _spot_adjusted:
-                run_info.update(min_spot_size=3, spot_range=[run_info['data_range']])
-                _logger.info('-> Adjusting spot size and range parameters ...')
+
+            if diagnosis['problems'] & {PROBLEMS.index_origin}:
+                _logger.info('-> Adjusting detector origin ...')
+                run_info['beam_center'] = diagnosis['options'].get('beam_center', run_info['beam_center'])
+                io.write_xds_input('IDXREF', run_info)
+                programs.xds_par()
+                info = xds.parse_idxref()
+                diagnosis = diagnose_index(info)
+            elif (diagnosis['problems'] & {PROBLEMS.few_spots, PROBLEMS.dimension_2d}) and not _all_images:
+                _logger.info('-> Expanding spot range ...')
+                run_info.update(spot_range=[run_info['data_range']])
+                io.write_xds_input('IDXREF', run_info)
+                programs.xds_par()
+                info = xds.parse_idxref()
+                diagnosis = diagnose_index(info)
+            elif (diagnosis['problems'] & {PROBLEMS.poor_solution, PROBLEMS.spot_accuracy, PROBLEMS.non_integral}) and not _spot_adjusted:
+                spot_size *= 1.5
+                sigma = 6
+                new_params = {'sigma': sigma, 'min_spot_size': spot_size, 'refine_index': "CELL BEAM ORIENTATION AXIS"}
+                if not _all_images:
+                    new_params['spot_range'] = [run_info['data_range']]
+                run_info.update(new_params)
+                _logger.info('-> Adjusting spot size and refinement parameters ...')
                 io.write_xds_input('COLSPOT IDXREF', run_info)
                 programs.xds_par()
                 info = xds.parse_idxref()
-                data = _diagnose_index(info)
-                _spot_adjusted = True
-            elif misc.code_matches_all(data['quality_code'], 16) and not _weak_removed:
+                diagnosis = diagnose_index(info)
+                _spot_adjusted = spot_size > 12
+            elif (diagnosis['problems'] & {PROBLEMS.unindexed_spots, PROBLEMS.multiple_subtrees}) and not _weak_removed:
                 sigma += 3
-                _weak_removed = sigma >= 12
                 _logger.info('.. Removing weak spots (Sigma < %2.0f)...' % sigma)
                 _filter_spots(sigma=sigma)
                 run_info.update(sigma=sigma)
                 io.write_xds_input('IDXREF', run_info)
                 programs.xds_par()
                 info = xds.parse_idxref()
-                data = _diagnose_index(info)
-            elif misc.code_matches_all(data['quality_code'], 16) and not _aliens_removed:
-                _logger.info('-> Removing alien spots ...')
+                diagnosis = diagnose_index(info)
+                _weak_removed = sigma >= 12
+            elif (diagnosis['problems'] & {PROBLEMS.unindexed_spots, PROBLEMS.multiple_subtrees}) and not _aliens_removed:
+                _logger.info('-> Removing all alien spots ...')
                 _filter_spots(unindexed=True)
                 io.write_xds_input(jobs, run_info)
                 programs.xds_par()
                 info = xds.parse_idxref()
-                data = _diagnose_index(info)
-                _aliens_removed = True                    
-            elif misc.code_matches_all(data['quality_code'], 19):
-                run_info['beam_center'] = data['new_origin']
-                _logger.info('-> Adjusting beam origin to (%0.0f %0.0f) ...'% run_info['beam_center'])
-                io.write_xds_input(jobs, run_info)
-                programs.xds_par()
-                info = xds.parse_idxref()
-                data = _diagnose_index(info)
-            elif misc.code_matches_all(data['quality_code'], 8) :
-                _logger.info('Adjusting spot parameters ...')
-                spot_size *= 1.5
-                sigma = 6
-                new_params = {'sigma': sigma, 'min_spot_size':spot_size, 'refine_index': "ORIENTATION BEAM"}
-                run_info.update(new_params)
-                io.write_xds_input('COLSPOT IDXREF', run_info)
-                programs.xds_par()
-                info = xds.parse_idxref()
-                data = _diagnose_index(info)                    
+                diagnosis = diagnose_index(info)
+                _aliens_removed = True
             else:
                 _logger.critical('.. Unable to proceed.')
                 _retries = 999

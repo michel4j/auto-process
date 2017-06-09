@@ -82,25 +82,21 @@ def diagnose_index(info):
         problems.append(PROBLEMS.dimension_2d)
 
     # get quality of selected index origin
-    _origins = info.get('index_origins')
-    selected_quality = 0
+    _origins = info.get('index_origins', [])
     selected_deviation = 0
-    best_quality = 999.
     best_deviation = 999.
     origin_deviation = _origins[0].get('position')
 
     for i, _org in enumerate(_origins):
-        deviation = sum(_org.get('deviation',0))
+        deviation = sum(_org.get('deviation',[0]))
         quality = _org.get('quality', 0)
         if deviation < best_deviation:
             selected_deviation = i
             best_deviation = deviation
             origin_deviation = _org.get('position')
-        if quality < best_quality:
-            selected_quality = i
-            best_quality = i
 
-    if best_quality != 0 or best_deviation != 0 or selected_quality != selected_deviation:
+
+    if selected_deviation != 0:
         problems.append(PROBLEMS.index_origin)
         options['beam_center'] = origin_deviation
 
@@ -108,108 +104,6 @@ def diagnose_index(info):
         'problems': set(problems),
         'options': options
     }
-
-
-def _diagnose_index(info):
-    # quality_code is integer factors
-    qcodes = {
-        256 : "serious indexing failure",
-        128: "not enough spots",
-        64: "cluster dimension is not 3D ",
-        32: "spot positions not predicted accurately",
-        16: "insufficient percent of spots indexed",
-        8: "indices deviate significantly from integers",
-        4: "no distinct subtree",
-        2: "more than one distinct subtree",
-        1: "index origin not optimal",
-    }
-
-
-    data = {}
-    data['quality_code'] = 0
-    failure_code = info.get('failure_code', 256)
-    if failure_code == xds.SPOT_LIST_NOT_3D:
-        data['quality_code'] |=  64
-    elif failure_code == xds.INSUFFICIENT_INDEXED_SPOTS:
-        data['quality_code'] |=  16
-    elif failure_code == xds.INSUFFICIENT_SPOTS:
-        data['quality_code'] |=  128
-    elif failure_code == xds.POOR_SOLUTION:
-        data['quality_code'] |=  32
-    elif failure_code in [xds.REFINE_ERROR,xds.INDEX_ERROR]:
-        data['quality_code'] |=  256
-        
-    _refl = info.get('reflections')
-    _st = info.get('subtrees')
-    _local_spots = info.get('local_indexed_spots')
-    
-    # not enough spots
-    if _refl:
-        if _refl.get('selected_spots', 0) < 300:
-            data['quality_code'] |= 128
-        else:
-            data['quality_code'] |= 128
-            
-    # get number of subtrees
-    data['distinct_subtrees'] = 0
-    data['satellites'] = 0
-    if _st is not None and len(_st) > 0 and _refl is not None:
-        data['distinct_subtrees'] = 0
-        data['satellites'] = 0
-        for item in _st:
-            _percent = 100.0 * item.get('population')/float(_local_spots)
-            if _percent >= 30.0:
-                data['distinct_subtrees'] += 1
-            elif _percent > 1:
-                data['satellites']  += 1
-            else:
-                break
-    if data['distinct_subtrees'] > 1 :
-        data['quality_code'] |= 2
-    elif data['distinct_subtrees'] == 0 :
-        data['quality_code'] |= 4
-        
-    # get max, std deviation of integral indices
-    _indices = info.get('cluster_indices')
-    data['index_error_max'] = 999.
-    data['index_error_mean'] = 999. 
-    if _indices is not None and len(_indices) > 0:
-        t = Table(_indices)
-        _index_array = numpy.array(t['hkl'])
-        _index_err = abs(_index_array - _index_array.round())
-        data['index_error_max'] = _index_err.max()
-        data['index_error_mean'] = _index_err.mean()
-    if data['index_error_mean'] > 0.05 : data['quality_code'] |= 8
-    
-    # get spot deviation 
-    data['spot_deviation'] = 999.
-    if info.get('summary')  is not None:
-        data['spot_deviation'] = info['summary'].get('stdev_spot')
-    if data['spot_deviation'] > 3 : data['quality_code'] |= 32
-    
-    # get rejects     
-    data['cluster_dimension'] = info.get('cluster_dimension', 0)
-    if data['cluster_dimension'] < 3 : data['quality_code'] |= 64
-    
-    # get quality of selected index origin
-    _origins = info.get('index_origins')
-    _sel_org = info.get('selected_origin')
-    data['index_origin_delta'] = 999.
-    data['new_origin'] = None
-    if _sel_org is not None and _origins is not None and len(_origins)>0:
-        _origins.sort(key=lambda k: k['delta_angle'])
-        for _org in _origins:
-            if _org['index_origin'] == _sel_org:
-                data['index_origin_delta'] = _org.get('delta')
-                data['index_origin_quality'] = _org.get('quality')
-                data['new_origin'] = _org.get('position')  
-                break
-        if data['index_origin_delta'] > 6 or data['index_origin_quality'] > 10: 
-            data['quality_code'] |= 1
-    data['failure_code'] = failure_code
-    data['messages'] = [v for k,v in qcodes.items() if (data['quality_code']|k == data['quality_code'])]
-    
-    return data
 
 
 def _filter_spots(sigma=0, unindexed=False, filename='SPOT.XDS'):

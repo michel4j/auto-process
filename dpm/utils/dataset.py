@@ -9,7 +9,7 @@ from scipy.ndimage import measurements
 from scipy.ndimage import filters
 
 from dpm.utils import misc
-from dpm.utils.imageio import read_header, read_image
+from dpm.libs.imageio import read_header, read_image
 from dpm.utils.log import get_module_logger
 import dpm.errors
 

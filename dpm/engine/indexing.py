@@ -10,13 +10,13 @@ _logger = log.get_module_logger(__name__)
 PROBLEMS = misc.Choices(
     (1, 'index_origin', 'Detector origin not optimal.'),
     (2, 'multiple_subtrees', 'Indexed reflections belong to multiple subtrees.'),
-    (4, 'poor_solution', 'Poor solution, indexing refinement problems.'),
-    (8, 'non_integral', 'Indices deviate significantly from integers.'),
-    (16, 'unindexed_spots', 'Too many un-indexed spots.'),
-    (32, 'spot_accuracy', 'Spots deviate significantly from expected positions.'),
-    (64, 'dimension_2d', 'Clusters are not 3-Dimensional.'),
-    (128, 'few_spots', 'Insufficient spots available.'),
-    (256, 'failed', 'Indexing failed for unknown reason.')
+    (3, 'poor_solution', 'Poor solution, indexing refinement problems.'),
+    (4, 'non_integral', 'Indices deviate significantly from integers.'),
+    (5, 'unindexed_spots', 'Too many un-indexed spots.'),
+    (6, 'spot_accuracy', 'Spots deviate significantly from expected positions.'),
+    (7, 'dimension_2d', 'Clusters are not 3-Dimensional.'),
+    (8, 'few_spots', 'Insufficient spots available.'),
+    (9, 'failed', 'Indexing failed for unknown reason.')
 )
 
 CODES = {
@@ -29,13 +29,12 @@ CODES = {
     256: PROBLEMS.failed
 }
 
-def diagnose_index(info):
 
+def diagnose_index(info):
     failure_code = info.get('failure_code', 256)
     problems = [CODES.get(failure_code, 0)]
     options = {}
 
-    _refl = info.get('reflections')
     subtrees = info.get('subtrees')
     _local_spots = info.get('local_indexed_spots')
 
@@ -49,17 +48,20 @@ def diagnose_index(info):
     satelites = 0
     for subtree in subtrees:
         pct = subtree['population']/float(_local_spots)
-        if pct > 0.3:
+        print pct
+        if pct > 0.2:
             distinct += 1
-        elif pct > 1:
+        elif pct > .05:
             satelites += 1
         else:
             break
 
     if distinct > 1:
         problems.append(PROBLEMS.multiple_subtrees)
-    elif distinct == 0:
+    elif satelites > 2:
         problems.append(PROBLEMS.poor_solution)
+    else:
+        problems.append(PROBLEMS.unindexed_spots)
 
 
     # get max, std deviation of integral indices
@@ -94,7 +96,6 @@ def diagnose_index(info):
             selected_deviation = i
             best_deviation = deviation
             origin_deviation = _org.get('position')
-
 
     if selected_deviation != 0:
         problems.append(PROBLEMS.index_origin)
@@ -183,7 +184,7 @@ def auto_index(data_info, options={}):
                 info = xds.parse_idxref()
                 diagnosis = diagnose_index(info)
                 _spot_adjusted = spot_size > 12
-            elif (diagnosis['problems'] & {PROBLEMS.unindexed_spots, PROBLEMS.multiple_subtrees}) and not _weak_removed:
+            elif (diagnosis['problems'] & {PROBLEMS.unindexed_spots}) and not _weak_removed:
                 sigma += 3
                 _logger.info('.. Removing weak spots (Sigma < %2.0f)...' % sigma)
                 _filter_spots(sigma=sigma)

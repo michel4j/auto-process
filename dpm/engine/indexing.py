@@ -48,7 +48,6 @@ def diagnose_index(info):
     satelites = 0
     for subtree in subtrees:
         pct = subtree['population']/float(_local_spots)
-        print pct
         if pct > 0.2:
             distinct += 1
         elif pct > .05:

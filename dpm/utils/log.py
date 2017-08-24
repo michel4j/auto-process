@@ -5,6 +5,8 @@ import logging
 import os
 
 LOG_LEVEL = logging.DEBUG
+IMPORTANT = 25
+logging.addLevelName(IMPORTANT, 'IMPORTANT')
 
 
 class TermColor(object):
@@ -63,6 +65,8 @@ class ColoredConsoleHandler(logging.StreamHandler):
                 msg = TermColor.error(msg)
             elif record.levelno == logging.DEBUG:
                 msg = TermColor.debug(msg)
+            elif record.levelno == IMPORTANT:
+                msg = TermColor.emphasis(msg)
             self.stream.write("{}\n".format(msg))
             self.flush()
         except:
@@ -117,3 +121,4 @@ def log_to_file(filename, level=logging.DEBUG):
     formatter = logging.Formatter('%(asctime)s [%(name)s] %(message)s', '%b/%d %H:%M:%S')
     logfile.setFormatter(formatter)
     logging.getLogger('').addHandler(logfile)
+

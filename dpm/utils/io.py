@@ -111,7 +111,7 @@ def write_xds_input(jobs, parameters):
         "JOB=   {jobs}\n"
         "MAXIMUM_NUMBER_OF_PROCESSORS=  {batch_size}\n"
         "MAXIMUM_NUMBER_OF_JOBS=    {num_jobs}\n"
-        "CLUSTER_NODES= {cluster_nodes}\n"
+        #"CLUSTER_NODES= {cluster_nodes}\n"
     ).format(**params)
 
     dataset_text = (
@@ -146,7 +146,7 @@ def write_xds_input(jobs, parameters):
 
         # reindexing matrix
         if params.get('reindex_matrix'):
-            dataset_text += "REIDX={} {} {} {} {} {} {} {} {} {} {} {}\n".format(**params['reindex_matrix'])
+            dataset_text += "REIDX={} {} {} {} {} {} {} {} {} {} {} {}\n".format(*params['reindex_matrix'])
 
     # reference data
     if params.get('reference_data'):
@@ -325,9 +325,7 @@ def write_xds_input1(jobs, params):
              numpy.cos(numpy.radians(params['two_theta'])),
              -1 * numpy.sin(numpy.radians(params['two_theta']))
              )
-    file_text += '    STRONG_PIXEL= %d \n' % params.get('sigma', 5)
-    if params.get('min_spot_separation') is not None:
-        file_text += '    SEPMIN= %d \n' % params['min_spot_separation']
+    file_text += '    STRONG_PIXEL= %d \n' % params.get('sigma', 3)
     if params.get('min_spot_size') is not None:
         file_text += '    MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT= %d \n' % params['min_spot_size']
     if params.get('cluster_radius') is not None:

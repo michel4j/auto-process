@@ -176,6 +176,8 @@ Options:
     --anom, -a : Set Friedel's law False
     --backup, -b : Backup previous output if it exists
     --frames=<start>-<end>, -f <start>-<end> : manually set the data range
+    --exclude=<start>-<end>,<start>-<end>,..., -x <start>-<end>,<start>-<end>,... 
+        : exclude data ranges
     --opt -o : Optimize integration using refined parameters from previous run
     --help, -h : display this message
     Default (no option): Resume previous processing from scaling step.
@@ -190,7 +192,7 @@ Examples:
 """
 def integrate_options(params):
     try:
-        opts, _ = getopt.gnu_getopt(params, "r:abf:oh", ["res=", "anom", "backup", "frames=", "opt", "inputs","help"])
+        opts, _ = getopt.gnu_getopt(params, "r:abf:ohx:", ["res=", "anom", "backup", "frames=", "opt", "inputs","help", "exclude="])
     except:
         print INTEGRATE_USAGE
         sys.exit(0)
@@ -205,6 +207,12 @@ def integrate_options(params):
             options['anomalous'] = True
         if o in ('-b', '--backup'):
             options['backup'] = True
+        if o in ('-x', '--exclude'):
+            try:
+                options['exclude'] = [map(int, x.split('-')) for x in a.split(',')]
+            except:
+                print INTEGRATE_USAGE
+                sys.exit(0)
         if o in ('-f', '--frames'):
             try:
                 options['frames'] = map(int, a.split('-'))

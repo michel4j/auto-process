@@ -27,9 +27,10 @@ def main():
     ow = {}
     if options.get('anomalous') is not None:
         app.options['anomalous'] = options.get('anomalous')
-    if options.get('frames') is not None:
-        ow.update(data_range=options.get('frames'))
-        
+    if options.get('frames'):
+        ow.update(data_range=options.get('frames'), skip_frames=options.get('skip_frames'))
+    if options.get('exclude'):
+        ow.update(skip_range=options.get('exclude'))
     app.options['backup'] = options.get('backup', False)
     app.run(resume_from=(chkpt['run_position'][0],'integration'), overwrite=ow)
      

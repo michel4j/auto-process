@@ -111,7 +111,7 @@ def write_xds_input(jobs, parameters):
         "JOB=   {jobs}\n"
         "MAXIMUM_NUMBER_OF_PROCESSORS=  {batch_size}\n"
         "MAXIMUM_NUMBER_OF_JOBS=    {num_jobs}\n"
-        #"CLUSTER_NODES= {cluster_nodes}\n"
+        "CLUSTER_NODES= {cluster_nodes}\n"
     ).format(**params)
 
     dataset_text = (

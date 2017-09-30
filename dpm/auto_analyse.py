@@ -61,7 +61,7 @@ def run():
     if len(sys.argv) > 1:
         img = os.path.abspath(sys.argv[1])
     else:
-        results =  _get_error_output('Invalid Parameters.')        
+        results = _get_error_output('Invalid Parameters.')
         sys.stderr.write(results+'\n')
         sys.exit(1)   
         

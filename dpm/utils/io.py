@@ -140,8 +140,8 @@ def write_xds_input(jobs, parameters):
         # space group and cell parameters
         dataset_text += (
             "SPACE_GROUP_NUMBER=    {space_group}\n"
-            "UNIT_CELL_CONSTANTS=   {unit_cell[0]:6.3} {unit_cell[1]:6.3} {unit_cell[2]:6.3} "
-            "{unit_cell[3]:4.3} {unit_cell[4]:4.3} {unit_cell[5]:4.3}\n"
+            "UNIT_CELL_CONSTANTS=   {unit_cell[0]:0.3f} {unit_cell[1]:0.3f} {unit_cell[2]:0.3f} "
+            "{unit_cell[3]:0.3f} {unit_cell[4]:0.3f} {unit_cell[5]:0.3f}\n"
         ).format(space_group=params['space_group'], unit_cell=params['unit_cell'])
 
         # reindexing matrix

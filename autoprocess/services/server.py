@@ -64,9 +64,9 @@ class DataProcessorService(rpyc.Service):
             'auto.process',
             '--dir={}'.format(directory)
         ]
-        args += ['--screen'] if 'screen' in info and info['screen'] else []
-        args += ['--anom'] if 'anomalous' in info and info['anomalous'] else []
-        args += ['--mad'] if 'mad' in info and info['mad'] else []
+        args += ['--screen'] if info.get('screen') else []
+        args += ['--anom'] if info.get('anomalous') else []
+        args += ['--mad'] if info.get('mad') else []
         args += info['file_names']
         subprocess.check_call(args, preexec_fn=demote(user_name))
 
@@ -81,7 +81,7 @@ class DataProcessorService(rpyc.Service):
             'auto.xrd',
             '--dir={}'.format(directory)
         ]
-        args += ['--calib'] if 'calib' in info and info['calibrate'] else []
+        args += ['--calib'] if info.get('calib') else []
         args += info['file_names']
         subprocess.check_call(args, preexec_fn=demote(user_name))
         json_file = os.path.join(directory, 'process.json')

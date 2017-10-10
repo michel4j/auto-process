@@ -21,7 +21,7 @@ unset i
 servicename='dpserver'
 pidfile='/var/run/dpserver.pid'
 logfile='/var/log/dpserver.log'
-appfile=$DPS_PATH/dpm/services/server.py
+appfile=$DPS_PATH/autoprocess/services/server.py
 umask=022
 
 export MPLCONFIGDIR=/tmp

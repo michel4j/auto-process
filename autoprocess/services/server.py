@@ -48,8 +48,7 @@ class DataProcessorService(rpyc.Service):
             frame_path,
         ]
         try:
-            print os.environ['PATH']
-            out = subprocess.check_output(args, preexec_fn=demote(user_name), env=os.environ.copy())
+            out = subprocess.check_output(args)
             result = json.loads(out)
             info = result['summary']
         except subprocess.CalledProcessError as e:

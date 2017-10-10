@@ -11,7 +11,7 @@ import rpyc
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from autoprocess.utils import mdns, log
+from autoprocess.utils import mdns, log, misc
 from autoprocess.utils.rpc import expose, expose_service
 from autoprocess.parser.distl import parse_distl_string
 
@@ -101,12 +101,16 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Run a Data Processing Server')
     parser.add_argument('--log', metavar='/path/to/logfile.log', type=str, nargs='?', help='full path to log file')
+    parser.add_argument('--pid', metavar='/path/to/pidfile.pid', type=str, nargs='?', help='full path to pid file')
 
     args = parser.parse_args()
     if args.log:
         log.log_to_file(args.log)
     else:
         log.log_to_console()
+
+    if args.pid:
+        misc.save_pid(args.pid)
 
     s = ThreadedServer(DataProcessorService, port=8881)
     provider = mdns.Provider('Data Processing Server', '_dpm_rpc._tcp', 8881, unique=True)

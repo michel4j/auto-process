@@ -441,3 +441,7 @@ class DotDict(dict):
     __setattr__= dict.__setitem__
     __delattr__= dict.__delitem__
 
+
+def save_pid(file_path):
+    with open(file_path, 'w') as handle:
+        handle.write('{}\n'.format(os.getpid()))

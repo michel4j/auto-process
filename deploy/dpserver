@@ -31,7 +31,7 @@ export MPLCONFIGDIR=/tmp
 
 start() {
     echo -n $"Starting DPM Service: "
-    daemon  --pidfile=$pidfile $appfile --log=$logfile
+    daemon  --pidfile=$pidfile $appfile --log=$logfile &
     RETVAL=$?
     echo
     [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$servicename

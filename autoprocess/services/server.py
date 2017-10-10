@@ -49,13 +49,14 @@ class DataProcessorService(rpyc.Service):
             frame_path,
         ]
         try:
-            out = subprocess.check_output(args, preexec_fn=demote(user_name))
+            out = subprocess.check_output(args, preexec_fn=demote(user_name), stderr=subprocess.STDOUT)
             #subprocess.check_output(['labelit.reset'])
             results = parse_distl_string(out)
             info = results['summary']
         except subprocess.CalledProcessError as e:
-            logger.error('Error analysing frame: {}'.format(e.output))
-            return {'error': 'Error analysing frame: {}'.format(e.output)}
+            logger.error('Error analysing frame [{}]: {}'.format(e.returncode, e.output))
+            results = parse_distl_string(e.output)
+            info = results['summary']
         else:
             return info
 

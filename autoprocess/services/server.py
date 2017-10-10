@@ -83,8 +83,8 @@ class DataProcessorService(rpyc.Service):
         args += ['--calib'] if 'calib' in info and info['calibrate'] else []
         args += info['file_names']
         subprocess.check_call(args, preexec_fn=demote(user_name))
-
-        with open('process.json', 'r') as handle:
+        json_file = os.path.join(directory, 'process.json')
+        with open(json_file, 'r') as handle:
             result = json.load(handle)
         return result
 

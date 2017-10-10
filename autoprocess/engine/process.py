@@ -181,7 +181,7 @@ class Manager(object):
             # prepare directories
             if self.options.get('directory', None) is None:
                 if self.options.get('mode', 'simple') == 'screen':
-                    _suffix = 'scrn'
+                    _suffix = 'screen'
                 else: 
                     _suffix = 'proc'
                 _prefix = misc.combine_names(self.datasets.keys())

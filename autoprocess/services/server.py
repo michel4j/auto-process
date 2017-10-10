@@ -73,6 +73,7 @@ class DataProcessorService(rpyc.Service):
         json_file = os.path.join(directory, 'process.json')
         with open(json_file, 'r') as handle:
             result = json.load(handle)
+            print result
         return result
 
     @expose

@@ -13,7 +13,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from autoprocess.utils import mdns, log, misc
 from autoprocess.utils.rpc import expose, expose_service
-from autoprocess.parser.distl import parse_distl_string
 
 logger = log.get_module_logger(__name__)
 
@@ -45,20 +44,16 @@ class DataProcessorService(rpyc.Service):
     @expose
     def analyse_frame(self, frame_path, user_name):
         args = [
-            'labelit.distl',
+            'auto.analyse',
             frame_path,
         ]
         try:
             out = subprocess.check_output(args, preexec_fn=demote(user_name), stderr=subprocess.STDOUT)
-            #subprocess.check_output(['labelit.reset'])
-            results = parse_distl_string(out)
-            info = results['summary']
+            result = json.loads(out)
+            info = result['summary']
         except subprocess.CalledProcessError as e:
-            logger.error('Error analysing frame [{}]: {}'.format(e.returncode, e.output))
-            results = parse_distl_string(e.output)
-            info = results['summary']
-        else:
-            return info
+            info = {'error': 'Error analysing frame [{}]: {}'.format(e.returncode, e.output)}
+        return info
 
     @expose
     def process_mx(self, info, directory, user_name):

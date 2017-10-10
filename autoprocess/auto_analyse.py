@@ -1,4 +1,5 @@
 import  sys
+import os
 import subprocess
 import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
@@ -8,14 +9,15 @@ from autoprocess.utils.misc import json
 
 
 def run_distl(img):
+    os.chdir(os.path.dirname(img))
     try:
         output = subprocess.check_output(['labelit.distl ', img])
         subprocess.check_output(['labelit.reset'])
         results = parse_distl_string(output)
         info = results['summary']
     except subprocess.CalledProcessError as e:
-        sys.stderr.write(str(e) + '\n')
-        info = {'error': str(e)}
+        sys.stderr.write(str(e.output) + '\n')
+        info = {'error': str(e.output)}
 
     sys.stdout.write(json.dumps(info, indent=2)+'\n')
 

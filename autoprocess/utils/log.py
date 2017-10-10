@@ -11,9 +11,6 @@ IMPORTANT = 25
 logging.addLevelName(IMPORTANT, 'IMPORTANT')
 DEBUGGING = False
 
-logging.basicConfig(level=logging.DEBUG)
-
-
 class TermColor(object):
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'

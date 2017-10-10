@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# dpserver:   Data Processing Module Server
+# dpserver:   Data Processing Server
 #
 # chkconfig: 345 98 02
 # description:  This is a daemon listens for data processing commands and executes them \

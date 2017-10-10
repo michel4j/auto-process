@@ -437,8 +437,8 @@ def get_reports(datasets, options={}):
             _report_directory,
             dset.parameters['wavelength'],
             ]
-        _dataset_info['result'] = dict(zip(_sum_keys, _sum_values))
-        _dataset_info['result']['details'] = {}
+        _dataset_info = dict(zip(_sum_keys, _sum_values))
+        _dataset_info['details'] = {}
         
         
         resol_method = {
@@ -450,8 +450,8 @@ def get_reports(datasets, options={}):
         }
         
         # set detailed parameters
-        _dataset_info['result']['details']['anomalous'] = options.get('anomalous', False)
-        _dataset_info['result']['details']['resolution_method'] = resol_method[_summary['summary']['resolution'][1]]
+        _dataset_info['details']['anomalous'] = options.get('anomalous', False)
+        _dataset_info['details']['resolution_method'] = resol_method[_summary['summary']['resolution'][1]]
         
       
         # compatible lattices and space group selection
@@ -472,18 +472,18 @@ def get_reports(datasets, options={}):
         _section['unit_cell'] = [_cell_fmt % tuple(c) for c in _t['unit_cell']]
         _section['quality'] = _t['quality']
         _section['volume'] = [xtal.cell_volume(c) for c in _t['unit_cell']]
-        _dataset_info['result']['details']['compatible_lattices'] = _section
+        _dataset_info['details']['compatible_lattices'] = _section
         
         _section = {}
         _t = Table(dres['symmetry']['candidates'])
         _section['space_group'] = _t['number']
         _section['name'] = [xtal.SPACE_GROUP_NAMES[n] for n in  _section['space_group']]
         _section['probability'] = _t['probability']            
-        _dataset_info['result']['details']['spacegroup_selection'] = _section 
+        _dataset_info['details']['spacegroup_selection'] = _section
 
         # Harvest screening details
         if options.get('mode', None) == 'screen':
-            _dataset_info['result']['kind'] = AUTOXDS_SCREENING
+            _dataset_info['kind'] = AUTOXDS_SCREENING
 
             if dres.get('strategy') and dres['strategy'].get('runs'):
                 _strategy = dres['strategy']
@@ -522,13 +522,13 @@ def get_reports(datasets, options={}):
                     'multiplicity': _strategy['redundancy'],
                     'frac_overload': _strategy['prediction_all']['fract_overload'],
                     }
-                _dataset_info['result']['details']['strategy'] = _section
+                _dataset_info['details']['strategy'] = _section
                 
                 # overlap_analysis and wedge analysis
                 _st_details =_strategy.get('details', {})
-                _dataset_info['result']['details']['overlap_analysis'] = _st_details.get('delta_statistics')
-                _dataset_info['result']['details']['wedge_analysis'] = _st_details.get('completeness_statistics')
-                _dataset_info['result']['details']['crystal_alignment'] = _st_details.get('crystal_alignment')
+                _dataset_info['details']['overlap_analysis'] = _st_details.get('delta_statistics')
+                _dataset_info['details']['wedge_analysis'] = _st_details.get('completeness_statistics')
+                _dataset_info['details']['crystal_alignment'] = _st_details.get('crystal_alignment')
 
                 # shell_statistics
                 _st_shell = _st_details.get('shell_statistics', {})
@@ -542,7 +542,7 @@ def get_reports(datasets, options={}):
                         'multiplicity': _st_shell['redundancy'][:-1],
                         'frac_overload': _st_shell['fract_overload'][:-1],
                         }
-                    _dataset_info['result']['details']['predicted_quality'] = _section
+                    _dataset_info['details']['predicted_quality'] = _section
 
                 # exposure time statistics
                 _st_time = _st_details.get('time_statistics', {})
@@ -552,11 +552,11 @@ def get_reports(datasets, options={}):
                         'resolution': _res_shells,
                         'exposure_time': _st_time.get('ex_time'),
                         }
-                    _dataset_info['result']['details']['exposure_analysis'] = _section
+                    _dataset_info['details']['exposure_analysis'] = _section
                
                     
         else:  
-            _dataset_info['result']['kind'] = AUTOXDS_PROCESSING
+            _dataset_info['kind'] = AUTOXDS_PROCESSING
             # Print out integration results
             _section = {}
             # combine integration statistics if merging
@@ -607,16 +607,16 @@ def get_reports(datasets, options={}):
                         diff_stats.extend(dat.results['correction']['diff_statistics'])
                                    
                 _t = Table(diff_stats)
-                _dataset_info['result']['details']['diff_statistics'] = {}
+                _dataset_info['details']['diff_statistics'] = {}
                 for k in ['frame_diff', 'rd', 'rd_friedel', 'rd_non_friedel', 'n_refl', 'n_friedel', 'n_non_friedel']:
-                    _dataset_info['result']['details']['diff_statistics'][k] = _t[k]
-            _dataset_info['result']['details']['frame_statistics'] = _section
+                    _dataset_info['details']['diff_statistics'][k] = _t[k]
+            _dataset_info['details']['frame_statistics'] = _section
             
             _section = {}
             _t = Table(dres['integration']['batches'])
             for k in ['range','unit_cell','stdev_spot','stdev_spindle','mosaicity','distance','beam_center']:
                 _section[k] = _t[k]
-            _dataset_info['result']['details']['integration_batches'] = _section
+            _dataset_info['details']['integration_batches'] = _section
                 
             # Print out correction results
             _section = {}
@@ -627,7 +627,7 @@ def get_reports(datasets, options={}):
             for k in ['completeness','r_meas','cc_half','i_sigma','sig_ano','cor_ano']:
                 _section[k] = _t[k][:-1] # don't get 'total' row
             _section['shell'] = [float(v) for v in _t['shell'][:-1]]
-            _dataset_info['result']['details']['shell_statistics'] = _section
+            _dataset_info['details']['shell_statistics'] = _section
             
             # Print out standard errors
             if dres['correction'].get('standard_errors'):
@@ -636,10 +636,10 @@ def get_reports(datasets, options={}):
                 _section['shell'] = [sum(v)/2.0 for v in _t['resol_range'][:-1]] # don't get 'total' row
                 for k in ['chi_sq', 'i_sigma', 'r_obs', 'r_exp','n_obs', 'n_accept', 'n_reject']:
                     _section[k] = _t[k][:-1]
-                _dataset_info['result']['details']['standard_errors'] = _section
+                _dataset_info['details']['standard_errors'] = _section
                 
             # correction factors
-            _dataset_info['result']['details']['correction_factors'] = dres['correction'].get('correction_factors')
+            _dataset_info['details']['correction_factors'] = dres['correction'].get('correction_factors')
 
             # Print out wilson_plot, cum int dist, twinning test
             if dres['scaling'].get('wilson_plot'):
@@ -647,9 +647,9 @@ def get_reports(datasets, options={}):
                 _t = Table(dres['scaling']['wilson_plot'])
                 for k in ['inv_res_sq', 'mean_i']:
                     _section[k] = _t[k]
-                _dataset_info['result']['details']['wilson_plot'] = _section
+                _dataset_info['details']['wilson_plot'] = _section
             if dres['scaling'].get('wilson_line'):
-                _dataset_info['result']['details']['wilson_line'] = dres['scaling']['wilson_line']           
+                _dataset_info['details']['wilson_line'] = dres['scaling']['wilson_line']
 
             if dres.get('data_quality'):
                 if dres['data_quality'].get('intensity_plots'):
@@ -657,67 +657,55 @@ def get_reports(datasets, options={}):
                     _t = Table(dres['data_quality']['intensity_plots'])
                     for k in ['inv_res_sq', 'expected_i', 'mean_i_binned', 'mean_i']:
                         _section[k] = _t[k]
-                    _dataset_info['result']['details']['wilson_plot'] = _section
+                    _dataset_info['details']['wilson_plot'] = _section
                 if dres['data_quality'].get('twinning_l_test'):
                     _section = {}
                     _t = Table(dres['data_quality']['twinning_l_test'])
                     for k in ['abs_l', 'observed', 'twinned', 'untwinned']:
                         _section[k] = _t[k]
-                    _dataset_info['result']['details']['twinning_l_test'] = _section
+                    _dataset_info['details']['twinning_l_test'] = _section
                     
                 if dres['data_quality'].get('twin_laws'):
-                    _dataset_info['result']['details']['twin_laws'] = dres['data_quality']['twin_laws']
+                    _dataset_info['details']['twin_laws'] = dres['data_quality']['twin_laws']
                 if dres['data_quality'].get('twinning_l_statistic'):
-                    _dataset_info['result']['details']['twinning_l_statistic'] = dres['data_quality']['twinning_l_statistic']
+                    _dataset_info['details']['twinning_l_statistic'] = dres['data_quality']['twinning_l_statistic']
                 if dres['data_quality'].get('twinning_l_zscore'):
-                    _dataset_info['result']['details']['twinning_l_zscore'] = dres['data_quality']['twinning_l_zscore']
+                    _dataset_info['details']['twinning_l_zscore'] = dres['data_quality']['twinning_l_zscore']
 
             # Save converted output files
             if dres.get('output_files') and len(dres.get('output_files')) > 0:
-                _dataset_info['result']['details']['output_files'] = dres.get('output_files')
+                _dataset_info['details']['output_files'] = dres.get('output_files')
       
         info.append(_dataset_info)
     return info
     
 def save_json(result_list, filename, options={}):
 
-    names = [v['result']['name'] for v in result_list]
+    names = [v['name'] for v in result_list]
     
     # read previous json_file and obtain id from it if one exists:
-    json_file_name = filename
-    if os.path.exists(json_file_name):
-        old_json = json.load(file(json_file_name))
-        for info in old_json['result']:
-            dataset_name = info['result']['name']
+    if os.path.exists(filename):
+        old_json = misc.load_json(filename)
+        for res in old_json:
+            dataset_name = res['name']
             if dataset_name in names:
                 pos = names.index(dataset_name)
-                result_list[pos]['id'] = info['result'].get('id')
-                
-    # save json information to file
-    if options.get('errors'):
-        error = {'message': options.get('errors') }
-    else:
-        error = None
-        
-    info = {
-        'result': result_list,
-        'error': error,
-    }
-    
+                result_list[pos]['id'] = res.get('id')
+
     # save process.json
-    fh = open(filename, 'w')
-    json.dump(info, fh)
-    fh.close()    
+    with open(filename, 'w') as handle:
+        json.dump(result_list, handle)
+
     
 
 def save_html(result_list, options={}):
     #generate html reports
 
     for report in result_list:
-        report_directory = os.path.join(report['result']['url'],'report')
+        report_directory = os.path.join(report['url'],'report')
         if not os.path.exists(report_directory):
             os.makedirs(report_directory)
-        if report['result']['kind'] == AUTOXDS_SCREENING:
+        if report['kind'] == AUTOXDS_SCREENING:
             htmlreport.create_screening_report(report, report_directory)
         else:
             htmlreport.create_full_report(report, report_directory)    

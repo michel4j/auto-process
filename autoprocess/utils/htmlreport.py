@@ -566,61 +566,59 @@ def plot_batch_stats(results, filename):
 
 
 
-def create_full_report(data, directory):
+def create_full_report(report, directory):
 
     report_file = os.path.join(directory,'index.html')
     html=open(report_file, 'w')
 
     try:
-        results = data['result']
-        results['space_group_name'] = xtal.SPACE_GROUP_NAMES[results['space_group_id']]
-        results['centric'] = '-X,-Y,-Z' in xtal.XTAL_TABLES[results['space_group_id']]['symmetry_operators']
+        report['space_group_name'] = xtal.SPACE_GROUP_NAMES[report['space_group_id']]
+        report['centric'] = '-X,-Y,-Z' in xtal.XTAL_TABLES[report['space_group_id']]['symmetry_operators']
     except KeyError:
         sys.exit(1)
 
     t = loader.get_template("report.html")    
     c = Context({
-            'object': results,
+            'object': report,
             })
     
     html.write(t.render(c))
     html.close()
 
     # create plots
-    plot_shell_stats(results, os.path.join(directory, 'shell.png'))
-    plot_error_stats(results, os.path.join(directory, 'stderr.png'))
-    plot_frame_stats(results, os.path.join(directory, 'frame.png'))
-    plot_diff_stats(results, os.path.join(directory, 'diff.png'))
-    plot_wilson_stats(results, os.path.join(directory, 'wilson.png'))
-    plot_twinning_stats(results, os.path.join(directory, 'twinning.png'))
-    #plot_batch_stats(results, os.path.join(directory, 'batch.png'))
+    plot_shell_stats(report, os.path.join(directory, 'shell.png'))
+    plot_error_stats(report, os.path.join(directory, 'stderr.png'))
+    plot_frame_stats(report, os.path.join(directory, 'frame.png'))
+    plot_diff_stats(report, os.path.join(directory, 'diff.png'))
+    plot_wilson_stats(report, os.path.join(directory, 'wilson.png'))
+    plot_twinning_stats(report, os.path.join(directory, 'twinning.png'))
+    #plot_batch_stats(report, os.path.join(directory, 'batch.png'))
 
 
     return os.path.basename(report_file)
 
-def create_screening_report(data, directory):
+def create_screening_report(report, directory):
 
     report_file = os.path.join(directory,'index.html')
     html=open(report_file, 'w')
 
     try:
-        results = data['result']
-        results['space_group_name'] = xtal.SPACE_GROUP_NAMES[results['space_group_id']]
-        results['centric'] = '-X,-Y,-Z' in xtal.XTAL_TABLES[results['space_group_id']]['symmetry_operators']
+        report['space_group_name'] = xtal.SPACE_GROUP_NAMES[report['space_group_id']]
+        report['centric'] = '-X,-Y,-Z' in xtal.XTAL_TABLES[report['space_group_id']]['symmetry_operators']
     except KeyError:
         sys.exit(1)
 
     t = loader.get_template("screening-report.html")
     c = Context({
-            'object': results,
+            'object': report,
     })
     
     html.write(t.render(c))
     html.close()
     # create plots
-    plot_pred_quality(results, os.path.join(directory, 'quality.png'))
-    plot_exposure_analysis(results, os.path.join(directory, 'exposure.png'))
-    plot_overlap_analysis(results, os.path.join(directory, 'overlap.png'))
-    plot_wedge_analysis(results, os.path.join(directory, 'wedge.png'))
+    plot_pred_quality(report, os.path.join(directory, 'quality.png'))
+    plot_exposure_analysis(report, os.path.join(directory, 'exposure.png'))
+    plot_overlap_analysis(report, os.path.join(directory, 'overlap.png'))
+    plot_wedge_analysis(report, os.path.join(directory, 'wedge.png'))
 
     return os.path.basename(report_file)

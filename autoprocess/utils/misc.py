@@ -445,3 +445,11 @@ class DotDict(dict):
 def save_pid(file_path):
     with open(file_path, 'w') as handle:
         handle.write('{}\n'.format(os.getpid()))
+
+def load_json(filename):
+    with open(filename, 'r') as handle:
+        info = json.load(handle)
+    if isinstance(info, list):
+        return info
+    else:
+        return [res['result'] for res in info['result']]

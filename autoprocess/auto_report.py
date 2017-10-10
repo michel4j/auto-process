@@ -34,8 +34,7 @@ def main():
         json_file = 'process.json'
         
     try:
-        data = misc.json.load(file(json_file))
-        report_list = data.get('result', [])
+        report_list = misc.load_json(json_file)
         options = {'command_dir': os.getcwd()}
         reporting.save_html(report_list, options)
     except IOError:

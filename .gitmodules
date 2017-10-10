@@ -1,3 +1,0 @@
-[submodule "dpm/libs/imageio"]
-	path = dpm/libs/imageio
-	url = git@srv-cmcf-dp4.clsi.ca:cmcf/imageio.git

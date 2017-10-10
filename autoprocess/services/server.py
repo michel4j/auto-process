@@ -72,9 +72,8 @@ class DataProcessorService(rpyc.Service):
 
         json_file = os.path.join(directory, 'process.json')
         with open(json_file, 'r') as handle:
-            result = json.load(handle)
-            print result
-        return result
+            output = json.load(handle)
+        return output['result']
 
     @expose
     def process_xrd(self, info, directory, user_name):
@@ -87,8 +86,8 @@ class DataProcessorService(rpyc.Service):
         subprocess.check_call(args, preexec_fn=demote(user_name))
         json_file = os.path.join(directory, 'process.json')
         with open(json_file, 'r') as handle:
-            result = json.load(handle)
-        return result
+            output = json.load(handle)
+        return output['result']
 
     def __str__(self):
         return '{}:{}'.format(*self._conn._channel.stream.sock.getpeername())

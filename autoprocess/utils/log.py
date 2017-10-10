@@ -3,8 +3,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
-import reprlib
-from twisted.python import log
+import repr as reprlib
 
 LOG_LEVEL = logging.DEBUG
 IMPORTANT = 25
@@ -71,18 +70,6 @@ class ColoredConsoleHandler(logging.StreamHandler):
             self.flush()
         except:
             self.handleError(record)
-
-
-class TwistedLogHandler(logging.StreamHandler):
-    def emit(self, record):
-        msg = self.format(record)
-        if record.levelno == logging.WARNING:
-            log.msg(msg)
-        elif record.levelno > logging.WARNING:
-            log.err(msg)
-        else:
-            log.msg(msg)
-        self.flush()
 
 
 def get_module_logger(name):

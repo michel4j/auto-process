@@ -48,7 +48,7 @@ class DataProcessorService(rpyc.Service):
             frame_path,
         ]
         try:
-            out = subprocess.check_output(args, preexec_fn=demote(user_name), stderr=subprocess.STDOUT)
+            out = subprocess.check_output(args, preexec_fn=demote(user_name), env=os.environ.copy())
             result = json.loads(out)
             info = result['summary']
         except subprocess.CalledProcessError as e:

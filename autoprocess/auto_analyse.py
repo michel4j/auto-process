@@ -11,8 +11,8 @@ from autoprocess.utils.misc import json
 def run_distl(img):
     os.chdir(os.path.dirname(img))
     try:
-        output = subprocess.check_output(['labelit.distl ', img], shell=True)
-        subprocess.check_output(['labelit.reset'])
+        output = subprocess.check_output(['labelit.distl ', img], env=os.environ.copy())
+        subprocess.check_output(['labelit.reset'], env=os.environ.copy())
         results = parse_distl_string(output)
         info = results['summary']
     except subprocess.CalledProcessError as e:

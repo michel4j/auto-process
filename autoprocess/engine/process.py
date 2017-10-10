@@ -16,11 +16,7 @@ from autoprocess.engine import symmetry, strategy, conversion
 
 _logger = log.get_module_logger(__name__)
 
-_version_file = os.path.join(os.path.dirname(__file__), '..', 'VERSION')
-if os.path.exists(_version_file):
-    VERSION = (file(_version_file).readline()).strip()
-else:
-    VERSION = '3.0 Dev'
+VERSION = '4.0 RC'
 
 _MAX_RMEAS_FACTOR = 2
 
@@ -37,6 +33,7 @@ _STEP_FUNCTIONS = {
     'strategy': strategy.calc_strategy,
     'solve-small': solver.solve_small_molecule
 }
+
 
 class DataSet(object):
     def __init__(self, filename=None, info=None, overwrites={}):
@@ -292,7 +289,7 @@ class Manager(object):
                               self.options['mode'].upper(), len(self.datasets))
         _separator = len(_header)*'-'
         _logger.info(_header)
-        _env_hosts = os.environ.get('DPM_HOSTS', 'localhost')
+        _env_hosts = os.environ.get('DPS_NODES', 'localhost')
         _num_nodes = len(_env_hosts.split(' '))
 
         _logger.debug('Computer system: %d nodes' % (_num_nodes))

@@ -47,6 +47,10 @@ class DataProcessorService(rpyc.Service):
             'auto.analyse',
             frame_path,
         ]
+        args = [
+            'labelit.distl',
+            frame_path
+        ]
         try:
             out = subprocess.check_output(args, preexec_fn=demote(user_name))
             info = json.loads(out)

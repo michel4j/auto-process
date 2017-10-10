@@ -112,6 +112,8 @@ if __name__ == '__main__':
     if args.pid:
         misc.save_pid(args.pid)
 
-    s = ThreadedServer(DataProcessorService, port=8881)
+    s = ThreadedServer(
+        DataProcessorService, port=8881, prrotocol_config={"allow_public_attrs": True,"allow_pickle": True}
+    )
     provider = mdns.Provider('Data Processing Server', '_dpm_rpc._tcp', 8881, unique=True)
     s.start()

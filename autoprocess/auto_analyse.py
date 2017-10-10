@@ -7,7 +7,7 @@ warnings.simplefilter("ignore") # ignore deprecation warnings
 from autoprocess.parser.distl import parse_distl_string
 from autoprocess.utils.misc import json
 
-print os.environ['PATH']
+
 
 def run_distl(img):
     os.chdir(os.path.dirname(img))

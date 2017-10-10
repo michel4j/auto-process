@@ -1,5 +1,5 @@
 import re, os, sys
-import commands
+import subprocess
 import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
 
@@ -18,7 +18,6 @@ def _get_json_output(text):
     info = data.get('summary', None)
     return json.dumps(info)
 
-#FIXME specify more generic error codes to use accross BCM/DPM, similar to those used by device base
  
 def _get_error_output(err, code=1, traceback=None):
     info = {'error': {'code': code, 'message': err, 'traceback':traceback}}
@@ -31,26 +30,13 @@ def run_distl(img, directory=None, output_file=None):
     else:
         if not os.path.isdir(directory):
             os.mkdir(directory)
-    os.chdir(directory)
-    sts, output = commands.getstatusoutput('labelit.distl %s' % img)
-    if sts == 0: # success:
-        results = _get_json_output(output)
-        if output_file is not None:
-            _save_json_output(output_file, results)
-        sys.stdout.write(results+'\n')
-    else:
-        exm = re.compile('Exception: (.+)$')
-        m = exm.search(output)
-        if m:
-            results = _get_error_output(m.group(0), traceback=output, code=2)       
-        else:
-            results = _get_error_output("labelit.distl exited prematurely.", traceback=output, code=2)       
-        if output_file is not None:
-            _save_json_output(output_file, results)
-        sys.stderr.write(results+'\n')
-        sys.exit(1)
-    sts, output = commands.getstatusoutput('labelit.reset')
-    return
+        os.chdir(directory)
+
+    output = subprocess.check_output(['labelit.distl ', img])
+    results = _get_json_output(output)
+    sys.stdout.write(results+'\n')
+
+    out = subprocess.check_output(['labelit.reset'])
 
 def run():
     if len(sys.argv) > 1:

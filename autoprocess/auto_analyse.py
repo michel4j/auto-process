@@ -11,7 +11,7 @@ from autoprocess.utils.misc import json
 def run_distl(img):
     os.chdir(os.path.dirname(img))
     try:
-        output = subprocess.check_output(['labelit.distl ', img])
+        output = subprocess.check_output(['labelit.distl ', img], shell=True)
         subprocess.check_output(['labelit.reset'])
         results = parse_distl_string(output)
         info = results['summary']

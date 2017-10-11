@@ -3,7 +3,7 @@ import shutil
 import json
 
 from autoprocess.parser import best, xds
-from autoprocess.utils import log, misc, programs, io
+from autoprocess.utils import log, misc, programs, xdsio
 import autoprocess.errors
 
 _logger = log.get_module_logger(__name__)
@@ -32,7 +32,7 @@ def calc_strategy(data_info, options={}):
 
     run_info = {'mode': options.get('mode'), 'anomalous': options.get('anomalous', False)}
     run_info.update(data_info)
-    io.write_xds_input("XPLAN", run_info)
+    xdsio.write_xds_input("XPLAN", run_info)
     
     try:
         programs.xds_par()

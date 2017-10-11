@@ -4,7 +4,7 @@ import shutil
 
 import autoprocess.errors
 from autoprocess.parser import xds
-from autoprocess.utils import log, misc, programs, xtal, io
+from autoprocess.utils import log, misc, programs, xtal, xdsio
 from autoprocess.utils.progress import FileProgressDisplay, ProgDisplay, ProgChecker
 
 _logger = log.get_module_logger(__name__)
@@ -35,7 +35,7 @@ def integrate(data_info, options={}):
     # check if we are screening
     _screening = options.get('mode') == 'screen'
 
-    io.write_xds_input("DEFPIX INTEGRATE", run_info)
+    xdsio.write_xds_input("DEFPIX INTEGRATE", run_info)
     if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS'):
         return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
 
@@ -81,7 +81,7 @@ def correct(data_info, options={}):
 
     if options.get('backup', False):
         misc.backup_files('XDS_ASCII.HKL', 'CORRECT.LP')
-    io.write_xds_input("CORRECT", run_info)
+    xdsio.write_xds_input("CORRECT", run_info)
 
     try:
         programs.xds_par()
@@ -92,7 +92,7 @@ def correct(data_info, options={}):
             for f in info['correction_factors'].get('factors', []):
                 if abs(f['chi_sq_fit'] - 1.0) > 0.25:
                     run_info.update({'strict_absorption': True})
-                    io.write_xds_input("CORRECT", run_info)
+                    xdsio.write_xds_input("CORRECT", run_info)
                     programs.xds_par()
                     info = xds.parse_correct()
                     info['strict_absorption'] = True

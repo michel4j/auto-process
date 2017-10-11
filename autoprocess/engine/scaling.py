@@ -4,7 +4,7 @@ import numpy
 from itertools import chain
 
 from autoprocess.parser import xds, ccp4, pointless, phenix
-from autoprocess.utils import log, misc, programs, io, xtal, cluster
+from autoprocess.utils import log, misc, programs, xdsio, xtal, cluster
 from autoprocess.engine import symmetry
 import autoprocess.errors
 
@@ -79,7 +79,7 @@ def scale_datasets(dsets, options={}, message="Scaling"):
         'sections': sections
         }
     
-    io.write_xscale_input(xscale_options)
+    xdsio.write_xscale_input(xscale_options)
     try:
         programs.xscale_par()
         raw_info = xds.parse_xscale('XSCALE.LP')
@@ -145,7 +145,7 @@ def prepare_reference(dsets, options={}):
             'inputs': dset_options,
             }]}
 
-        io.write_xscale_input(xscale_options)
+        xdsio.write_xscale_input(xscale_options)
         programs.xscale_par()
         misc.backup_special_file('XSCALE.LP','first')
         _out = xds.parse_correlations('XSCALE.LP.first')
@@ -187,7 +187,7 @@ def prepare_reference(dsets, options={}):
                     'inputs': best_subtree,
                     }]}
             
-                io.write_xscale_input(xscale_options)
+                xdsio.write_xscale_input(xscale_options)
                 programs.xscale_par()
                 opt_info = xds.parse_xscale('XSCALE.LP').values()[0]
                 opt_info['output_file'] = 'REF1.HKL'
@@ -226,7 +226,7 @@ def prepare_reference(dsets, options={}):
         'inputs': [{'input_file': reference_file}],
         }]}
 
-    io.write_xscale_input(xscale_options)
+    xdsio.write_xscale_input(xscale_options)
     programs.xscale_par()
     opt_info = xds.parse_xscale('XSCALE.LP').values()[0]
     opt_info['output_file'] = 'REFERENCE.HKL'

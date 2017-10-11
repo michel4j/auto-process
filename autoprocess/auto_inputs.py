@@ -6,7 +6,7 @@ import warnings
 warnings.simplefilter("ignore") # ignore deprecation warnings
     
 from autoprocess.engine.process import DataSet
-from autoprocess.utils import options, log, io
+from autoprocess.utils import options, log, xdsio
 
 _logger = log.get_module_logger('auto.process')
 
@@ -17,7 +17,7 @@ def main():
     if len(opt['images']) >= 1:
         dset = DataSet(filename=opt['images'][0])
         _logger.info('Creating XDS.INP ...')
-        io.write_xds_input('ALL !XYCORR INIT COLSPOT IDXREF DEFPIX INTEGRATE CORRECT', dset.parameters)
+        xdsio.write_xds_input('ALL !XYCORR INIT COLSPOT IDXREF DEFPIX INTEGRATE CORRECT', dset.parameters)
     else:
         _logger.error('No image specified.')
         print options.INPUTS_USAGE

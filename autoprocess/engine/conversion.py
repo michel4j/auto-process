@@ -1,7 +1,7 @@
 import os
 
 import autoprocess.errors
-from autoprocess.utils import programs, misc, log, io
+from autoprocess.utils import programs, misc, log, xdsio
 
 _logger = log.get_module_logger(__name__)
 
@@ -47,7 +47,7 @@ def convert_formats(dset, options={}):
     
     for opt in conv_options:
         try:
-            io.write_xdsconv_input(opt)
+            xdsio.write_xdsconv_input(opt)
             programs.xdsconv()
             
             # Special formatting for MTZ

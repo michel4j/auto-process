@@ -1,7 +1,7 @@
 import os
 
 from autoprocess.parser import distl
-from autoprocess.utils import log, misc, programs, io
+from autoprocess.utils import log, misc, programs, xdsio
 import autoprocess.errors
 
 _logger = log.get_module_logger(__name__)
@@ -14,7 +14,7 @@ def initialize(data_info, options={}):
     run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
     
-    io.write_xds_input('XYCORR INIT', run_info)
+    xdsio.write_xds_input('XYCORR INIT', run_info)
     try:
         programs.xds_par()
     except autoprocess.errors.ProcessError, e:
@@ -49,7 +49,7 @@ def find_spots(data_info, options={}):
     run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
     
-    io.write_xds_input('COLSPOT', run_info)
+    xdsio.write_xds_input('COLSPOT', run_info)
     try:
         programs.xds_par()
     except autoprocess.errors.ProcessError, e:

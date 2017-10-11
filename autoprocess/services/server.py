@@ -78,15 +78,15 @@ class DataProcessorService(rpyc.Service):
     @expose
     def process_xrd(self, info, directory, user_name):
         args = [
-            'auto.xrd',
-            '--dir={}'.format(directory)
+            'auto.powder'
         ]
         args += ['--calib'] if info.get('calib') else []
         args += info['file_names']
         subprocess.check_call(args, preexec_fn=demote(user_name))
-        json_file = os.path.join(directory, 'process.json')
-        with open(json_file, 'r') as handle:
-            output = json.load(handle)
+        #json_file = os.path.join(directory, 'calib.json')
+        #with open(json_file, 'r') as handle:
+        #    output = json.load(handle)
+        output = {'success': True}
         return output
 
     def __str__(self):

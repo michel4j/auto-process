@@ -396,18 +396,6 @@ def get_reports(datasets, options={}):
         _dataset_info = {}
         dres = dset.results
 
-        # read dataset file if present and use that to figure out the data_id, crystal_id, experiment_id
-        data_id = None
-        crystal_id = None
-        exp_id = None
-
-        dataset_file = re.sub('_[?]*\.[^.]*$', '.SUMMARY', dset.parameters['file_template'])
-        if os.path.exists(dataset_file):
-            dataset_info = json.load(file(dataset_file))
-            data_id = dataset_info.get('id')
-            crystal_id = dataset_info.get('crystal_id')
-            exp_id = dataset_info.get('experiment_id')
-
         if dres.get('image_analysis'):
             _ice_rings = dres['image_analysis']['summary']['ice_rings']
         else:
@@ -417,7 +405,7 @@ def get_reports(datasets, options={}):
             _summary = dres['scaling']
         else:
             _summary = dres['correction']
-        _sum_keys = ['name', 'data_id', 'crystal_id', 'experiment_id', 'score',
+        _sum_keys = ['name', 'score',
                      'space_group', 'space_group_id', 'cell_a', 'cell_b',
                      'cell_c', 'cell_alpha', 'cell_beta', 'cell_gamma',
                      'resolution', 'reflections', 'unique', 'multiplicity', 'completeness', 'mosaicity', 'i_sigma',
@@ -426,9 +414,6 @@ def get_reports(datasets, options={}):
                      ]
         _sum_values = [
             dataset_name,
-            data_id,
-            crystal_id,
-            exp_id,
             dres['crystal_score'],
             xtal.SPACE_GROUP_NAMES[dres['correction']['symmetry']['space_group']['sg_number']],
             dres['correction']['symmetry']['space_group']['sg_number'],

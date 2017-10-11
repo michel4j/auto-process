@@ -17,6 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from autoprocess.utils import mdns, log
 from autoprocess.utils.which import which
+from autoprocess.parser.distl import parse_distl_string
 
 
 logger = log.get_module_logger(__name__)
@@ -49,15 +50,17 @@ class CommandProtocol(protocol.ProcessProtocol):
     """
     Twisted Protocol for running commands asynchronously
     """
-    def __init__(self, command, directory, json_file=None, json_out=False):
+    def __init__(self, command, directory, json_file=None, json_out=False, parser=None):
         """
         :param command: name of command
         :param directory: directory to run command
         :param json_file: output file name for reading json output from the command
         :param json_out: bool, interpret standard output as json for output
+        :param parser: function, optional parser to converting command output into return value
         """
         self.output = ''
         self.errors = ''
+        self.parser = parser
         self.command = command
         self.json_file = json_file if not json_file else os.path.join(directory, json_file)
         self.json_out = json_out
@@ -83,6 +86,8 @@ class CommandProtocol(protocol.ProcessProtocol):
                     self.deferred.callback(json.load(handle))
             elif self.json_out:
                 self.deferred.callback(json.loads(self.output))
+            elif self.parser:
+                self.deferred.callback(self.parser(self.output))
             else:
                 self.deferred.callback(self.output)
             if self.errors:
@@ -96,7 +101,7 @@ class CommandProtocol(protocol.ProcessProtocol):
             self.deferred.errback(failure)
 
 
-def async_command(command, args, directory='/tmp', user_name='root', json_file=None, json_output=False):
+def async_command(command, args, directory='/tmp', user_name='root', json_file=None, json_output=False, parser=None):
     """
     Run a command asynchronously as a given user and return a deferred. The final result can be
     either read from a json file or json formatted standard output, or regular text output
@@ -106,12 +111,13 @@ def async_command(command, args, directory='/tmp', user_name='root', json_file=N
     :param user_name: User name
     :param json_file: File name of file to read output from, or None
     :param json_output: Bool, whether to pParse standard output as json instead of reading from file
+    :param parser: function, optional parser to converting command output into return value
     :return: [str|list|dict]
     """
     pwdb = pwd.getpwnam(user_name)
     uid = pwdb.pw_uid
     gid = pwdb.pw_gid
-    prot = CommandProtocol(command, directory, json_file=json_file, json_out=json_output)
+    prot = CommandProtocol(command, directory, json_file=json_file, json_out=json_output, parser=parser)
     prot.deferred = defer.Deferred()
     args = [which(command)] + args
     reactor.spawnProcess(prot, args[0], args, env=os.environ, path=directory, uid=uid, gid=gid, usePTY=True)
@@ -173,13 +179,18 @@ class DPSPerspective2Service(pb.Root):
         return self.service.process_xrd(*args, **kwargs)
 
 
+def _distl_output(text):
+    out = parse_distl_string(text)
+    return out['summary']
+
+
 class DPService(service.Service):
     implements(IDPService)
 
     @log.log_call
     def analyse_frame(self, frame_path, user_name):
         directory = os.path.dirname(frame_path)
-        return async_command('auto.analyse', [frame_path], directory, user_name=user_name, json_output=True)
+        return async_command('labelit.distl', [frame_path], directory, user_name=user_name, parser=_distl_output)
 
     @log.log_call
     def process_mx(self, info, directory, user_name):

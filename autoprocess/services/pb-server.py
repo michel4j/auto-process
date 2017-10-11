@@ -81,15 +81,19 @@ class CommandProtocol(protocol.ProcessProtocol):
     def processEnded(self, reason):
         rc = reason.value.exitCode
         if rc == 0:
-            if self.json_file:
-                with open(self.output_file, 'r') as handle:
-                    self.deferred.callback(json.load(handle))
-            elif self.json_out:
-                self.deferred.callback(json.loads(self.output))
-            elif self.parser:
-                self.deferred.callback(self.parser(self.output))
-            else:
-                self.deferred.callback(self.output)
+            try:
+                if self.json_file:
+                    with open(self.json_file, 'r') as handle:
+                        self.deferred.callback(json.load(handle))
+                elif self.json_out:
+                    self.deferred.callback(json.loads(self.output))
+                elif self.parser:
+                    self.deferred.callback(self.parser(self.output))
+                else:
+                    self.deferred.callback(self.output)
+            except Exception as e:
+                logger.error(e)
+                self.deferred.errback(Failure(e))
             if self.errors:
                 logger.error(self.errors)
         else:

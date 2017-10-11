@@ -1,14 +1,14 @@
 """This module implements utility classes and functions for logging."""
 
 import logging
-from logging.handlers import RotatingFileHandler
-
 import repr as reprlib
+from logging.handlers import RotatingFileHandler
 
 LOG_LEVEL = logging.DEBUG
 IMPORTANT = 25
 logging.addLevelName(IMPORTANT, 'IMPORTANT')
 DEBUGGING = False
+
 
 class TermColor(object):
     HEADER = '\033[95m'

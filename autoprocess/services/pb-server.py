@@ -1,18 +1,23 @@
 #!/usr/bin/env python
 
 import json
+import logging
 import os
 import pwd
-import logging
+import sys
 
-from autoprocess.utils import mdns, log
-from autoprocess.utils.which import which
 from twisted.application import internet, service
 from twisted.internet import protocol, reactor, defer
 from twisted.python import components, log as twistedlog
 from twisted.python.failure import Failure
 from twisted.spread import pb
 from zope.interface import implements, Interface
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+from autoprocess.utils import mdns, log
+from autoprocess.utils.which import which
+
 
 logger = log.get_module_logger(__name__)
 

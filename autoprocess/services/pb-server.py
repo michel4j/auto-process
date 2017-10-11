@@ -5,6 +5,7 @@ import logging
 import os
 import pwd
 import sys
+import subprocess
 
 from twisted.application import internet, service
 from twisted.internet import protocol, reactor, defer
@@ -46,6 +47,18 @@ def log_to_twisted(level=logging.DEBUG):
     logging.getLogger('').addHandler(console)
 
 
+def demote(user_name):
+    """Pass the function 'set_user' to preexec_fn, rather than just calling
+    setuid and setgid. This will change the ids for that subprocess only"""
+
+    def set_user():
+        pwdb = pwd.getpwnam(user_name)
+        os.setgid(pwdb.pw_gid)
+        os.setuid(pwdb.pw_uid)
+
+    return set_user
+
+
 class CommandProtocol(protocol.ProcessProtocol):
     """
     Twisted Protocol for running commands asynchronously
@@ -65,6 +78,7 @@ class CommandProtocol(protocol.ProcessProtocol):
         self.json_file = json_file if not json_file else os.path.join(directory, json_file)
         self.json_out = json_out
         self.directory = directory
+
 
     def outReceived(self, output):
         self.output += output
@@ -121,6 +135,10 @@ def async_command(command, args, directory='/tmp', user_name='root', json_file=N
     pwdb = pwd.getpwnam(user_name)
     uid = pwdb.pw_uid
     gid = pwdb.pw_gid
+    
+    if not os.path.exists(directory):
+        subprocess.check_call(['mkdir', '-p', directory], preexec_fn=demote(user_name))
+
     prot = CommandProtocol(command, directory, json_file=json_file, json_out=json_output, parser=parser)
     prot.deferred = defer.Deferred()
     args = [which(command)] + args

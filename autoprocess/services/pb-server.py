@@ -21,31 +21,6 @@ from autoprocess.parser.distl import parse_distl_string
 
 
 logger = log.get_module_logger(__name__)
-log_observer = twistedlog.PythonLoggingObserver()
-log_observer.start()
-
-class TwistedLogger(logging.StreamHandler):
-    def emit(self, record):
-        msg = self.format(record)
-        if record.levelno == logging.WARNING:
-            twistedlog.msg(msg)
-        elif record.levelno > logging.WARNING:
-            twistedlog.err(msg)
-        else:
-            twistedlog.msg(msg)
-        self.flush()
-
-
-def log_to_twisted(level=logging.INFO):
-    """
-    Add a log handler which logs to the twisted logger.
-    """
-    console = TwistedLogger()
-    console.setLevel(level)
-    formatter = logging.Formatter('%(message)s')
-    console.setFormatter(formatter)
-    logging.getLogger('').addHandler(console)
-
 
 class CommandProtocol(protocol.ProcessProtocol):
     """
@@ -215,7 +190,7 @@ class DPService(service.Service):
 components.registerAdapter(DPSPerspective2Service, IDPService, IDPSPerspective)
 
 # twisd stuff goes here
-log_to_twisted()
+log.log_to_console()
 application = service.Application('Data Processing Server')
 serviceCollection = service.IServiceCollection(application)
 srv = DPService()

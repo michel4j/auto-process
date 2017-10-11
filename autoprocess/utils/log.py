@@ -57,19 +57,15 @@ class NullHandler(logging.Handler):
 
 
 class ColoredConsoleHandler(logging.StreamHandler):
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            if record.levelno == logging.WARNING:
-                msg = TermColor.warn(msg)
-            elif record.levelno > logging.WARNING:
-                msg = TermColor.error(msg)
-            elif record.levelno == logging.DEBUG:
-                msg = TermColor.debug(msg)
-            self.stream.write("{}\n".format(msg))
-            self.flush()
-        except:
-            self.handleError(record)
+    def format(self, record):
+        msg = super(ColoredConsoleHandler, self).format(record)
+        if record.levelno == logging.WARNING:
+            msg = TermColor.warn(msg)
+        elif record.levelno > logging.WARNING:
+            msg = TermColor.error(msg)
+        elif record.levelno == logging.DEBUG:
+            msg = TermColor.debug(msg)
+        return msg
 
 
 def get_module_logger(name):

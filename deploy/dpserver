@@ -21,7 +21,7 @@ unset i
 servicename='dpserver'
 pidfile='/var/run/dpserver.pid'
 logfile='/var/log/dpserver.log'
-appfile=$DPS_PATH/autoprocess/services/server.py
+appfile=$DPS_PATH/autoprocess/services/pb-server.py
 umask=022
 
 export MPLCONFIGDIR=/tmp
@@ -30,15 +30,15 @@ export MPLCONFIGDIR=/tmp
 [ -f $appfile ] || exit 0
 
 start() {
-    echo -n $"Starting DPM Service: "
-    daemon $appfile  --log=$logfile --pid=$pidfile &
+    echo -n $"Starting Data Processing Server: "
+    daemon /usr/bin/twistd -y $appfile --logfile=$logfile --umask=$umask --pidfile=$pidfile
     RETVAL=$?
     echo
     [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$servicename
 }
 
 stop() {
-    echo -n $"Stopping Data Processing Service: "
+    echo -n $"Stopping Data Processing Server: "
 
     killproc -p $pidfile
     RETVAL=$?

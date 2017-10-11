@@ -202,12 +202,12 @@ class DPService(service.Service):
 
 components.registerAdapter(DPSPerspective2Service, IDPService, IDPSPerspective)
 
-if __name__ == '__main__':
-    log_to_twisted()
-    application = service.Application('Data Processing Server')
-    serviceCollection = service.IServiceCollection(application)
-    srv = DPService()
+# twisd stuff goes here
+log_to_twisted()
+application = service.Application('Data Processing Server')
+serviceCollection = service.IServiceCollection(application)
+srv = DPService()
 
-    # publish DPS service on network
-    provider = mdns.Provider('Data Processing Server', '_dpm_rpc._tcp', 9991, {})
-    internet.TCPServer(9991, pb.PBServerFactory(IDPSPerspective(srv))).setServiceParent(serviceCollection)
+# publish DPS service on network
+provider = mdns.Provider('Data Processing Server', '_dpm_rpc._tcp', 9991, {})
+internet.TCPServer(9991, pb.PBServerFactory(IDPSPerspective(srv))).setServiceParent(serviceCollection)

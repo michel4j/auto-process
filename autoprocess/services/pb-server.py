@@ -21,7 +21,8 @@ from autoprocess.parser.distl import parse_distl_string
 
 
 logger = log.get_module_logger(__name__)
-
+log_observer = twistedlog.PythonLoggingObserver()
+log_observer.start()
 
 class TwistedLogger(logging.StreamHandler):
     def emit(self, record):

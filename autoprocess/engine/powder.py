@@ -8,7 +8,9 @@ from autoprocess.libs.imageio import read_image
 from autoprocess.utils import xdi
 from autoprocess.utils.ellipse import fit_ellipse
 from scipy import signal, interp, optimize, interpolate
+import warnings
 
+warnings.filterwarnings('ignore')
 
 XSTEP = 0.05
 BACKSTOP_OFFSET = 200
@@ -337,7 +339,7 @@ def calibrate(filename):
         fileroot, ext = os.path.splitext(filename)
         calc.save_xdi(prof, '{}.xdi'.format(fileroot))
 
-        peaks = find_peaks(prof, width=5)
+        peaks = find_peaks(prof[:,1], width=5)
         print json.dumps({'peak_count': len(peaks)})
 
 
@@ -355,6 +357,6 @@ def radial_profile(filename, cx=None, cy=None, rotx=None, roty=None):
     fileroot, ext = os.path.splitext(filename)
     calc.save_xdi(prof, '{}.xdi'.format(fileroot))
 
-    peaks = find_peaks(prof, width=5)
+    peaks = find_peaks(prof[:,1], width=5)
     print json.dumps({'peak_count': len(peaks)})
 

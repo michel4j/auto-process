@@ -230,7 +230,7 @@ class DPService(service.Service):
         args = []
         args += ['--calib'] if info.get('calib') else []
         args += info['file_names']
-        return async_command('auto.powder', args, directory, user_name=user_name)
+        return async_command('auto.powder', args, directory, user_name=user_name, json_output=True)
 
 
 components.registerAdapter(DPSPerspective2Service, IDPService, IDPSPerspective)

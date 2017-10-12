@@ -10,6 +10,11 @@ from autoprocess.utils.ellipse import fit_ellipse
 from scipy import signal, interp, optimize, interpolate
 import warnings
 
+try:
+    from scipy.signal import savgol_filter
+except:
+    from autoprocess.utils.misc import savgol_filter
+
 warnings.filterwarnings('ignore')
 
 XSTEP = 0.05
@@ -30,10 +35,10 @@ def find_peaks(y, width=11, sensitivity=0.01, smooth=True):
     width = width if width % 2 else width + 1  # force width to be odd
     hw = width // 2
     hw = hw if hw % 2 else hw + 1  # force width to be odd
-    ypp = signal.savgol_filter(y, width, 2, deriv=2)
+    ypp = savgol_filter(y, width, 2, deriv=2)
     ypp[ypp > 0] = 0.0
     ypp *= -1
-    yp = signal.savgol_filter(ypp, hw, 1, deriv=1)
+    yp = savgol_filter(ypp, hw, 1, deriv=1)
 
     peak_str = numpy.array([True, True, False, False]).tostring()
     data_str = (yp > 0.0).tostring()

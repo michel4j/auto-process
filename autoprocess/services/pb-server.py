@@ -135,7 +135,7 @@ def async_command(command, args, directory='/tmp', user_name='root', json_file=N
     pwdb = pwd.getpwnam(user_name)
     uid = pwdb.pw_uid
     gid = pwdb.pw_gid
-    
+
     if not os.path.exists(directory):
         subprocess.check_call(['mkdir', '-p', directory], preexec_fn=demote(user_name))
 

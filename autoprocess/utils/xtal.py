@@ -1,17 +1,23 @@
+from __future__ import unicode_literals, print_function
+
 from autoprocess.utils.misc import Table
 import bisect
-import json
+import gzip
+import msgpack
 import math
 import numpy
 import os
 
 DEBUG = False
-XTAL_TABLE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'xtal_tables.json')
-XTAL_TABLES = dict(json.load(file(XTAL_TABLE_FILE)))
+XTAL_TABLE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'xtal_tables.dat')
+with gzip.open(XTAL_TABLE_FILE, 'rb') as handle:
+    XTAL_TABLES = msgpack.load(handle)
 
-SPACE_GROUP_NAMES = dict([(k,v['space_group_name']) for k,v in XTAL_TABLES.items()])
-SPACE_GROUP_NUMBERS = dict([(v['space_group_name'], k) for k,v in XTAL_TABLES.items()])
+SG_SYMBOLS = {k: v['name'] for k, v in XTAL_TABLES.items()}
+SG_NAMES = {k: v['symbol'] for k, v in XTAL_TABLES.items()}
+SG_NUMBERS = {v['name']: k for k, v in XTAL_TABLES.items()}
 CHIRAL_SPACE_GROUPS = [k for k,v in XTAL_TABLES.items() if v['chiral']]
+CENTRO_SYMETRIC = {k: '-X,-Y,-Z' in v['symmetry'] for k,v in XTAL_TABLES.items()}
 
 # each rule is a list of 9 boolean values representing
 # a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120
@@ -42,16 +48,16 @@ def get_character(sg_number=1):
     return XTAL_TABLES[sg_number]['lattice_character']
 
 def get_number(sg_name):
-    return SPACE_GROUP_NUMBERS[sg_name]
+    return SG_NUMBERS[sg_name]
 
 def get_pg_list(lattices, chiral=True):     
     """Takes a list of lattice characters and returns a unique list of the
     names of the lowest symmetry pointgroup."""
-    pgset = set([ SPACE_GROUP_NUMBERS[v['point_group']] for v in XTAL_TABLES.values() if v['lattice_character'] in lattices ])
+    pgset = set([SG_NUMBERS[v['point_group']] for v in XTAL_TABLES.values() if v['lattice_character'] in lattices])
     if chiral:
         pgset = pgset.intersection(set(CHIRAL_SPACE_GROUPS))
     pgnums = sorted(pgset)
-    return [ SPACE_GROUP_NAMES[n] for n in pgnums ]
+    return [SG_SYMBOLS[n] for n in pgnums]
 
 def get_sg_table(chiral=True):     
     """Generate a table of all spacegroups for each given crystal system."""
@@ -59,9 +65,9 @@ def get_sg_table(chiral=True):
     for k,v in XTAL_TABLES.items():
         if (chiral and not v['chiral']): continue
         if v['lattice_character'] in tab.keys():
-            tab[v['lattice_character']].append("%d:%s" % (k, v['space_group_name']))
+            tab[v['lattice_character']].append("%d:%s" % (k, v['symbol']))
         else:
-            tab[v['lattice_character']] = ["%d:%s" % (k, v['space_group_name'])]
+            tab[v['lattice_character']] = ["%d:%s" % (k, v['symbol'])]
     txt = 'Table of space group numbers for each Bravais lattice type\n'
     txt += '-------------------------------------------------------------------------------\n'   
     for k in ['aP','mP','mC','oP','oC','oA','oF','oI','tP','tI','hP','hR','cP','cF','cI']:
@@ -213,7 +219,7 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
         names = ['Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Ice']
         vals = [resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, ice_rings]
         for name, contrib, val in zip(names, scores, vals):
-            print '\t%s : %0.3f (%0.3f)' % (name, contrib, val)
+            print('\t{} : {:0.3f} ({:0.3f})'.format(name, contrib, val))
         
     return numpy.exp(numpy.log(scores).mean())
    
@@ -233,7 +239,7 @@ def score_crystal_old(resolution, completeness, r_meas, i_sigma, mosaicity, std_
         names = ['Root', 'Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Ice']
         vals = [1, resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, ice_rings]
         for name, contrib, val in zip(names,score, vals):
-            print '\t\t%s : %0.3f (%0.3f)' % (name, contrib, val)
+            print('\t\t{} : {:0.3f} ({:0.3f})'.format(name, contrib, val))
         
     return sum(score)
 

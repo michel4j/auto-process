@@ -347,7 +347,7 @@ def symmetry_options(params):
         if o in ("-g","--spacegroup"):
             try:
                 sg_num = int(a)
-                assert sg_num in xtal.SPACE_GROUP_NAMES.keys()
+                assert sg_num in xtal.SG_SYMBOLS.keys()
                 if sg_num not in xtal.CHIRAL_SPACE_GROUPS:
                     options['chiral'] = False
                 options['sg_overwrite'] = sg_num

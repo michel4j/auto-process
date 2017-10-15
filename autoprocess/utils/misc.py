@@ -449,10 +449,7 @@ def save_pid(file_path):
 def load_json(filename):
     with open(filename, 'r') as handle:
         info = json.load(handle)
-    if isinstance(info, list):
-        return info
-    else:
-        return [res['result'] for res in info['result']]
+    return info
 
 
 def savgol_filter(data, window_length, polyorder, deriv=0):

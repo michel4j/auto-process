@@ -31,12 +31,13 @@ def main():
     if len(sys.argv) > 1:
         json_file = sys.argv[1]
     else:
-        json_file = 'process.json'
+        json_file = 'checkpoint.json'
         
     try:
-        report_list = misc.load_json(json_file)
+        data = misc.load_json(json_file)
         options = {'command_dir': os.getcwd()}
-        reporting.save_html(report_list, options)
+        reporting.save_report(data['datasets'], data['options'])
+        #reporting.save_html(report_list, options)
     except IOError:
         _logger.error('Harvest file "process.json" file does not exist.')
         print REPORT_USAGE

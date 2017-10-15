@@ -24,7 +24,7 @@ def get_symmetry_params(spacegroup, dset):
             break
 
     if not lat_compatible:
-        _logger.warning('Space group `%s` has a poor fit to the lattice' % xtal.SPACE_GROUP_NAMES[spacegroup])
+        _logger.warning('Space group `%s` has a poor fit to the lattice' % xtal.SG_SYMBOLS[spacegroup])
     return sg_info
     
 
@@ -43,7 +43,7 @@ def determine_sg(data_info, dset, options={}):
     xds_params = get_symmetry_params(sg_info['sg_number'], dset)
     sg_info.update(xds_params)
     _logger.info('Selected %s: %s , #%d ' % (sg_info['type'], 
-                                        xtal.SPACE_GROUP_NAMES[sg_info['sg_number']], 
+                                        xtal.SG_SYMBOLS[sg_info['sg_number']],
                                         sg_info['sg_number'],
                                         ))   
 

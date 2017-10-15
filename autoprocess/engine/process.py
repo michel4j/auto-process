@@ -3,7 +3,8 @@ import os
 import sys
 import time
 import numpy
-import json
+import msgpack
+import gzip
 
 import autoprocess.errors
 from collections import OrderedDict
@@ -14,7 +15,7 @@ from autoprocess.engine import symmetry, strategy, conversion
 
 
 
-_logger = log.get_module_logger(__name__)
+logger = log.get_module_logger(__name__)
 
 VERSION = '4.0 RC'
 
@@ -209,8 +210,8 @@ class Manager(object):
             try:
                 misc.prepare_dir(self.options['directory'], self.options.get('backup', False))
             except Exception as e:
-                _logger.error("Could not prepare working directory '%s'." % self.options['directory'])
-                _logger.error(e)
+                logger.error("Could not prepare working directory '%s'." % self.options['directory'])
+                logger.error(e)
                 raise autoprocess.errors.FilesystemError('Could not prepare working directory')
         
         # for multiple data sets, process each in a separate sub-directory
@@ -234,10 +235,10 @@ class Manager(object):
                 'datasets': [d.get_info() for d in self.datasets.values()]}
         
         # Checkpoint file is saved in top-level processing directory
-        fname = os.path.join(self.options['directory'], 'checkpoint.json')
-        fh = open(fname, 'w')
-        json.dump(info, fh)
-        fh.close()
+        fname = os.path.join(self.options['directory'], 'process.chkpt')
+        with gzip.open(fname, 'wb') as handle:
+            msgpack.dump(info, handle)
+        return info
 
     def run_step(self, step, dset, overwrite={}, optional=False):
         """
@@ -264,9 +265,9 @@ class Manager(object):
 
         if not _out['success']:
             if optional:
-                _logger.warning('Failed (%s): %s' % (_out['step'], _out['reason']))
+                logger.warning('Failed (%s): %s' % (_out['step'], _out['reason']))
             else:
-                _logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
+                logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
                 sys.exit(1)
                         
     
@@ -288,12 +289,12 @@ class Manager(object):
         _header = '------ AutoProcess(%s) - %s [%d dataset(s)] ------' % (VERSION, 
                               self.options['mode'].upper(), len(self.datasets))
         _separator = len(_header)*'-'
-        _logger.info(_header)
+        logger.info(_header)
         _env_hosts = os.environ.get('DPS_NODES', 'localhost')
         _num_nodes = len(_env_hosts.split(' '))
 
-        _logger.debug('Computer system: %d nodes' % (_num_nodes))
-        _logger.debug('Computer nodes: "%s"' % _env_hosts )
+        logger.debug('Computer system: %d nodes' % (_num_nodes))
+        logger.debug('Computer nodes: "%s"' % _env_hosts)
         if resume_from is not None:
             cur_pos, next_step = resume_from
         else:
@@ -305,9 +306,9 @@ class Manager(object):
         if next_step in _sub_steps:
             for i, dset in enumerate(self.datasets.values()):
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
-                _logger.info(_separator)
-                _logger.info('Initializing `%s` in directory "%s"' % (dset.name, 
-                             misc.relpath(dset.parameters['working_directory'], self.options['command_dir'])))                
+                logger.info(_separator)
+                logger.info('Initializing `%s` in directory "%s"' % (dset.name,
+                                                                     misc.relpath(dset.parameters['working_directory'], self.options['command_dir'])))
                 for j, step in enumerate(_sub_steps):
                     self.run_position = (i, step)
                     
@@ -328,11 +329,11 @@ class Manager(object):
                             'unit_cell': dset.results['indexing']['parameters']['unit_cell'],
                             'space_group': dset.results['indexing']['parameters']['sg_number']})
                         
-                        _logger.log(log.IMPORTANT, "Reduced Cell: %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f" % tuple(
+                        logger.log(log.IMPORTANT, "Reduced Cell: %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f" % tuple(
                                             dset.results['indexing']['parameters']['unit_cell']))
                         _xter_list = [ v['character'] for v in dset.results['indexing']['lattices'] ]
                         _pg_txt = ", ".join(xtal.get_pg_list(_xter_list, chiral=self.options.get('chiral', True)))
-                        _logger.log(log.IMPORTANT, "Possible Point Groups: %s" % _pg_txt)
+                        logger.log(log.IMPORTANT, "Possible Point Groups: %s" % _pg_txt)
                             
             next_step = 'integration'
         
@@ -341,7 +342,7 @@ class Manager(object):
         if next_step in _sub_steps:
             for i, dset in enumerate(self.datasets.values()):
                 if i < cur_pos: continue  # skip all datasets earlier than specified one                    
-                _logger.info(_separator)
+                logger.info(_separator)
                 for j, step in enumerate(_sub_steps):
                     self.run_position = (i, step)
                     
@@ -366,6 +367,8 @@ class Manager(object):
         # Check Spacegroup and scale the datasets
         if next_step == 'symmetry':
             self.run_position = (0, 'symmetry')
+            ref_info = None
+            _sg_number = 0
             if overwrite.get('sg_overwrite') is not None:
                 _sg_number = overwrite['sg_overwrite']
                 ref_info = None              
@@ -399,7 +402,7 @@ class Manager(object):
                     })
                 self.run_step('correction', dset, overwrite=step_ovw)
                 cell_str = "%0.6g %0.6g %0.6g %0.6g %0.6g %0.6g" % tuple(dset.results['correction']['summary']['unit_cell'])
-                _logger.info('Refined cell: %s' % cell_str)         
+                logger.info('Refined cell: %s' % cell_str)
             
             self.save_checkpoint()
             next_step = 'scaling'
@@ -414,7 +417,7 @@ class Manager(object):
             self.save_checkpoint()
 
             if not _out['success']:
-                _logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
+                logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
                 sys.exit()
             next_step = 'strategy'
 
@@ -432,7 +435,7 @@ class Manager(object):
                 xalign_options = xoptions.get('xalign', {'vectors': ("",""), 'method': 0})
                 self.options['xalign'] = xalign_options
                 
-                _logger.info('Goniometer parameters for re-orienting crystal:')
+                logger.info('Goniometer parameters for re-orienting crystal:')
                 info = dset.results['correction']['parameters']
                 _mode = {0:'MAIN', 1:'CUSP'}[xalign_options['method']]
                 isols, pars = kappa.get_solutions(info, orientations=xalign_options['vectors'], mode=_mode)
@@ -442,14 +445,14 @@ class Manager(object):
                 else:
                     descr = u'v1\u27C2omega & beam, v2\u2225v1-omega plane'
                     html_descr = 'v1 parallel to both omega & beam, v2 perpendicular to the v1-omega plane'
-                _logger.info("%6s %6s  %s: %s" % ("Kappa", "Phi", "(v1,v2)", descr))
-                _logger.info("-"*58)
+                logger.info("%6s %6s  %s: %s" % ("Kappa", "Phi", "(v1,v2)", descr))
+                logger.info("-" * 58)
                 sols = []
                 for isol in isols:
                     txt = ", ".join(["(%s)" % v for v in  [",".join(p) for p in isol[1:]]])
-                    _logger.info("%6.1f %6.1f  %s" % (isol[0][0], isol[0][1], txt))
+                    logger.info("%6.1f %6.1f  %s" % (isol[0][0], isol[0][1], txt))
                     sols.append((isol[0][0], isol[0][1], txt))
-                _logger.info("-"*58)
+                logger.info("-" * 58)
                 dset.results['strategy']['details']['crystal_alignment'] = {
                     'method': html_descr,
                     'solutions': sols,
@@ -471,11 +474,11 @@ class Manager(object):
             # Run Data Quality Step:
             if self.options.get('mode') != 'screen':
                 self.run_position = (i, 'data_quality')
-                _logger.info('Checking quality of dataset `%s` ...' % _data_dscr)
+                logger.info('Checking quality of dataset `%s` ...' % _data_dscr)
                 _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
                 dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
                 if not _out['success']:
-                    _logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
+                    logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
                     sys.exit()
                 else:
                     dset.results['data_quality'] = _out.get('data')
@@ -483,9 +486,9 @@ class Manager(object):
                        
             # Scoring and experiment setup check
             _score = dset.score()
-            _logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
+            logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
             ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-            _logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
+            logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
             
             # file format conversions
             self.run_position = (i, 'conversion')
@@ -502,10 +505,10 @@ class Manager(object):
                     dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
                     if not _out['success']:
                         dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-                        _logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
+                        logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
                     else:
                         dset.results['output_files'] = _out.get('data')
-                        _logger.info('%s' % (', '.join(_out['data'])))
+                        logger.info('%s' % (', '.join(_out['data'])))
                 self.save_checkpoint()
 
 
@@ -525,19 +528,17 @@ class Manager(object):
         # reporting
         self.run_position = (0, 'reporting')
         os.chdir(self.options['directory'])
-        self.save_checkpoint()
+        checkpoint = self.save_checkpoint()
 
         # Save summaries
         import reporting
-        log_data = reporting.get_log_data(self.datasets, self.options)
-        reporting.save_log(log_data, 'process.log')   
-        reports = reporting.get_reports(self.datasets, self.options)
-        reporting.save_json(reports, 'process.json', self.options)
-        _logger.info('Generating HTML reports ...')
-        reporting.save_html(reports, self.options)      
+        logger.info('Generating Reports ...')
+        reporting.save_report(checkpoint['datasets'], self.options)
+        logger.info('    HTML: report.html ')
+        logger.info('    TEXT: report.txt ')
             
         used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
-        _logger.info("Done in: %s"  % (used_time))
+        logger.info("Done in: %s" % (used_time))
   
         
             

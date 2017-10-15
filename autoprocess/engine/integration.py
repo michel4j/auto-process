@@ -72,7 +72,7 @@ def correct(data_info, options={}):
     os.chdir(data_info['working_directory'])
     message = options.get('message', "Applying corrections to")
     _logger.info(
-        '%s `%s` in `%s` ... ' % (message, data_info['name'], xtal.SPACE_GROUP_NAMES[data_info['space_group']]))
+        '%s `%s` in `%s` ... ' % (message, data_info['name'], xtal.SG_SYMBOLS[data_info['space_group']]))
     run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
 

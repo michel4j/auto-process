@@ -29,7 +29,7 @@ def scale_datasets(dsets, options={}, message="Scaling"):
         suffix.append("res=%0.2f" % options.get('resolution'))
     if len(suffix)>0:
         suffix_txt = "with [%s]" % ",".join(suffix)
-    sg_name = xtal.SPACE_GROUP_NAMES[dsets.values()[0].results['correction']['summary']['spacegroup']]
+    sg_name = xtal.SG_SYMBOLS[dsets.values()[0].results['correction']['summary']['spacegroup']]
       
     # Check Requirements
     for dset in dsets.values():
@@ -211,7 +211,7 @@ def prepare_reference(dsets, options={}):
     sg_info['reference_data'] = reference_file
     cell_str = "%0.3f %0.3f %0.3f %0.3f %0.3f %0.3f" % tuple(sg_info['unit_cell'])
     _logger.info('Reference %s: %s (#%d) - %s' % (sg_info['type'],
-                                        xtal.SPACE_GROUP_NAMES[sg_info['sg_number']], 
+                                        xtal.SG_SYMBOLS[sg_info['sg_number']],
                                         sg_info['sg_number'],
                                         cell_str))
     

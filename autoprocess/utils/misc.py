@@ -3,62 +3,74 @@ Created on Mar 24, 2011
 
 @author: michel
 '''
-import pwd
-import os
-import shutil
-import math
-import numpy
-import posixpath
-from autoprocess.utils.prettytable import PrettyTable
+import gzip
 import json
-from choices import Choices
+import math
+import os
+import posixpath
+import pwd
+import shutil
+
+import msgpack
+import numpy
+import functools
+from autoprocess.utils.prettytable import PrettyTable
 
 # Physical Constants
-_h = 4.13566733e-15 # eV.s
-_c = 299792458e10   # A/s
+_h = 4.13566733e-15  # eV.s
+_c = 299792458e10  # A/s
 
-#direction vector of kappa axis on 08B1-1 when omega is at 0.0 deg
-KAPPA_AXIS = numpy.array([ 0.91354546,  0.3468    ,  0.21251931])
+# direction vector of kappa axis on 08B1-1 when omega is at 0.0 deg
+KAPPA_AXIS = numpy.array([0.91354546, 0.3468, 0.21251931])
 
 
 def code_matches_all(code, *args):
-    return all([code|v == code for v in args])
+    return all([code | v == code for v in args])
+
 
 def code_matches_any(code, *args):
-    return any([code|v == code for v in args])
+    return any([code | v == code for v in args])
+
 
 def code_matches_only(code, *args):
-    return code == reduce(lambda x,y: x|y, args)
+    return code == functools.reduce(lambda x, y: x | y, args)
+
 
 def code_matches_none(code, *args):
-    return not(any([code|v == code for v in args]))
+    return not (any([code | v == code for v in args]))
+
 
 def get_cpu_count():
     return os.sysconf('SC_NPROCESSORS_ONLN')
 
 
-def energy_to_wavelength(energy): 
+def energy_to_wavelength(energy):
     """Convert energy in keV to wavelength in angstroms."""
     if energy == 0.0:
         return 0.0
-    return (_h*_c)/(energy*1000.0)
+    return (_h * _c) / (energy * 1000.0)
 
-def wavelength_to_energy(wavelength): 
+
+def wavelength_to_energy(wavelength):
     """Convert wavelength in angstroms to energy in keV."""
     if wavelength == 0.0:
         return 0.0
-    return (_h*_c)/(wavelength*1000.0)
+    return (_h * _c) / (wavelength * 1000.0)
+
 
 def air(e):
-    p = [ 1.00000857e+00,  -3.10243288e-04,   3.01020914e+00]    
-    return 1.0 - (p[0] * math.exp( p[1] * (e**p[2])))
-   
+    p = [1.00000857e+00, -3.10243288e-04, 3.01020914e+00]
+    return 1.0 - (p[0] * math.exp(p[1] * (e ** p[2])))
+
+
 def get_project_name():
     return pwd.getpwuid(os.geteuid())[0]
 
+
 def get_home_dir():
     return pwd.getpwuid(os.geteuid())[5]
-    
+
+
 def backup_files(*args):
     for filename in args:
         if os.path.exists(filename):
@@ -68,10 +80,12 @@ def backup_files(*args):
             shutil.copy(filename, '%s.%0d' % (filename, index))
     return
 
+
 def backup_special_file(filename, suffix):
     if os.path.exists(filename):
         shutil.copy(filename, '%s.%s' % (filename, suffix))
     return
+
 
 def file_requirements(*args):
     all_exist = True
@@ -81,12 +95,13 @@ def file_requirements(*args):
             break
     return all_exist
 
+
 def rad2deg(r):
-    return r*180.0/numpy.pi
+    return r * 180.0 / numpy.pi
 
 
 def deg2rad(d):
-    return r*numpy.pi/180.0
+    return r * numpy.pi / 180.0
 
 
 def _relpath(path, base=os.curdir):
@@ -101,7 +116,7 @@ def _relpath(path, base=os.curdir):
     path_list = posixpath.abspath(path).split(posixpath.sep)
     # Work out how much of the filepath is shared by start and path.
     i = len(posixpath.commonprefix([start_list, path_list]))
-    rel_list = [posixpath.pardir] * (len(start_list)-i) + path_list[i:]
+    rel_list = [posixpath.pardir] * (len(start_list) - i) + path_list[i:]
     if not rel_list:
         return posixpath.curdir
     return posixpath.join(*rel_list)
@@ -116,7 +131,7 @@ def combine_names(names):
     if _prefix[-1] in ['_', '-', '.']:
         _prefix = _prefix[:-1]
     if len(_prefix) == 0:
-        _prefix = '_'.join(names)                      
+        _prefix = '_'.join(names)
 
     return _prefix
 
@@ -127,13 +142,14 @@ try:
 except:
     relpath = _relpath
 
+
 def prepare_dir(workdir, backup=False):
     """ 
     Creates a work dir for autoprocess to run. Increments run number if 
     directory already exists.
     
     """
-    
+
     exists = os.path.isdir(workdir)
     if not exists:
         os.makedirs(workdir)
@@ -146,16 +162,18 @@ def prepare_dir(workdir, backup=False):
         shutil.move(workdir, bkdir)
         os.makedirs(workdir)
 
+
 def calc_angle(v1, v2):
-    v1 = numpy.array(v1, dtype=numpy.float64)/numpy.linalg.norm(v1)
-    v2 = numpy.array(v2, dtype=numpy.float64)/numpy.linalg.norm(v2)
-    cs = numpy.dot(v1,v2)
-    sn = numpy.linalg.norm(numpy.cross(v1,v2))
-    a = numpy.arctan2(sn,cs)
-    if a > numpy.pi/2.0:
+    v1 = numpy.array(v1, dtype=numpy.float64) / numpy.linalg.norm(v1)
+    v2 = numpy.array(v2, dtype=numpy.float64) / numpy.linalg.norm(v2)
+    cs = numpy.dot(v1, v2)
+    sn = numpy.linalg.norm(numpy.cross(v1, v2))
+    a = numpy.arctan2(sn, cs)
+    if a > numpy.pi / 2.0:
         a = a - numpy.pi
     return a
-    
+
+
 def make_rot_matrix(direction, angle):
     """
     Create a rotation matrix corresponding to the rotation around a general
@@ -168,29 +186,31 @@ def make_rot_matrix(direction, angle):
         angle : float a
         direction : array d
     """
-    angle = angle * numpy.pi/180.0
-    
+    angle = angle * numpy.pi / 180.0
+
     d = numpy.array(direction, dtype=numpy.float64)
     d /= numpy.linalg.norm(d)
 
     eye = numpy.eye(3, dtype=numpy.float64)
     ddt = numpy.outer(d, d)
-    skew = numpy.array([[    0,  d[2],  -d[1]],
-                     [-d[2],     0,  d[0]],
-                     [ d[1], -d[0],    0]], dtype=numpy.float64)
+    skew = numpy.array([[0, d[2], -d[1]],
+                        [-d[2], 0, d[0]],
+                        [d[1], -d[0], 0]], dtype=numpy.float64)
 
     mtx = ddt + numpy.cos(angle) * (eye - ddt) + numpy.sin(angle) * skew
-    return mtx    
+    return mtx
+
 
 def rotate_vector(vec, mtxa):
     mtx = numpy.matrix(mtxa, dtype=numpy.float64)
     vec = numpy.matrix(vec, dtype=numpy.float64)
     nvec = mtx * vec.getT()
 
-    if vec.shape == (1,3):
+    if vec.shape == (1, 3):
         return nvec.getT().getA1()
     else:
         return nvec.getT().getA()
+
 
 def optimize_xtal_offset(info, kappa_axis=KAPPA_AXIS):
     """Optimize the kappa and Phi rotations required to align the 
@@ -200,59 +220,59 @@ def optimize_xtal_offset(info, kappa_axis=KAPPA_AXIS):
         - info is a dictionary produced by parser.xds.parse_xparm
         - kappa_axis is the direction vector of the kappa axis at zero spindle rotation
     """
-    
-    STEP = 5 # How coarse should the brute force search be in degrees?
-    
+
+    STEP = 5  # How coarse should the brute force search be in degrees?
+
     axis_names = ['cell_a_axis', 'cell_b_axis', 'cell_c_axis']
     longest_axis = max(zip(info['unit_cell'], axis_names))[1]
     kmat = make_rot_matrix(kappa_axis, STEP)
-    orig_offset = abs(calc_angle(info[longest_axis], info['rotation_axis']))*180.0/numpy.pi
+    orig_offset = abs(calc_angle(info[longest_axis], info['rotation_axis'])) * 180.0 / numpy.pi
     offsets = []
     cell_axis = info[longest_axis]
     rot_axis = info['rotation_axis']
-    
+
     for kappa in range(0, 180, STEP):
         for phi in range(0, 360, STEP):
             pmat = make_rot_matrix(rot_axis, phi)
-            nc_axis = rotate_vector(cell_axis, pmat) # first apply phi rotation to cell axis
+            nc_axis = rotate_vector(cell_axis, pmat)  # first apply phi rotation to cell axis
             kmat = make_rot_matrix(kappa_axis, kappa)
-            nc_axis = rotate_vector(nc_axis, kmat) # then add kappa rotation to cell axis
-            
-            offset = abs(calc_angle(nc_axis, rot_axis))*180.0/numpy.pi
-            p_ax =  rotate_vector(rot_axis, kmat)
-            chi_offset = abs(calc_angle(p_ax, rot_axis))*180.0/numpy.pi
+            nc_axis = rotate_vector(nc_axis, kmat)  # then add kappa rotation to cell axis
+
+            offset = abs(calc_angle(nc_axis, rot_axis)) * 180.0 / numpy.pi
+            p_ax = rotate_vector(rot_axis, kmat)
+            chi_offset = abs(calc_angle(p_ax, rot_axis)) * 180.0 / numpy.pi
             offsets.append((offset, kappa, phi, chi_offset))
 
-    
     # offset dimensions
     ks = len(range(0, 180, STEP))
     ps = len(range(0, 360, STEP))
-   
+
     opt_offset, opt_kappa, opt_phi, chi_offset = min(offsets)
     _out = {
         'kappa': opt_kappa,
         'phi': opt_phi,
         'chi': chi_offset,
         'longest_axis': axis_names.index(longest_axis),
-        'offset': orig_offset,   
+        'offset': orig_offset,
         'best_offset': opt_offset,
         'data': numpy.array(offsets),
         'shape': (ks, ps),
     }
     return _out
 
+
 class Table(object):
     def __init__(self, t):
         self._table = t
         self.size = len(self._table)
         self.hidden_columns = []
-        
+
     def __repr__(self):
         return "<Table (%d rows)\n%s\n>" % (self.size, str(self))
-    
+
     def __str__(self):
         return self.get_text()
-        
+
     def get_text(self, full=False):
         x = PrettyTable(self.keys())
         if self.size < 7 or full:
@@ -262,26 +282,26 @@ class Table(object):
             for i in range(3):
                 x.add_row(self.row(i))
             x.add_row(['...'] * len(self.keys()))
-            for i in range(self.size-3, self.size):
-                x.add_row(self.row(i))     
+            for i in range(self.size - 3, self.size):
+                x.add_row(self.row(i))
         return x.get_string()
-        
+
     def keys(self):
-        return [k for k in  self._table[0].keys() if k not in self.hidden_columns]
-    
+        return [k for k in self._table[0].keys() if k not in self.hidden_columns]
+
     def hide(self, *args):
         self.hidden_columns.extend(args)
-    
+
     def show_all(self):
         self.hidden_columns = []
-        
+
     def row(self, i):
         if i < len(self._table):
-            return [v for k,v in self._table[i].items() if k not in self.hidden_columns]
-    
+            return [v for k, v in self._table[i].items() if k not in self.hidden_columns]
+
     def rows(self, slice=":"):
         pre, post = slice.split(':')
-        if pre.strip() == '': 
+        if pre.strip() == '':
             pre = 0
         else:
             pre = int(pre)
@@ -290,20 +310,21 @@ class Table(object):
         else:
             post = int(post)
             if post < 0: post = self.size + post
-            
+
         return [self.row(i) for i in range(self.size) if i >= pre and i < post]
-    
+
     def column(self, key):
         return [r[key] for r in self._table]
-    
+
     def sort(self, key, reverse=False):
         self._table.sort(key=lambda x: x[key])
         if reverse:
             self._table = self._table[::-1]
-    
+
     def __getitem__(self, s):
         vals = [r[s] for r in self._table]
         return vals
+
 
 class rTable(Table):
     def __init__(self, t):
@@ -316,14 +337,15 @@ class rTable(Table):
             self._table.append(d)
         self.size = len(self._table)
         self.hidden_columns = []
-               
-       
+
+
 # Ordered Dict from Django
 
 class SortedDict(dict):
     """
     A dictionary that keeps its keys in the order in which they're inserted.
     """
+
     def __new__(cls, *args, **kwargs):
         instance = super(SortedDict, cls).__new__(cls, *args, **kwargs)
         instance.keyOrder = []
@@ -438,17 +460,25 @@ class SortedDict(dict):
 class DotDict(dict):
     def __getattr__(self, attr):
         return self.get(attr, None)
-    __setattr__= dict.__setitem__
-    __delattr__= dict.__delitem__
+
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
 
 def save_pid(file_path):
     with open(file_path, 'w') as handle:
         handle.write('{}\n'.format(os.getpid()))
 
+
 def load_json(filename):
     with open(filename, 'r') as handle:
         info = json.load(handle)
+    return info
+
+
+def load_chkpt(filename='process.chkpt'):
+    with gzip.open(filename, 'rb') as handle:
+        info = msgpack.load(handle)
     return info
 
 

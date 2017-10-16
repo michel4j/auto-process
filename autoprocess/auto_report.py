@@ -11,30 +11,30 @@ from autoprocess.engine import reporting
 _logger = log.get_module_logger('auto.report')
 
 REPORT_USAGE = """
-auto.report [path/to/process.json]
+auto.report [path/to/process.chkpt]
 
 Description:  
-    Generate HTML reports from a "process.json" harvest file.
+    Generate HTML reports from a "process.chkpt" harvest file.
 
 Arguments:
-    Default (no argument): Tries to read "process.json" from current directory.
+    Default (no argument): Tries to read "process.chkpt" from current directory.
 
 Examples:
     auto.report
-        If run within a directory which contains a process.json file.        
-    auto.report process.json
-    auto.report /foo/bar/process.json
+        If run within a directory which contains a process.chkpt file.        
+    auto.report process.chkpt
+    auto.report /foo/bar/process.chkpt
 
 """
 
 def main():
     if len(sys.argv) > 1:
-        json_file = sys.argv[1]
+        filename = sys.argv[1]
     else:
-        json_file = 'checkpoint.json'
+        filename = 'process.chkpt'
         
     try:
-        data = misc.load_json(json_file)
+        data = misc.load_json(filename)
         options = {'command_dir': os.getcwd()}
         reporting.save_report(data['datasets'], data['options'])
         #reporting.save_html(report_list, options)

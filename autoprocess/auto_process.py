@@ -22,7 +22,7 @@ def main():
         app.run()      
     else:
         try:
-            chkpt = misc.json.loads(file('checkpoint.json').read())
+            chkpt = misc.load_chkpt()
             app = Manager(checkpoint=chkpt, options=opt)
             if opt.get('zap', False):
                 app.run()

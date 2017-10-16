@@ -16,7 +16,7 @@ def main():
     # Parse options
     options = strategy_options(sys.argv[1:])
     try:
-        chkpt = misc.json.loads(file('checkpoint.json').read())
+        chkpt = misc.load_chkpt()
     except IOError:
         _logger.error('This command must be run within a data processing directory.')
         sys.exit(1)

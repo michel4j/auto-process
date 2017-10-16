@@ -403,6 +403,13 @@ class Manager(object):
                 self.run_step('correction', dset, overwrite=step_ovw)
                 cell_str = "%0.6g %0.6g %0.6g %0.6g %0.6g %0.6g" % tuple(dset.results['correction']['summary']['unit_cell'])
                 logger.info('Refined cell: %s' % cell_str)
+
+                if self.options.get('mode') in ['merge']:
+                    _score = dset.score()
+
+                    logger.info('(%s) Initial Score: %0.2f' % (dset.name, _score))
+                    ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+                    logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
             
             self.save_checkpoint()
             next_step = 'scaling'
@@ -486,7 +493,7 @@ class Manager(object):
                        
             # Scoring and experiment setup check
             _score = dset.score()
-            logger.info('(%s) Dataset Score: %0.2f' % (dset.name, _score))
+            logger.info('(%s) Final Score: %0.2f' % (dset.name, _score))
             ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
             logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
             

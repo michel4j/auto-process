@@ -89,7 +89,6 @@ def scale_datasets(dsets, options={}, message="Scaling"):
             dset.log.append((time.time(), 'scaling', False, str(e)))
         return {'step': 'scaling', 'success': False, 'reason': str(e)}
 
-
     if len(raw_info.keys()) == 1:
         info = raw_info.values()[0]
         info['output_file'] = 'XSCALE.HKL'
@@ -102,7 +101,8 @@ def scale_datasets(dsets, options={}, message="Scaling"):
 
         if options.get('mode') == 'merge':
             dset = copy.deepcopy(dsets.values()[0])
-            dset.name = dset.parameters['name'] = 'combined'
+            dset.parameters['name'] = 'combined'
+            dset.name = dset.parameters['name']
             dsets[dset.name] = dset
         else:
             dset = dsets.values()[0]

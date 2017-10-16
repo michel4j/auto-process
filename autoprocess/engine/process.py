@@ -83,14 +83,15 @@ class DataSet(object):
         self.results = info.get('results',{})            
 
     def score(self):
-        
-        _overall = {}
-        _overall.update(self.results['correction']['summary'])
         # full data processing
         if 'scaling' in self.results:
-            _overall.update(self.results['scaling']['summary'])
+            _overall = copy.deepcopy(self.results['scaling']['summary'])
+            _overall['mosaicity'] = self.results['correction']['summary']['mosaicity']
+            _overall['stdev_spot'] = self.results['correction']['summary']['stdev_spot']
+            _overall['stdev_spindle'] = self.results['correction']['summary']['stdev_spindle']
             t = misc.Table(self.results['scaling']['statistics'])
         else:
+            _overall = copy.deepcopy(self.results['correction']['summary'])
             t = misc.Table(self.results['correction']['statistics'])
 
                     
@@ -483,17 +484,8 @@ class Manager(object):
         
         # check quality and covert formats     
         for i, dset in enumerate(self.datasets.values()):
-            # Only calculate for first dataset when merging.
-            if self.options['mode'] == 'merge' and i > 0: break
-            
-            # data description is different for merged data
-            if self.options['mode'] == 'merge':
-                # create copy of merged dataset
-                dset = copy.deepcopy(dset)
-                dset.name = 'combined'
-                dset.parameters['name'] = 'combined'
-                self.datasets[dset.name] = dset
-
+            # Only calculate for 'combined' dataset when merging.
+            if self.options['mode'] == 'merge' and dset.name != 'combined': continue
 
             # Run Data Quality Step:
             if self.options.get('mode') != 'screen':
@@ -509,8 +501,7 @@ class Manager(object):
                 self.save_checkpoint()
                        
             # Scoring
-            _score = dset.score()
-            logger.info('(%s) Final Score: %0.2f' % (dset.name, _score))
+            logger.info('(%s) Final Score: %0.2f' % (dset.name, dset.score()))
 
             
             # file format conversions

@@ -165,7 +165,8 @@ def summary_table(datasets, options):
         report['data'][9].append('{:0.1f} %'.format(analysis['summary']['completeness']))
         report['data'][10].append(
             'N/A' if dataset['parameters']['name'] =='combined' else '{:0.2f}'.format(
-                results['correction']['correction_factors']['mosaicity'])
+                results['correction']['correction_factors']['mosaicity']
+            )
         )
         report['data'][11].append('{:0.1f}'.format(analysis['summary']['i_sigma']))
         report['data'][12].append('{:0.1f}'.format(analysis['summary']['r_meas']))

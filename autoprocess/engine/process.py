@@ -287,8 +287,9 @@ class Manager(object):
                      'strategy',
                      ]
         
-        _header = '------ AutoProcess(%s) - %s [%d dataset(s)] ------' % (VERSION, 
-                              self.options['mode'].upper(), len(self.datasets))
+        _header = '------ AutoProcess({}) - {} [{:d} dataset(s)] ------'.format(
+            VERSION, self.options['mode'].upper(), len([name for name in self.datasets.keys() if name != 'combined'])
+        )
         _separator = len(_header)*'-'
         logger.info(_header)
         _env_hosts = os.environ.get('DPS_NODES', 'localhost')

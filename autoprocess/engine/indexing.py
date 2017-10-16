@@ -3,11 +3,12 @@ import numpy
 from autoprocess.utils.misc import Table
 from autoprocess.parser import xds
 from autoprocess.utils import log, misc, programs, xdsio
+from autoprocess.utils.choices import Choices
 import autoprocess.errors
 
 _logger = log.get_module_logger(__name__)
 
-PROBLEMS = misc.Choices(
+PROBLEMS = Choices(
     (1, 'index_origin', 'Detector origin not optimal.'),
     (2, 'multiple_subtrees', 'Indexed reflections belong to multiple subtrees.'),
     (3, 'poor_solution', 'Poor solution, indexing refinement problems.'),

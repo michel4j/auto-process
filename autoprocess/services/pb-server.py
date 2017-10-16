@@ -223,7 +223,7 @@ class DPService(service.Service):
         args += ['--anom'] if info.get('anomalous') else []
         args += ['--mad'] if info.get('mad') else []
         args += info['file_names']
-        return async_command('auto.process', args, directory, user_name=user_name, json_file='process.json')
+        return async_command('auto.process', args, directory, user_name=user_name, json_file='report.json')
 
     @log.log_call
     def process_xrd(self, info, directory, user_name):

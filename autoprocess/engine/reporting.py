@@ -15,17 +15,19 @@ _logger = log.get_module_logger(__name__)
 
 SHARE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'share')
 
+
 def save_report(datasets, options):
     directory = options['command_dir']
     report = {
         'id': None,
         'directory': directory,
+        'file_name': 'report.json',
         'score': None,
         'data_id': None,
         'details': {},
     }
 
-    report_file = os.path.join(directory, 'report.json')
+    report_file = os.path.join(directory, report['file_name'])
     text_file = os.path.join(directory, 'report.txt')
 
     # read previous json_file and obtain id from it if one exists:

@@ -187,7 +187,7 @@ function draw_xy_chart() {
                         }));
                 } else if (datasets[p]['y2']) {
                     y2_draw_line.push(d3.line()
-                        .curve(d3.curveCatmullRom)
+                        .curve(d3.curveLinear)
                         .x(function (d) {
                             return x_scale(d[0]);
                         })

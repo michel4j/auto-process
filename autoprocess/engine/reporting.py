@@ -35,12 +35,14 @@ def save_report(datasets, options):
 
     if options.get('mode') == 'screen':
         results = datasets[0]['results']
+        report['title'] = '{}Screening Report'.format(options.get('anomalous') and 'Anomalous ' or '')
         report['details'] = screening_report(datasets[0], options)
         report['score'] = results['crystal_score']
         report['strategy'] = get_strategy(results)
     elif options.get('mode') == 'mad':
         results = datasets[0]['results']
         report['details'] = mad_report(datasets, options)
+        report['title'] = 'MAD Data Analysis Report'
         report['score'] = results['crystal_score']
     elif options.get('mode') == 'merge':
         results = datasets[0]['results']
@@ -48,10 +50,12 @@ def save_report(datasets, options):
             if dataset['parameters']['name'] == '*combined*':
                 results = dataset['results']
                 break
+        report['title'] = 'Merged Dataset Analysis Report'
         report['details'] = merge_report(datasets, options)
         report['score'] = results['crystal_score']
     else:
         results = datasets[0]['results']
+        report['title'] = 'Data Analysis Report'
         report['details'] = single_report(datasets[0], options)
         report['score'] = results['crystal_score']
 

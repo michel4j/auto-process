@@ -5,6 +5,7 @@ import time
 import numpy
 import msgpack
 import gzip
+import copy
 
 import autoprocess.errors
 from collections import OrderedDict
@@ -305,6 +306,9 @@ class Manager(object):
         step_ovw = {}
         if next_step in _sub_steps:
             for i, dset in enumerate(self.datasets.values()):
+                if dset.name == 'combined' and self.options.get('mode') == 'merge':
+                    # 'combined' merged dataset is special
+                    continue
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
                 logger.info(_separator)
                 logger.info('Initializing `%s` in directory "%s"' % (dset.name,
@@ -341,6 +345,9 @@ class Manager(object):
         _sub_steps = ['integration', 'correction']
         if next_step in _sub_steps:
             for i, dset in enumerate(self.datasets.values()):
+                if dset.name == 'combined' and self.options.get('mode') == 'merge':
+                    # 'combined' merged dataset is special
+                    continue
                 if i < cur_pos: continue  # skip all datasets earlier than specified one                    
                 logger.info(_separator)
                 for j, step in enumerate(_sub_steps):
@@ -380,6 +387,9 @@ class Manager(object):
                 _sg_number = ref_info['sg_number']
                 
             for dset in self.datasets.values():
+                if dset.name == 'combined' and self.options.get('mode') == 'merge':
+                    # 'combined' merged dataset is special
+                    continue
                 if self.options.get('mode') in ['simple', 'screen'] and overwrite.get('sg_overwrite') is None:
                     # automatic spacegroup determination
                     self.run_step('symmetry', dset)
@@ -408,8 +418,8 @@ class Manager(object):
                     _score = dset.score()
 
                     logger.info('(%s) Initial Score: %0.2f' % (dset.name, _score))
-                    ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-                    logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
+                ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+                logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
             
             self.save_checkpoint()
             next_step = 'scaling'
@@ -420,6 +430,9 @@ class Manager(object):
             step_ovw = {}
             step_ovw.update(self.options)
             step_ovw.update(overwrite)
+            if self.options.get('mode') == 'merge' and 'combined' in self.datasets:
+                # 'combined' merged dataset is special remove it before scaling
+                self.datasets.pop('combined', None)
             _out= scaling.scale_datasets(self.datasets, step_ovw)
             self.save_checkpoint()
 
@@ -474,14 +487,17 @@ class Manager(object):
             
             # data description is different for merged data
             if self.options['mode'] == 'merge':
-                _data_dscr = misc.combine_names(self.datasets.keys())
-            else:
-                _data_dscr = dset.name
+                # create copy of merged dataset
+                dset = copy.deepcopy(dset)
+                dset.name = 'combined'
+                dset.parameters['name'] = 'combined'
+                self.datasets[dset.name] = dset
+
 
             # Run Data Quality Step:
             if self.options.get('mode') != 'screen':
                 self.run_position = (i, 'data_quality')
-                logger.info('Checking quality of dataset `%s` ...' % _data_dscr)
+                logger.info('Checking quality of dataset `%s` ...' % dset.name)
                 _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
                 dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
                 if not _out['success']:
@@ -491,11 +507,10 @@ class Manager(object):
                     dset.results['data_quality'] = _out.get('data')
                 self.save_checkpoint()
                        
-            # Scoring and experiment setup check
+            # Scoring
             _score = dset.score()
             logger.info('(%s) Final Score: %0.2f' % (dset.name, _score))
-            ISa =   dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-            logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
+
             
             # file format conversions
             self.run_position = (i, 'conversion')
@@ -506,7 +521,7 @@ class Manager(object):
                 else:
                     _step_options = {}
                     _step_options.update(self.options)
-                    _step_options['file_root'] = _data_dscr
+                    _step_options['file_root'] = dset.name
                     
                     _out = conversion.convert_formats(dset, _step_options)
                     dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
@@ -526,7 +541,7 @@ class Manager(object):
                 else:
                     _step_info = {
                         'unit_cell': dset.results['correction']['summary']['unit_cell'],
-                        'name': _data_dscr,
+                        'name': dset.name,
                         'formula': self.options.get('solve-small'),
                     }
                     _out = solver.solve_small_molecule(_step_info, self.options)

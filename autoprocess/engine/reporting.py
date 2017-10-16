@@ -47,7 +47,7 @@ def save_report(datasets, options):
     elif options.get('mode') == 'merge':
         results = datasets[0]['results']
         for dataset in datasets:
-            if dataset['parameters']['name'] == '*combined*':
+            if dataset['parameters']['name'] == 'combined':
                 results = dataset['results']
                 break
         report['title'] = 'Merged Dataset Analysis Report'
@@ -101,12 +101,11 @@ def resolution_method(key):
     }.get(key, 'N/A')
 
 
-def summary_table(datasets, options, use_scaling=False):
+def summary_table(datasets, options):
     """
     Generate the summary table for the provided list of datasets
     :param datasets: list of dataset dictionaries
     :param options: dictionary of options
-    :param use_scaling: whether to use scaling tables instead of correction tables
     :return: dictionary of table specification
     """
 
@@ -145,10 +144,10 @@ def summary_table(datasets, options, use_scaling=False):
         """)
     }
     res_method = -1
-    for dataset in datasets:
+    for dataset in reversed(datasets):
         results = dataset['results']
         params = dataset['parameters']
-        analysis = results['correction'] if not use_scaling else results['scaling']
+        analysis = results['correction'] if not 'scaling' in results else results['scaling']
         multiplicity = float(analysis['summary']['observed']) / analysis['summary']['unique']
         res_method = analysis['summary']['resolution'][1]
 
@@ -164,11 +163,17 @@ def summary_table(datasets, options, use_scaling=False):
         report['data'][7].append(analysis['summary']['unique'])
         report['data'][8].append('{:0.1f}'.format(multiplicity))
         report['data'][9].append('{:0.1f} %'.format(analysis['summary']['completeness']))
-        report['data'][10].append('{:0.2f}'.format(analysis['summary']['mosaicity']))
+        report['data'][10].append(
+            'N/A' if not 'mosaicity' in analysis['summary'] else '{:0.2f}'.format(analysis['summary']['mosaicity'])
+        )
         report['data'][11].append('{:0.1f}'.format(analysis['summary']['i_sigma']))
         report['data'][12].append('{:0.1f}'.format(analysis['summary']['r_meas']))
         report['data'][13].append('{:0.1f} %'.format(analysis['summary']['cc_half']))
-        report['data'][14].append(results['correction']['correction_factors']['parameters'][0].get('ISa', -1))
+        report['data'][14].append(
+            'N/A' if not 'correction_factors' in analysis else '{:0.1f}'.format(
+                analysis['correction_factors']['parameters'][0].get('ISa', -1)
+            )
+        )
 
     report['notes'] += """    5. Resolution selection: {}""".format(resolution_method(res_method))
     report['notes'] = inspect.cleandoc(report['notes'])
@@ -176,17 +181,16 @@ def summary_table(datasets, options, use_scaling=False):
     return report
 
 
-def screening_summary_table(dataset, options, use_scaling=True):
+def screening_summary_table(dataset, options):
     """
     Generate the summary table for the provided list of datasets
     :param datasets: list of dataset dictionaries
     :param options: dictionary of options
-    :param use_scaling: whether to use scaling tables instead of correction tables
     :return: dictionary of table specification
     """
     results = dataset['results']
     params = dataset['parameters']
-    analysis = results['correction'] if not use_scaling else results['scaling']
+    analysis = results['correction'] if not 'scaling' in results else results['scaling']
 
     return {
         'title': 'Data Quality Statistics',
@@ -339,9 +343,9 @@ def standard_error_report(dataset, options):
     }
 
 
-def shell_statistics_report(dataset, options, use_scaling=True):
+def shell_statistics_report(dataset, options,):
     results = dataset['results']
-    analysis = results['correction'] if not use_scaling else results['scaling']
+    analysis = results['correction'] if not 'scaling' in results else results['scaling']
     return {
         'title': 'Statistics of Final Reflections by Shell',
         'content': [
@@ -473,9 +477,9 @@ def frame_statistics_report(dataset, options):
     }
 
 
-def wilson_report(dataset, options, use_scaling=True):
+def wilson_report(dataset, options):
     results = dataset['results']
-    analysis = results['correction'] if not use_scaling else results['scaling']
+    analysis = results['correction'] if not 'scaling' in results else results['scaling']
     if results.get('data_quality') and results['data_quality'].get('intensity_plots'):
         plot = {
             'kind': 'lineplot',
@@ -738,18 +742,18 @@ def merge_report(datasets, options):
         {
             'title': title,
             'content': [
-                summary_table(datasets, options, use_scaling=False),
+                summary_table(datasets, options),
             ],
         }
     ]
     combined = None
     for dataset in datasets:
-        if dataset['parameters']['name'] == '*combined*':
+        if dataset['parameters']['name'] == 'combined':
             combined = dataset
             continue
         report.extend([
             {
-                'title': 'Analysis Report: Dataset "{}"',
+                'title': 'Analysis Report: Dataset "{}"'.format(dataset['parameters']['name']),
                 'content': [
                     lattice_table(dataset, options),
                     spacegroup_table(dataset, options),
@@ -757,7 +761,7 @@ def merge_report(datasets, options):
             },
             standard_error_report(dataset, options),
             frame_statistics_report(dataset, options),
-            shell_statistics_report(dataset, options, use_scaling=False),
+            shell_statistics_report(dataset, options),
         ])
     if combined:
         report.extend([

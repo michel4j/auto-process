@@ -127,13 +127,8 @@ def combine_names(names):
     Return a combined name to represent a set of names
     """
 
-    _prefix = os.path.commonprefix(names)
-    if _prefix[-1] in ['_', '-', '.']:
-        _prefix = _prefix[:-1]
-    if len(_prefix) == 0:
-        _prefix = '_'.join(names)
+    return '-'.join(filter(None, [os.path.commonprefix(names), 'combined']))
 
-    return _prefix
 
 
 # custom relpath for python < 2.7

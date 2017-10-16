@@ -1,6 +1,7 @@
 import os
 import time
 import numpy
+import copy
 from itertools import chain
 
 from autoprocess.parser import xds, ccp4, pointless, phenix
@@ -83,24 +84,31 @@ def scale_datasets(dsets, options={}, message="Scaling"):
     try:
         programs.xscale_par()
         raw_info = xds.parse_xscale('XSCALE.LP')
-    except autoprocess.errors.ProcessError, e:
+    except autoprocess.errors.ProcessError as e:
         for dset in dsets.values():
             dset.log.append((time.time(), 'scaling', False, str(e)))
         return {'step': 'scaling', 'success': False, 'reason': str(e)}
 
+
     if len(raw_info.keys()) == 1:
         info = raw_info.values()[0]
         info['output_file'] = 'XSCALE.HKL'
-        for i, dset in enumerate(dsets.values()):
-            if i == 0:
-                # Set resolution
-                if options.get('resolution'):
-                    resol = (options.get('resolution'), 4)
-                else:
-                    resol = xtal.select_resolution(info['statistics'])
-                info['summary']['resolution'] = resol
-                dset.results['scaling'] = info
-                dset.log.append((time.time(), 'scaling', True, None))
+        # Set resolution
+        if options.get('resolution'):
+            resol = (options.get('resolution'), 4)
+        else:
+            resol = xtal.select_resolution(info['statistics'])
+        info['summary']['resolution'] = resol
+
+        if options.get('mode') == 'merge':
+            dset = copy.deepcopy(dsets.values()[0])
+            dset.name = dset.parameters['name'] = 'combined'
+            dsets[dset.name] = dset
+        else:
+            dset = dsets.values()[0]
+
+        dset.results['scaling'] = info
+        dset.log.append((time.time(), 'scaling', True, None))
     else:
         for name, info in raw_info.items():
             dset = dsets[name]

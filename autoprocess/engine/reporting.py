@@ -21,13 +21,13 @@ def save_report(datasets, options):
     report = {
         'id': None,
         'directory': directory,
-        'file_name': 'report.json',
+        'filename': 'report.json',
         'score': None,
         'data_id': None,
         'details': {},
     }
 
-    report_file = os.path.join(directory, report['file_name'])
+    report_file = os.path.join(directory, report['filename'])
     text_file = os.path.join(directory, 'report.txt')
 
     # read previous json_file and obtain id from it if one exists:

@@ -113,7 +113,7 @@ def summary_table(datasets, options, use_scaling=False):
             [''],
             ['Score¹'],
             ['Wavelength (A)'],
-            ['Space Group ²'],
+            ['Space Group²'],
             ['Unit Cell (A)'],
             ['Resolution⁵'],
             ['All Reflections'],
@@ -299,7 +299,7 @@ def standard_error_report(dataset, options):
                         round(numpy.mean(row['resol_range']), 2) for row in results['correction']['standard_errors'][:-1]
                     ],
                     'y1': [
-                        ['Chi^2'] + [row['chi_sq'] for row in results['correction']['standard_errors'][:-1]]
+                        ['Chi²'] + [row['chi_sq'] for row in results['correction']['standard_errors'][:-1]]
                     ],
                     'y2': [
                         ['I/Sigma'] + [row['i_sigma'] for row in results['correction']['standard_errors'][:-1]]
@@ -522,7 +522,7 @@ def twinning_report(dataset, options):
         'data': {
             'x': ['|L|'] + [row['abs_l'] for row in results['data_quality']['twinning_l_test']],
             'y1': [
-                ['<I> Observed'] + [row['observed'] for row in results['data_quality']['twinning_l_test']],
+                ['Observed'] + [row['observed'] for row in results['data_quality']['twinning_l_test']],
                 ['Twinned'] + [row['twinned'] for row in results['data_quality']['twinning_l_test']],
                 ['Untwinned'] + [row['untwinned'] for row in results['data_quality']['twinning_l_test']],
             ],

@@ -12,9 +12,12 @@ svg {
   font-family: $font-stack;
 }
 
-.x-axis, .y-axis {
-  font-family: $font-stack;
+.axis {
   font-size: $font-size;
+}
+
+.tick line{
+    opacity: 0.2;
 }
 
 td, th {

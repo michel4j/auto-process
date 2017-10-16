@@ -49,78 +49,86 @@
     }
 })();
 
+function rounded(v) {
+    var exp = Math.pow(10, -Math.ceil(Math.log(Math.abs(v), 10)));
+    return Math.round(v*exp)/exp;
+}
+
+Array.cleanspace = function(a, b, steps){
+    var A= [];
+
+    steps = steps || 7;
+    var min =  rounded((b - a)/8);
+    a = Math.ceil(a/min)*min;
+    b = Math.floor(b/min)*min;
+    var step = Math.ceil(((b - a)/steps)/min)*min;
+
+    A[0]= a;
+    while(a+step<= b){
+        A[A.length]= a+= step;
+    }
+    //console.log(A);
+    return A;
+
+};
+
+function inv_sqrt(a) {
+    var A = [];
+    for (var i=0; i < a.length; i++) {
+        A[i] = Math.pow(a[i], -0.5);
+    }
+    return A;
+};
+
+
 
 // Live Reports from MxLIVE
-
 function draw_xy_chart() {
 
     function chart(selection) {
         selection.each(function (datasets) {
-            var xoffset = notes && 40 || 0;
+            var xoffset = 0; //notes && 40 || 0;
             var margin = {top: 20, right: width * 0.1, bottom: 50, left: width * 0.1},
                 innerwidth = width - margin.left - margin.right,
                 innerheight = height - margin.top - margin.bottom;
-
+            var xmin = d3.min(datasets, function (d) { return d3.min(d.x);});
+            var xmax = d3.max(datasets, function (d) { return d3.max(d.x);});
             switch (xscale) {
                 case 'inv-square':
-                    var x_scale = d3.scalePow().exponent(-0.5)
+
+                    var x_scale = d3.scalePow().exponent(-2)
                         .range([0, innerwidth])
-                        .domain([d3.min(datasets, function (d) {
-                            return d3.max(d.x);
-                        }),
-                            d3.max(datasets, function (d) {
-                                return d3.min(d.x);
-                            })]);
+                        .domain([xmax, xmin]);
                     break;
                 case 'pow':
                     var x_scale = d3.scalePow()
                         .range([0, innerwidth])
-                        .domain([d3.min(datasets, function (d) {
-                            return d3.min(d.x);
-                        }),
-                            d3.max(datasets, function (d) {
-                                return d3.max(d.x);
-                            })]);
+                        .domain([xmin, xmax]);
                     break;
                 case 'log':
                     var x_scale = d3.scaleLog()
                         .range([0, innerwidth])
-                        .domain([d3.min(datasets, function (d) {
-                            return d3.min(d.x);
-                        }),
-                            d3.max(datasets, function (d) {
-                                return d3.max(d.x);
-                            })]);
+                        .domain([xmin, xmax]);
                     break;
                 case 'identity':
                     var x_scale = d3.scaleIdentity()
                         .range([0, innerwidth])
-                        .domain([d3.min(datasets, function (d) {
-                            return d3.min(d.x);
-                        }),
-                            d3.max(datasets, function (d) {
-                                return d3.max(d.x);
-                            })]);
+                        .domain([xmin, xmax]);
                     break;
                 case 'time':
                     var x_scale = d3.scaleTime()
                         .range([0, innerwidth])
-                        .domain([d3.min(datasets, function (d) {
-                            return d3.min(d.x);
-                        }),
-                            d3.max(datasets, function (d) {
-                                return d3.max(d.x);
-                            })]);
+                        .domain([xmin, xmax]);
                     break;
                 case 'linear':
                     var x_scale = d3.scaleLinear()
                         .range([0, innerwidth])
-                        .domain([d3.min(datasets, function (d) {
-                            return d3.min(d.x);
-                        }),
-                            d3.max(datasets, function (d) {
-                                return d3.max(d.x);
-                            })]);
+                        .domain([xmin, xmax]);
+                    break;
+                case 'inverse':
+                    var x_scale = d3.scaleLinear()
+                        .range([0, innerwidth])
+                        .domain([xmax, xmin]);
             }
 
             var color_scale = d3.scaleOrdinal(d3.schemeCategory10);
@@ -152,6 +160,11 @@ function draw_xy_chart() {
             var x_axis = d3.axisBottom()
                 .scale(x_scale)
                 .tickSize(-innerheight);
+            if (xscale === 'inv-square') {
+
+                var ticks = inv_sqrt(Array.cleanspace(Math.pow(xmax, -2), Math.pow(xmin, -2), 8));
+                x_axis.tickValues(ticks).tickFormat(d3.format(".3"));
+            }
 
             var y1_axis = d3.axisLeft()
                 .scale(y1_scale)
@@ -192,7 +205,7 @@ function draw_xy_chart() {
 
 
             svg.append("g")
-                .attr("class", "x-axis")
+                .attr("class", "x axis")
                 .attr("transform", "translate(0," + (innerheight) + ")")
                 .call(x_axis);
             svg.append("text")
@@ -201,7 +214,7 @@ function draw_xy_chart() {
                 .text(xlabel);
 
             svg.append("g")
-                .attr("class", "y-axis")
+                .attr("class", "y axis")
                 .call(y1_axis)
                 .append("text")
                 .attr("transform", "translate(0," + innerheight / 2 + "), rotate(-90)")
@@ -219,7 +232,7 @@ function draw_xy_chart() {
 
             if (y2data.length) {
                 svg.append("g")
-                    .attr("class", "y-axis")
+                    .attr("class", "y axis")
                     .attr("transform", "translate(" + innerwidth + ", 0)")
                     .call(y2_axis)
                     .append("text")
@@ -294,7 +307,6 @@ function draw_xy_chart() {
                         })
                         .attr("data-legend", function (_, l) {
                             return y2datasets[l]['label'] || null;
-                            ;
                         })
                         .attr("stroke", function (_, l) {
                             return y2datasets[l]['color'];
@@ -338,7 +350,6 @@ function draw_xy_chart() {
                 svg.append("text")
                     .attr('class', notes[i]['label'] + ' ' + (notes[i]['class'] || '') + ' ' + (notes[i]['display'] !== null && (notes[i]['display'] === true && 'visible ' || 'hidden')) || 'visible')
                     .text(notes[i]['label'])
-                    .style("font-size", "9px")
                     .style("fill", notes[i]['color'] || "#333")
                     .attr("transform", "translate(" + (xpos + 3) + "," + (y1_scale(0) + xoffset / 2) + "), rotate(-90)")
                     .style("text-anchor", "middle");
@@ -347,7 +358,6 @@ function draw_xy_chart() {
             legend = svg.append("g")
                 .attr("class", "legend")
                 .attr("transform", "translate(50,30)")
-                //.style("font-size", "12px")
                 .call(d3.legend);
 
 
@@ -385,9 +395,9 @@ function draw_xy_chart() {
             }
 
             mousePerLine.append("circle")
-                .attr("r", 6)
+                .attr("r", 2)
                 .style("fill", "none")
-                .style("stroke-width", "2px")
+                .style("stroke-width", "4px")
                 .style("opacity", "0");
 
             mousePerLine.append("text")
@@ -502,7 +512,6 @@ function build_report(selector, report) {
             section_box.append("<div class='col-xs-12'>" + converter.makeHtml(section['description']) + "</div>");
         }
         $.each(section['content'], function (j, entry) {
-            console.log(entry['kind']);
             var entry_row = section_box.append("<div class='col-xs-12' id='entry-" + i + "-" + j + "'></div>").children(":last-child");
             entry_row.addClass(entry['style'] || '');
             if (entry['title']) {
@@ -564,7 +573,7 @@ function build_report(selector, report) {
 
                 var xy_chart = draw_xy_chart()
                     .width(width)
-                    .height(500)
+                    .height(400)
                     .xlabel(xlabel)
                     .y1label(y1label)
                     .y2label(y2label)
@@ -583,96 +592,5 @@ function build_report(selector, report) {
             }
         });
 
-    });
-    $.each(report['details1'], function (i, section) {
-        var section_box = $(selector).append('<div class="row"></div>');
-
-        section_box.append("<h3 class='text-condensed col-xs-12' id='section-" + i + "' >" + section['title'] + "</h3>");
-        section_box.addClass(section['style'] || '');
-
-        if (section['description']) {
-            section_box.append("<div class='col-xs-12'>" + converter.makeHtml(section['description']) + "</div>");
-        }
-
-        $.each(section['contents'], function (j, entry) {
-            var entry_row = section_box.append("<div class='col-xs-12' id='entry-" + i + "-" + j + "'></div>");
-            entry_row.addClass(entry['style'] || '');
-
-            if (entry['title']) {
-                if (entry['kind'] === 'table') {
-                    entry_row.append("<h4 class='text-center'>Table " + ($('table').length + 1) + '. ' + entry['title'] + "</h4>")
-                } else {
-                    entry_row.append("<h4 class='text-center'>Figure " + ($('svg').length + 1) + '. ' + entry['title'] + "</h4>")
-                }
-            }
-            if (entry['description']) {
-                entry_row.append("<span class='text-center text-muted'>" + converter.makeHtml(entry['description']) + "</span>")
-            }
-            if (entry['kind'] === 'table') {
-                if (entry['data']) {
-                    var table = $("<table id='table-" + i + "-" + j + "' class='table table-hover report-table'></table>");
-                    var thead = $('<thead></thead>');
-                    var tbody = $('<tbody></tbody>');
-
-                    $.each(entry['data'], function (l, line) {
-                        if (line) {
-                            var tr = $('<tr></tr>');
-                            for (k = 0; k < line.length; k++) {
-                                if ((k === 0 && entry['header'] === 'column') || (l === 0 && entry['header'] === 'row')) {
-                                    var td = $('<th></th>').text(line[k]);
-                                } else {
-                                    var td = $('<td></td>').text(line[k]);
-                                }
-                                tr.append(td);
-                            }
-                            if (entry['header'] === 'row' && l === 0) {
-                                thead.append(tr);
-                            } else {
-                                tbody.append(tr);
-                            }
-                        }
-                    });
-                    table.append(thead);
-                    table.append(tbody);
-                    entry_row.append(table);
-                }
-            } else if (entry['kind'] === 'lineplot' || entry['kind'] === 'scatterplot') {
-                var data = [];
-                var xlabel = entry['data']['x'].shift();
-                var xscale = entry['data']['x-scale'] || 'linear';
-                var y1label = '', y2label = '';
-                $.each(entry['data']['y1'], function (l, line) {
-                    y1label = line.shift();
-                    data.push({'label': y1label, 'x': entry['data']['x'], 'y1': line});
-                });
-                $.each(entry['data']['y2'], function (l, line) {
-                    y2label = line.shift();
-                    data.push({'label': y2label, 'x': entry['data']['x'], 'y2': line});
-                });
-                var width = section_box.width();
-                y1label = entry['data']['y1-label'] || y1label;
-                y2label = entry['data']['y2-label'] || y2label;
-
-                var xy_chart = draw_xy_chart()
-                    .width(width)
-                    .height(500)
-                    .xlabel(xlabel)
-                    .y1label(y1label)
-                    .y2label(y2label)
-                    .xscale(xscale)
-                    .notes([])
-                    .scatter(entry['kind'] === 'scatterplot' && 'scatter' || entry['kind'] === 'lineplot' && 'line');
-                var svg = d3.select('#entry-' + i + '-' + j).append("svg").attr('id', 'plot-' + i + "-" + j)
-                    .datum(data)
-                    .call(xy_chart);
-            }
-            if (entry['data'] && entry['notes']) {
-                entry_row.append("<div class='caption'>" + converter.makeHtml(entry['notes']) + "</div>");
-            }
-        });
-
-        if (section['notes']) {
-            section_box.append("<small class='col-xs-12 text-muted'>" + convert.makeHtml(section['notes']) + "</small>");
-        }
     });
 }

@@ -655,7 +655,7 @@ def predicted_quality_report(dataset, options):
                             ['Shell', 'Completeness', 'R-factor', 'I/Sigma(I)', 'Multipliticy', 'Overload Fraction']
                         ] + [
                             [
-                                resolution[i],
+                                '{:0.2f}'.format(resolution[i]),
                                 '{:0.2f}'.format(statistics['completeness'][i]),
                                 '{:0.2f}'.format(statistics['R_factor'][i]),
                                 '{:0.2f}'.format(statistics['average_i_over_sigma'][i]),

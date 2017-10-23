@@ -37,11 +37,13 @@ def save_report(datasets, options):
 
     if options.get('mode') == 'screen':
         results = datasets[0]['results']
-        report['title'] = '{}Screening Report'.format(options.get('anomalous') and 'Anomalous ' or '')
+        report['kind'] = 'MX-Screen'
+        report['title'] = '{}Screening Summary'.format(options.get('anomalous') and 'Anomalous ' or '')
         report['details'] = screening_report(datasets[0], options)
         report['score'] = results['crystal_score']
         report['strategy'] = get_strategy(results)
     elif options.get('mode') == 'mad':
+        report['kind'] = 'MX-MAD'
         results = datasets[0]['results']
         report['details'] = mad_report(datasets, options)
         report['title'] = 'MAD Data Analysis Report'
@@ -52,12 +54,14 @@ def save_report(datasets, options):
             if dataset['parameters']['name'] == 'combined':
                 results = dataset['results']
                 break
-        report['title'] = 'Merged Dataset Analysis Report'
+        report['title'] = 'Merged Dataset Analysis'
+        report['kind'] = 'MX-Merge'
         report['details'] = merge_report(datasets, options)
         report['score'] = results['crystal_score']
     else:
         results = datasets[0]['results']
-        report['title'] = 'Data Analysis Report'
+        report['title'] = 'Data Analysis'
+        report['kind'] = 'MX-Normal' if not options.get('anomalous') else 'MX-Anomalous'
         report['details'] = single_report(datasets[0], options)
         report['score'] = results['crystal_score']
 
@@ -717,9 +721,9 @@ def screening_analysis_report(dataset, options):
 
 def single_report(dataset, options):
     if options.get('anomalous'):
-        title = 'Anomalous Data Analysis Summary'
+        title = 'Anomalous Data Quality Summary'
     else:
-        title = 'Data Analysis Summary'
+        title = 'Data Quality Summary'
     return [
         {
             'title': title,
@@ -739,9 +743,9 @@ def single_report(dataset, options):
 
 def merge_report(datasets, options):
     if options.get('anomalous'):
-        title = 'Anomalous Data Analysis Summary'
+        title = 'Anomalous Data Quality Summary'
     else:
-        title = 'Data Analysis Summary'
+        title = 'Data Quality Summary'
     report = [
         {
             'title': title,
@@ -786,7 +790,7 @@ def merge_report(datasets, options):
 def mad_report(datasets, options):
     report = [
         {
-            'title': 'MAD Data Analysis Summary',
+            'title': 'MAD Data Quality Summary',
             'content': [
                 summary_table(datasets, options),
             ],

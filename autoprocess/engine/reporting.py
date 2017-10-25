@@ -799,7 +799,7 @@ def mad_report(datasets, options):
     for dataset in datasets:
         report.extend([
             {
-                'title': 'Analysis Report: Dataset "{}"',
+                'title': 'Analysis Report: Dataset "{}"'.format(dataset['parameters']['name']),
                 'content': [
                     lattice_table(dataset, options),
                     spacegroup_table(dataset, options),

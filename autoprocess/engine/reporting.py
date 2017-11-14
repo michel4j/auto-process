@@ -82,18 +82,17 @@ def get_strategy(results):
     strategy = results['strategy']
     run = strategy['runs'][0]
     info = {
-        'resolution': strategy['resolution'],
-        'start': run['phi_start'],
-        'delta': run['phi_width'],
         'attenuation': strategy['attenuation'],
-        'range': run['phi_width'] * run['number_of_images'],
+        'start_angle': run['phi_start'],
+        'total_angle': run['phi_width'] * run['number_of_images'],
+        'resolution': strategy['resolution'],
+        'max_delta': run['phi_width'],
         'overlaps': run['overlaps'],
         'exposure_rate': -1,
     }
     if run.get('total_exposure_time', 0) > 0:
-        info['exposure_rate'] = strategy['total_exposure_time']/info['range']
-
-    return strategy
+        info['exposure_rate'] = float(info['total_angle'])/strategy['total_exposure_time']
+    return info
 
 
 
@@ -598,10 +597,10 @@ def strategy_table(dataset, options):
         'data': [
             ['Resolution', '{:0.2f}'.format(strategy['resolution'])],
             ['Attenuation', '{:0.1f}'.format(strategy['attenuation'])],
-            ['Start Angle', '{:0.0f}'.format(strategy['start'])],
-            ['Maximum Delta Angle', '{:0.2f}'.format(strategy['delta'])],
-            ['Total Angle Range', '{:0.1f}'.format(strategy['range'])],
-            ['Exposure Rate (sec/deg)', '{:0.2f}'.format(strategy['exposure_rate'])],
+            ['Start Angle', '{:0.0f}'.format(strategy['start_angle'])],
+            ['Maximum Delta Angle', '{:0.2f}'.format(strategy['max_delta'])],
+            ['Total Angle Range', '{:0.1f}'.format(strategy['total_angle'])],
+            ['Exposure Rate (deg/sec)', '{:0.2f}'.format(strategy['exposure_rate'])],
             ['Overlaps?', strategy['overlaps']],
         ]
     }

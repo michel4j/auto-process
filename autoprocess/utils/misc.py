@@ -3,17 +3,17 @@ Created on Mar 24, 2011
 
 @author: michel
 '''
+import functools
 import gzip
 import json
 import math
 import os
-import posixpath
 import pwd
 import shutil
 
 import msgpack
 import numpy
-import functools
+
 from autoprocess.utils.prettytable import PrettyTable
 
 # Physical Constants
@@ -96,46 +96,12 @@ def file_requirements(*args):
     return all_exist
 
 
-def rad2deg(r):
-    return r * 180.0 / numpy.pi
-
-
-def deg2rad(d):
-    return r * numpy.pi / 180.0
-
-
-def _relpath(path, base=os.curdir):
-    """
-    Return a relative path to the target from either the current dir or an optional base dir.
-    Base can be a directory specified either as absolute or relative to current dir.
-    """
-
-    if not path:
-        raise ValueError("no path specified")
-    start_list = posixpath.abspath(base).split(posixpath.sep)
-    path_list = posixpath.abspath(path).split(posixpath.sep)
-    # Work out how much of the filepath is shared by start and path.
-    i = len(posixpath.commonprefix([start_list, path_list]))
-    rel_list = [posixpath.pardir] * (len(start_list) - i) + path_list[i:]
-    if not rel_list:
-        return posixpath.curdir
-    return posixpath.join(*rel_list)
-
-
 def combine_names(names):
     """
     Return a combined name to represent a set of names
     """
 
     return '-'.join(filter(None, [os.path.commonprefix(names), 'combined']))
-
-
-
-# custom relpath for python < 2.7
-try:
-    from os.path import relpath
-except:
-    relpath = _relpath
 
 
 def prepare_dir(workdir, backup=False):

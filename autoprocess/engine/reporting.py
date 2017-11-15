@@ -89,8 +89,8 @@ def get_strategy(results):
         'overlaps': run['overlaps'],
         'exposure_rate': -1,
     }
-    if run.get('total_exposure_time', 0) > 0:
-        info['exposure_rate'] = float(info['total_angle'])/strategy['total_exposure_time']
+    if run.get('exposure_time', 0) > 0:
+        info['exposure_rate'] = float(round(run['phi_width'], 1))/round(run['exposure_time'],1)
     return info
 
 
@@ -596,11 +596,23 @@ def strategy_table(dataset, options):
             ['Resolution', '{:0.2f}'.format(strategy['resolution'])],
             ['Attenuation', '{:0.1f}'.format(strategy['attenuation'])],
             ['Start Angle', '{:0.0f}'.format(strategy['start_angle'])],
-            ['Maximum Delta Angle', '{:0.2f}'.format(strategy['max_delta'])],
-            ['Total Angle Range', '{:0.1f}'.format(strategy['total_angle'])],
-            ['Exposure Rate (deg/sec)', '{:0.2f}'.format(strategy['exposure_rate'])],
+            ['Maximum Delta Angle¹', '{:0.2f}'.format(strategy['max_delta'])],
+            ['Minimum Angle Range²', '{:0.1f}'.format(strategy['total_angle'])],
+            ['Exposure Rate (deg/sec)³', '{:0.2f}'.format(strategy['exposure_rate'])],
             ['Overlaps?', strategy['overlaps']],
-        ]
+        ],
+        'notes': inspect.cleandoc("""
+            1. This is the maximum delta-angle to be collected in order to avoid overlaps. Note that
+               it may be desirable to use a smaller delta angle than this value to obtain better quality data, if the
+               beamline allows.
+            2. Minimum angle range for complete data. This is the bare minimum and it is strongly recommended to 
+               to collect a full 180 degrees of data and often even more.
+            3. The exposure rate specifies the ratio between the delta angle and the exposure time and determines
+               the total does of x-rays for the full dataset.  To obtain an exposure time corresponding to any delta 
+               angle, divide the selected delta angle by this number. When adjusting the delta angle, the exposure time 
+               should be adjusted accordingly to keep the total does the same.
+             """
+        )
     }
 
 

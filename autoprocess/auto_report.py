@@ -27,6 +27,7 @@ Examples:
 
 """
 
+
 def main():
     if len(sys.argv) > 1:
         filename = sys.argv[1]
@@ -34,7 +35,7 @@ def main():
         filename = 'process.chkpt'
         
     try:
-        data = misc.load_json(filename)
+        data = misc.load_chkpt()
         options = {'command_dir': os.getcwd()}
         reporting.save_report(data['datasets'], data['options'])
         #reporting.save_html(report_list, options)

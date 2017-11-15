@@ -77,7 +77,6 @@ def save_report(datasets, options):
     shutil.copy(os.path.join(SHARE_DIR, 'report.min.css'), directory)
 
 
-
 def get_strategy(results):
     strategy = results['strategy']
     run = strategy['runs'][0]
@@ -93,7 +92,6 @@ def get_strategy(results):
     if run.get('total_exposure_time', 0) > 0:
         info['exposure_rate'] = float(info['total_angle'])/strategy['total_exposure_time']
     return info
-
 
 
 def resolution_method(key):
@@ -819,6 +817,8 @@ def screening_report(dataset, options):
             'title': 'Data Quality Summary',
             'content': [
                 screening_summary_table(dataset, options),
+                strategy_table(dataset, options),
+                kappa_analysis_table(dataset, options),
                 lattice_table(dataset, options),
                 spacegroup_table(dataset, options),
             ]

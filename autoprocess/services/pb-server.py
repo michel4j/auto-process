@@ -164,7 +164,7 @@ class IDPService(Interface):
         :return:
         """
 
-    def process_mosflm(info, directory, user_name):
+    def process_misc(info, directory, user_name):
         """
         Process an MX dataset
         :param info: dictionary containing parameters
@@ -190,7 +190,7 @@ class IDPSPerspective(Interface):
     def remote_process_mx(*args, **kwargs):
         """analyse_mx adaptor"""
 
-    def remote_process_mosflm(*args, **kwargs):
+    def remote_process_misc(*args, **kwargs):
         """analyse_mx adaptor"""
 
     def remote_process_xrd(*args, **kwargs):
@@ -209,7 +209,7 @@ class DPSPerspective2Service(pb.Root):
     def remote_process_mx(self, *args, **kwargs):
         return self.service.process_mx(*args, **kwargs)
 
-    def remote_process_mosflm(self, *args, **kwargs):
+    def remote_process_misc(self, *args, **kwargs):
         return self.service.process_mx(*args, **kwargs)
 
     def remote_process_xrd(self, *args, **kwargs):
@@ -241,7 +241,7 @@ class DPService(service.Service):
         return async_command('auto.process', args, directory, user_name=user_name, json_file='report.json')
 
     @log.log_call
-    def process_mosflm(self, info, directory, user_name):
+    def process_misc(self, info, directory, user_name):
         args = [
            info['file_names'][0]
         ]

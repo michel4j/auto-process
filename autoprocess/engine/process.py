@@ -1,20 +1,18 @@
-
+import copy
+import gzip
 import os
 import sys
 import time
-import numpy
+from collections import OrderedDict
+
 import msgpack
-import gzip
-import copy
+import numpy
 
 import autoprocess.errors
-from collections import OrderedDict
-from autoprocess.utils import dataset, misc, log, xtal
-from autoprocess.utils import kappa
 from autoprocess.engine import indexing, spots, integration, scaling, solver
 from autoprocess.engine import symmetry, strategy, conversion
-
-
+from autoprocess.utils import dataset, misc, log, xtal
+from autoprocess.utils import kappa
 
 logger = log.get_module_logger(__name__)
 
@@ -41,21 +39,21 @@ class DataSet(object):
     def __init__(self, filename=None, info=None, overwrites={}):
         if filename is not None:
             self.parameters = dataset.get_parameters(filename)
-            self.parameters.update(overwrites) # overwrite parameters
+            self.parameters.update(overwrites)  # overwrite parameters
             self.log = []
             self.results = {}
         elif info is not None:
             self.set_info(info)
-            self.parameters.update(overwrites) # overwrite parameters
+            self.parameters.update(overwrites)  # overwrite parameters
         else:
             raise autoprocess.errors.DatasetError('Filename/parameters not specified')
         self.name = self.parameters['name']
-    
+
     def __str__(self):
         return "<DataSet: %s, %s, first=%d, n=%d>" % (self.name, self.parameters['file_template'],
-                                             self.parameters['first_frame'], 
-                                             self.parameters['frame_count'])
-    
+                                                      self.parameters['first_frame'],
+                                                      self.parameters['frame_count'])
+
     def get_info(self):
         """
         Return a dictionary representing all the information content of the 
@@ -63,24 +61,24 @@ class DataSet(object):
         an identical dataset object
         
         """
-        
+
         info = {'parameters': self.parameters,
                 'log': self.log,
                 'results': self.results,
-                
+
                 }
         return info
-    
+
     def set_info(self, info):
         """
         Restore the state of the dataset object to the content of the
         info dictionary. 
         
         """
-        
+
         self.parameters = info.get('parameters')
         self.log = info.get('log', [])
-        self.results = info.get('results',{})            
+        self.results = info.get('results', {})
 
     def score(self):
         # full data processing
@@ -94,7 +92,6 @@ class DataSet(object):
             _overall = copy.deepcopy(self.results['correction']['summary'])
             t = misc.Table(self.results['correction']['statistics'])
 
-                    
         # screening
         if 'strategy' in self.results and 'shell_statistics' in self.results['strategy'].get('details', {}):
             _overall.update(self.results['strategy']['prediction_all'])
@@ -105,10 +102,10 @@ class DataSet(object):
             _shells = numpy.array(map(float, t['max_resolution'][:-1]))
             _isigma = numpy.array(t['average_i_over_sigma'][:-1])
             _rmeas = numpy.array(t['R_factor'][:-1])
-            _compl = numpy.array(t['completeness'][:-1])*100.0
-            
+            _compl = numpy.array(t['completeness'][:-1]) * 100.0
+
             sel = (_shells > 4.0)
-            
+
             if sel.sum() == len(_shells):
                 low_res = dict(zip(t.keys(), t.row(-1)))
             elif sel.sum() == 0:
@@ -120,8 +117,8 @@ class DataSet(object):
                     'r_meas': _rmeas[sel].mean(),
                     'completeness': _compl.mean(),
                     'shell': _shells[sel][-1],
-                }        
-        else:         
+                }
+        else:
             _shells = numpy.array(map(float, t['shell'][:-1]))
             _isigma = numpy.array(t['i_sigma'][:-1])
             _rmeas = numpy.array(t['r_meas'][:-1])
@@ -130,7 +127,7 @@ class DataSet(object):
             _unique = numpy.array(t['unique'][:-1])
             _possible = numpy.array(t['possible'][:-1])
             sel = (_shells > 4.0)
-            
+
             if sel.sum() == len(_shells) or _nrefl[sel].any() == 0:
                 low_res = dict(zip(t.keys(), t.row(-1)))
             elif sel.sum() == 0:
@@ -138,8 +135,8 @@ class DataSet(object):
             else:
                 # weighted by number of reflections
                 low_res = {
-                    'i_sigma': (_isigma[sel]*_nrefl[sel]).mean() / _nrefl[sel].mean(),
-                    'r_meas': (_rmeas[sel]*_nrefl[sel]).mean() / _nrefl[sel].mean(),
+                    'i_sigma': (_isigma[sel] * _nrefl[sel]).mean() / _nrefl[sel].mean(),
+                    'r_meas': (_rmeas[sel] * _nrefl[sel]).mean() / _nrefl[sel].mean(),
                     'completeness': 100.0 * _unique[sel].sum() / _possible[sel].sum(),
                     'shell': _shells[sel][-1],
                 }
@@ -148,23 +145,24 @@ class DataSet(object):
             ice_rings = self.results['image_analysis'].get('summary', {}).get('ice_rings', -1)
         else:
             ice_rings = -1
-                        
-        score = xtal.score_crystal(_overall['resolution'][0], 
+
+        score = xtal.score_crystal(_overall['resolution'][0],
                                    low_res['completeness'],
                                    low_res['r_meas'],
                                    low_res['i_sigma'],
-                                   _overall['mosaicity'], 
+                                   _overall['mosaicity'],
                                    _overall['stdev_spot'],
                                    _overall['stdev_spindle'],
                                    ice_rings)
         self.results['crystal_score'] = score
         return score
-    
+
+
 class Manager(object):
     def __init__(self, options=None, checkpoint=None, overwrites={}):
-        
+
         self.datasets = OrderedDict()
-        
+
         if checkpoint is not None:
             self.run_position = checkpoint['run_position']
             self.options = checkpoint['options']
@@ -173,11 +171,11 @@ class Manager(object):
             for dset_info in checkpoint['datasets']:
                 dset = DataSet(info=dset_info, overwrites=overwrites)
                 self.datasets[dset.name] = dset
-        elif options is not None:   
+        elif options is not None:
             self.run_position = (0, 'initialize')
             self.options = options
             self.options['command_dir'] = os.getcwd()
-    
+
             for img in options.get('images', []):
                 dset = DataSet(filename=img, overwrites=overwrites)
                 self.datasets[dset.name] = dset
@@ -185,18 +183,15 @@ class Manager(object):
             if self.options.get('directory', None) is None:
                 if self.options.get('mode', 'simple') == 'screen':
                     _suffix = 'screen'
-                else: 
+                else:
                     _suffix = 'proc'
                 _prefix = misc.combine_names(self.datasets.keys())
-                    
+
                 self.options['directory'] = os.path.join(self.options['command_dir'], '%s-%s' % (_prefix, _suffix))
             self.setup_directories()
         else:
             raise autoprocess.errors.DatasetError('Options/Checkpoint file not specified')
-        
-            
 
-        
     def setup_directories(self):
         """
         Creates the top-level working directory if it doesn't exist. Renames 
@@ -206,7 +201,7 @@ class Manager(object):
         one if multiple datasets are being processed.
         
         """
-        
+
         # prepare top level working directory
         if not os.path.isdir(self.options['directory']) or self.options.get('backup', False):
             try:
@@ -215,27 +210,27 @@ class Manager(object):
                 logger.error("Could not prepare working directory '%s'." % self.options['directory'])
                 logger.error(e)
                 raise autoprocess.errors.FilesystemError('Could not prepare working directory')
-        
+
         # for multiple data sets, process each in a separate sub-directory
         _multi = (len(self.datasets.keys()) > 1)
         for dset in self.datasets.values():
             if _multi:
                 dset.parameters['working_directory'] = os.path.join(self.options['directory'], dset.name)
                 misc.prepare_dir(dset.parameters['working_directory'])
-            else:   
+            else:
                 dset.parameters['working_directory'] = self.options['directory']
-        
+
     def save_checkpoint(self):
         """
         Save a checkpoint file to use for resuming or repeating auto-processing
         steps.
         
         """
-        
+
         info = {'options': self.options,
                 'run_position': self.run_position,
                 'datasets': [d.get_info() for d in self.datasets.values()]}
-        
+
         # Checkpoint file is saved in top-level processing directory
         fname = os.path.join(self.options['directory'], 'process.chkpt')
         with gzip.open(fname, 'wb') as handle:
@@ -253,7 +248,7 @@ class Manager(object):
         step_parameters = {}
         step_parameters.update(dset.parameters)
         step_parameters.update(overwrite)
-        
+
         # symmetry needs an extra parameter
         if step == 'symmetry':
             _out = _STEP_FUNCTIONS[step](step_parameters, dset, self.options)
@@ -271,27 +266,26 @@ class Manager(object):
             else:
                 logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
                 sys.exit(1)
-                        
-    
+
     def run(self, resume_from=None, single=False, overwrite={}):
         """
         resume_from is a tuple of the form
             (dataset_index, 'step')
         """
-        
+
         # Create a log file also
         log.log_to_file(os.path.join(self.options['directory'], 'auto.log'))
-        
+
         self._start_time = time.time()
-        run_steps = ['initialize', 'image_analysis', 'spot_search', 
-                     'indexing', 'integration','correction', 'symmetry',
+        run_steps = ['initialize', 'image_analysis', 'spot_search',
+                     'indexing', 'integration', 'correction', 'symmetry',
                      'strategy',
                      ]
-        
+
         _header = '------ AutoProcess({}) - {} [{:d} dataset(s)] ------'.format(
             VERSION, self.options['mode'].upper(), len([name for name in self.datasets.keys() if name != 'combined'])
         )
-        _separator = len(_header)*'-'
+        _separator = len(_header) * '-'
         logger.info(_header)
         _env_hosts = os.environ.get('DPS_NODES', 'localhost')
         _num_nodes = len(_env_hosts.split(' '))
@@ -313,11 +307,12 @@ class Manager(object):
                     continue
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
                 logger.info(_separator)
-                logger.info('Initializing `%s` in directory "%s"' % (dset.name,
-                                                                     misc.relpath(dset.parameters['working_directory'], self.options['command_dir'])))
+                logger.info('Initializing `{}` in directory "{}"'.format(
+                    dset.name, os.path.relpath(dset.parameters['working_directory'], self.options['command_dir']))
+                )
                 for j, step in enumerate(_sub_steps):
                     self.run_position = (i, step)
-                    
+
                     # prepare separate copy of overwrite parameters for this step
                     step_ovw = {}
                     step_ovw.update(overwrite)
@@ -325,24 +320,24 @@ class Manager(object):
                     # skip this step based on the properties
                     if j < _sub_steps.index(next_step): continue
                     if self.options.get('mode') != 'screen' and step == 'image_analysis': continue
-    
+
                     self.run_step(step, dset, overwrite=step_ovw)
-                    
+
                     # Special post processing after indexing
                     if step == 'indexing':
                         # Update parameters with reduced cell
                         dset.parameters.update({
                             'unit_cell': dset.results['indexing']['parameters']['unit_cell'],
                             'space_group': dset.results['indexing']['parameters']['sg_number']})
-                        
+
                         logger.log(log.IMPORTANT, "Reduced Cell: %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f" % tuple(
-                                            dset.results['indexing']['parameters']['unit_cell']))
-                        _xter_list = [ v['character'] for v in dset.results['indexing']['lattices'] ]
+                            dset.results['indexing']['parameters']['unit_cell']))
+                        _xter_list = [v['character'] for v in dset.results['indexing']['lattices']]
                         _pg_txt = ", ".join(xtal.get_pg_list(_xter_list, chiral=self.options.get('chiral', True)))
                         logger.log(log.IMPORTANT, "Possible Point Groups: %s" % _pg_txt)
-                            
+
             next_step = 'integration'
-        
+
         # then integrate and correct separately
         _sub_steps = ['integration', 'correction']
         if next_step in _sub_steps:
@@ -354,25 +349,25 @@ class Manager(object):
                 logger.info(_separator)
                 for j, step in enumerate(_sub_steps):
                     self.run_position = (i, step)
-                    
+
                     # skip this step based on the properties
                     if j < _sub_steps.index(next_step): continue
-                    
+
                     # prepare separate copy of overwrite parameters for this step
                     step_ovw = {}
                     step_ovw.update(overwrite)
-    
+
                     # special pre-step handling  for correction
-                    if step == 'correction' and i > 0 and self.options.get('mode') in ['merge', 'mad']:                  
+                    if step == 'correction' and i > 0 and self.options.get('mode') in ['merge', 'mad']:
                         # update parameters with reference after correction
-                        _ref_file = os.path.join('..', self.datasets.values()[i-1].results['correction']['output_file'])
+                        _ref_file = os.path.join('..',
+                                                 self.datasets.values()[i - 1].results['correction']['output_file'])
                         _ref_sg = self.datasets.values()[0].results['correction']['summary']['spacegroup']
-                        step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg })
-                                                             
+                        step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg})
+
                     self.run_step(step, dset, overwrite=step_ovw)
             next_step = 'symmetry'
-        
-        
+
         # Check Spacegroup and scale the datasets
         if next_step == 'symmetry':
             self.run_position = (0, 'symmetry')
@@ -380,14 +375,14 @@ class Manager(object):
             _sg_number = 0
             if overwrite.get('sg_overwrite') is not None:
                 _sg_number = overwrite['sg_overwrite']
-                ref_info = None              
+                ref_info = None
             elif self.options.get('mode') in ['merge', 'mad']:
                 ref_opts = {}
                 ref_opts.update(self.options)
                 ref_opts.update(overwrite)
                 ref_info = scaling.prepare_reference(self.datasets, ref_opts)
                 _sg_number = ref_info['sg_number']
-                
+
             for dset in self.datasets.values():
                 if dset.name == 'combined' and self.options.get('mode') == 'merge':
                     # 'combined' merged dataset is special
@@ -398,7 +393,7 @@ class Manager(object):
                     ref_sginfo = dset.results['symmetry']
                 else:
                     # tranfer symmetry info from reference to this dataset and update with specific reindex matrix
-                    if ref_info is not None: 
+                    if ref_info is not None:
                         dset.results['symmetry'] = ref_info
                     ref_sginfo = symmetry.get_symmetry_params(_sg_number, dset)
                     dset.results['symmetry'].update(ref_sginfo)
@@ -409,11 +404,12 @@ class Manager(object):
                     'space_group': ref_sginfo['sg_number'],
                     'unit_cell': ref_sginfo['unit_cell'],
                     'reindex_matrix': ref_sginfo['reindex_matrix'],
-                    #'reference_data': ref_sginfo.get('reference_data'), # will be none for single data sets
+                    # 'reference_data': ref_sginfo.get('reference_data'), # will be none for single data sets
                     'message': 'Reindexing & refining',
-                    })
+                })
                 self.run_step('correction', dset, overwrite=step_ovw)
-                cell_str = "%0.6g %0.6g %0.6g %0.6g %0.6g %0.6g" % tuple(dset.results['correction']['summary']['unit_cell'])
+                cell_str = "%0.6g %0.6g %0.6g %0.6g %0.6g %0.6g" % tuple(
+                    dset.results['correction']['summary']['unit_cell'])
                 logger.info('Refined cell: %s' % cell_str)
 
                 if self.options.get('mode') in ['merge']:
@@ -422,12 +418,12 @@ class Manager(object):
                     logger.info('(%s) Initial Score: %0.2f' % (dset.name, _score))
                 ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
                 logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
-            
+
             self.save_checkpoint()
             next_step = 'scaling'
 
         if next_step == 'scaling':
-                            
+
             self.run_position = (0, 'scaling')
             step_ovw = {}
             step_ovw.update(self.options)
@@ -435,7 +431,7 @@ class Manager(object):
             if self.options.get('mode') == 'merge' and 'combined' in self.datasets:
                 # 'combined' merged dataset is special remove it before scaling
                 self.datasets.pop('combined', None)
-            _out= scaling.scale_datasets(self.datasets, step_ovw)
+            _out = scaling.scale_datasets(self.datasets, step_ovw)
             self.save_checkpoint()
 
             if not _out['success']:
@@ -443,7 +439,6 @@ class Manager(object):
                 sys.exit()
             next_step = 'strategy'
 
- 
         # Strategy
         if self.options.get('mode') == 'screen' and next_step == 'strategy':
             self.run_position = (0, 'strategy')
@@ -454,12 +449,12 @@ class Manager(object):
                 xoptions = {}
                 xoptions.update(self.options)
                 xoptions.update(overwrite)
-                xalign_options = xoptions.get('xalign', {'vectors': ("",""), 'method': 0})
+                xalign_options = xoptions.get('xalign', {'vectors': ("", ""), 'method': 0})
                 self.options['xalign'] = xalign_options
-                
+
                 logger.info('Goniometer parameters for re-orienting crystal:')
                 info = dset.results['correction']['parameters']
-                _mode = {0:'MAIN', 1:'CUSP'}[xalign_options['method']]
+                _mode = {0: 'MAIN', 1: 'CUSP'}[xalign_options['method']]
                 isols, pars = kappa.get_solutions(info, orientations=xalign_options['vectors'], mode=_mode)
                 if pars['mode'] == 'MAIN':
                     descr = u'v1\u2225omega, v2\u2225omega-beam plane'
@@ -471,7 +466,7 @@ class Manager(object):
                 logger.info("-" * 58)
                 sols = []
                 for isol in isols:
-                    txt = ", ".join(["(%s)" % v for v in  [",".join(p) for p in isol[1:]]])
+                    txt = ", ".join(["(%s)" % v for v in [",".join(p) for p in isol[1:]]])
                     logger.info("%6.1f %6.1f  %s" % (isol[0][0], isol[0][1], txt))
                     sols.append((isol[0][0], isol[0][1], txt))
                 logger.info("-" * 58)
@@ -481,7 +476,7 @@ class Manager(object):
                     'goniometer': pars['goniometer']
                 }
             self.save_checkpoint()
-        
+
         # check quality and covert formats     
         for i, dset in enumerate(self.datasets.values()):
             # Only calculate for 'combined' dataset when merging.
@@ -499,22 +494,21 @@ class Manager(object):
                 else:
                     dset.results['data_quality'] = _out.get('data')
                 self.save_checkpoint()
-                       
+
             # Scoring
             logger.info('(%s) Final Score: %0.2f' % (dset.name, dset.score()))
 
-            
             # file format conversions
             self.run_position = (i, 'conversion')
             if self.options.get('mode') != 'screen':
-                
-                if self.options.get('mode') == 'merge' and i > 0: 
-                    pass # do not convert 
+
+                if self.options.get('mode') == 'merge' and i > 0:
+                    pass  # do not convert
                 else:
                     _step_options = {}
                     _step_options.update(self.options)
                     _step_options['file_root'] = dset.name
-                    
+
                     _out = conversion.convert_formats(dset, _step_options)
                     dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
                     if not _out['success']:
@@ -525,11 +519,10 @@ class Manager(object):
                         logger.info('%s' % (', '.join(_out['data'])))
                 self.save_checkpoint()
 
-
             if self.options.get('solve-small'):
                 self.run_position = (i, 'solve-small')
-                if self.options.get('mode') == 'merge' and i > 0: 
-                    pass # do not solve 
+                if self.options.get('mode') == 'merge' and i > 0:
+                    pass  # do not solve
                 else:
                     _step_info = {
                         'unit_cell': dset.results['correction']['summary']['unit_cell'],
@@ -550,11 +543,6 @@ class Manager(object):
         reporting.save_report(checkpoint['datasets'], self.options)
         logger.info('    HTML: report.html ')
         logger.info('    TEXT: report.txt ')
-            
+
         used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
         logger.info("Done in: %s" % (used_time))
-  
-        
-            
-                
-            

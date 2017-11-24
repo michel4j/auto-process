@@ -241,7 +241,7 @@ class DPService(service.Service):
         return async_command('auto.process', args, directory, user_name=user_name, json_file='report.json')
 
     @log.log_call
-    def process_misc(self, info, directory, user_name):
+    def process_misc(sreelf, info, directory, user_name):
         args = [
            info['file_names'][0]
         ]

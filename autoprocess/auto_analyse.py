@@ -2,11 +2,11 @@ import  sys
 import os
 import subprocess
 import warnings
+import numpy
 warnings.simplefilter("ignore") # ignore deprecation warnings
 
 from autoprocess.parser.distl import parse_distl_string
 from autoprocess.utils.misc import json
-
 
 
 def run_distl(img):
@@ -16,9 +16,18 @@ def run_distl(img):
         subprocess.check_output(['labelit.reset'], env=os.environ.copy())
         results = parse_distl_string(output)
         info = results['summary']
+
+        bragg = info['bragg_spots']
+        ice = 1 / (1.0 + info['ice_rings'])
+        saturation = info['saturation'][1]
+        sc_x = numpy.array([bragg, saturation, ice])
+        sc_w = numpy.array([5, 10, 0.2])
+        score = numpy.exp((sc_w * numpy.log(sc_x)).sum() / sc_w.sum())
+
+        info['score'] = score
     except subprocess.CalledProcessError as e:
         sys.stderr.write(str(e.output) + '\n')
-        info = {'error': str(e.output)}
+        info = {'error': str(e.output), 'score': 0.0}
 
     sys.stdout.write(json.dumps(info, indent=2)+'\n')
 

@@ -3,6 +3,7 @@ import gzip
 import os
 import sys
 import time
+import subprocess
 from collections import OrderedDict
 
 import msgpack
@@ -545,4 +546,6 @@ class Manager(object):
         logger.info('    TEXT: report.txt ')
 
         used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
+        out = subprocess.check_output(['sync'])
         logger.info("Done in: %s" % (used_time))
+

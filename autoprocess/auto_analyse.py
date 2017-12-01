@@ -17,14 +17,6 @@ def run_distl(img):
         results = parse_distl_string(output)
         info = results['summary']
 
-        bragg = info['bragg_spots']
-        ice = 1 / (1.0 + info['ice_rings'])
-        saturation = info['saturation'][1]
-        sc_x = numpy.array([bragg, saturation, ice])
-        sc_w = numpy.array([5, 10, 0.2])
-        score = numpy.exp((sc_w * numpy.log(sc_x)).sum() / sc_w.sum())
-
-        info['score'] = score
     except subprocess.CalledProcessError as e:
         sys.stderr.write(str(e.output) + '\n')
         info = {'error': str(e.output), 'score': 0.0}

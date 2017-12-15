@@ -102,7 +102,8 @@ def correct(data_info, options={}):
         if data_info['working_directory'] == options.get('directory'):
             info['output_file'] = 'XDS_ASCII.HKL'
         else:
-            info['output_file'] = os.path.join(data_info['name'], 'XDS_ASCII.HKL')
+            sub_dir = os.path.relpath(data_info['working_directory'], options.get('directory', ''))
+            info['output_file'] = os.path.join(sub_dir, 'XDS_ASCII.HKL')
 
         programs.xdsstat('XDS_ASCII.HKL')
         stat_info = xds.parse_xdsstat()

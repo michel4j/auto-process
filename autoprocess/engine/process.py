@@ -180,15 +180,27 @@ class Manager(object):
             for img in options.get('images', []):
                 dset = DataSet(filename=img, overwrites=overwrites)
                 self.datasets[dset.name] = dset
+
             # prepare directories
             if self.options.get('directory', None) is None:
-                if self.options.get('mode', 'simple') == 'screen':
-                    _suffix = 'screen'
+                if self.options.get('mode') == 'screen':
+                    suffix = 'screen'
+                elif self.options.get('mode') == 'mad':
+                    suffix = 'mad'
+                elif self.options.get('mode') == 'merge':
+                    suffix = 'merge'
+                elif self.options.get('anomalous', False):
+                    suffix = 'anom'
                 else:
-                    _suffix = 'proc'
-                _prefix = misc.combine_names(self.datasets.keys())
-
-                self.options['directory'] = os.path.join(self.options['command_dir'], '%s-%s' % (_prefix, _suffix))
+                    suffix = 'native'
+                directory = os.path.join(self.options['command_dir'], 'proc-{}'.format(suffix))
+                if self.options.get('backup') and os.path.exists(directory):
+                    for i in range(99):
+                        new_directory = '{}.{}'.format(directory, i + 1)
+                        if not os.path.exists(new_directory):
+                            directory = new_directory
+                            break
+                self.options['directory'] = directory
             self.setup_directories()
         else:
             raise autoprocess.errors.DatasetError('Options/Checkpoint file not specified')
@@ -204,19 +216,20 @@ class Manager(object):
         """
 
         # prepare top level working directory
-        if not os.path.isdir(self.options['directory']) or self.options.get('backup', False):
-            try:
-                misc.prepare_dir(self.options['directory'], self.options.get('backup', False))
-            except Exception as e:
-                logger.error("Could not prepare working directory '%s'." % self.options['directory'])
-                logger.error(e)
-                raise autoprocess.errors.FilesystemError('Could not prepare working directory')
+
+        try:
+            misc.prepare_dir(self.options['directory'])
+        except Exception as e:
+            logger.error("Could not prepare working directory '%s'." % self.options['directory'])
+            logger.error(e)
+            raise autoprocess.errors.FilesystemError('Could not prepare working directory')
 
         # for multiple data sets, process each in a separate sub-directory
-        _multi = (len(self.datasets.keys()) > 1)
-        for dset in self.datasets.values():
-            if _multi:
-                dset.parameters['working_directory'] = os.path.join(self.options['directory'], dset.name)
+        multiple = (len(self.datasets.keys()) > 1)
+        for i, dset in enumerate(self.datasets.values()):
+            if multiple:
+                directory = os.path.join(self.options['directory'], '{}-{}'.format(i, dset.name))
+                dset.parameters['working_directory'] = directory
                 misc.prepare_dir(dset.parameters['working_directory'])
             else:
                 dset.parameters['working_directory'] = self.options['directory']

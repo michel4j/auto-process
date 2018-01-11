@@ -33,7 +33,9 @@ CODES = {
 
 def diagnose_index(info):
     failure_code = info.get('failure_code', 256)
-    problems = [CODES.get(failure_code, 0)]
+    failure_prob = CODES.get(failure_code, 0)
+    problems = [failure_prob] if failure_prob else []
+
     options = {}
 
     subtrees = info.get('subtrees')
@@ -63,7 +65,6 @@ def diagnose_index(info):
     else:
         problems.append(PROBLEMS.unindexed_spots)
 
-
     # get max, std deviation of integral indices
     _indices = info.get('cluster_indices')
     if _indices is not None and len(_indices) > 0:
@@ -87,11 +88,11 @@ def diagnose_index(info):
     _origins = info.get('index_origins', [])
     selected_deviation = 0
     best_deviation = 999.
-    origin_deviation = _origins[0].get('position')
 
     for i, _org in enumerate(_origins):
+        if i == 0:
+            origin_deviation = _org.get('position')
         deviation = sum(_org.get('deviation',[0]))
-        quality = _org.get('quality', 0)
         if deviation < best_deviation:
             selected_deviation = i
             best_deviation = deviation
@@ -139,7 +140,7 @@ def auto_index(data_info, options={}):
         programs.xds_par()
         info = xds.parse_idxref()
         diagnosis = diagnose_index(info)
-        
+
         _retries = 0
         sigma = 6
         spot_size = 3
@@ -152,7 +153,7 @@ def auto_index(data_info, options={}):
             _retries += 1
             _logger.warning('Indexing failed:')
             for prob in diagnosis['problems']:
-                _logger.warning('... {0}'.format(PROBLEMS[prob]))
+                _logger.warning('... {}'.format(PROBLEMS[prob]))
             
             if options.get('backup', False):
                 misc.backup_files('SPOT.XDS', 'IDXREF.LP')
@@ -206,7 +207,7 @@ def auto_index(data_info, options={}):
                 _logger.critical('.. Unable to proceed.')
                 _retries = 999
                 
-    except autoprocess.errors.ProcessError, e:
+    except autoprocess.errors.ProcessError as e:
         return {'step': 'indexing', 'success':False, 'reason': str(e)}
         
     if info.get('failure_code') == 0:

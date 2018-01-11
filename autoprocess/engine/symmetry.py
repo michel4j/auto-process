@@ -37,7 +37,7 @@ def determine_sg(data_info, dset, options={}):
     try:
         programs.pointless(chiral=options.get('chiral', True))
         sg_info = pointless.parse_pointless()
-    except (autoprocess.errors.ProcessError, autoprocess.errors.ParserError, IOError), e:
+    except (autoprocess.errors.ProcessError, autoprocess.errors.ParserError, IOError) as e:
         return {'step': 'symmetry', 'success': False, 'reason': str(e)}
     
     xds_params = get_symmetry_params(sg_info['sg_number'], dset)

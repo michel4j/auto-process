@@ -428,7 +428,7 @@ def frame_statistics_report(dataset, options):
                     ],
                     'y2': [
                         ['Mosaicity'] + [row['mosaicity'] for row in results['integration']['scale_factors']],
-                        ['Divergence'] + [row['divergence'] for row in results['integration']['scale_factors']],
+                        #['Divergence'] + [row['divergence'] for row in results['integration']['scale_factors']],
                     ],
                 }
             },

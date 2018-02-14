@@ -561,4 +561,5 @@ class Manager(object):
         used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
         out = subprocess.check_output(['sync'])
         logger.info("Done in: %s" % (used_time))
+        time.sleep(2.0)
 

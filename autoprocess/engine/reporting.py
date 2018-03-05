@@ -727,6 +727,45 @@ def screening_analysis_report(dataset, options):
         ]
     }
 
+def alternate_screening__report(dataset, options):
+    strategy = dataset['results']['strategy']
+    delta_resolutions = sorted(strategy['details']['delta_statistics'].keys())
+    start_angles = sorted(strategy['details']['completeness_statistics'].keys())
+    delta_resolutions.remove('angle')
+    start_angles.remove('start_angle')
+    return {
+        'title': 'Detailed Screening Analysis',
+        'content': [
+            {
+                'title': 'Maximum Delta Angle to avoid overlaps',
+                'kind': 'lineplot',
+                'data': {
+                    'x': ['Angle (deg)'] + strategy['details']['delta_statistics']['angle'],
+                    'y1': [
+                        [resolution] + strategy['details']['delta_statistics'][resolution]
+                        for resolution in delta_resolutions
+                    ],
+                    'y1-label': 'Maximum Delta (deg)'
+                },
+                'notes': "The above plot was calculated by BEST. See A.N. Popov and G.P. Bourenkov Acta Cryst. "
+                         "(2003). D59, 1145-1153, G.P. Bourenkov and A.N. Popov Acta Cryst. (2006). D62, 58-64"
+            },
+            {
+                'title': 'Minimal Range for Complete Data Acquisition',
+                'kind': 'lineplot',
+                'data': {
+                    'x': ['Start Angle (deg)'] + strategy['details']['completeness_statistics']['start_angle'],
+                    'y1': [
+                        [start] + strategy['details']['completeness_statistics'][start]
+                        for start in start_angles
+                    ],
+                    'y1-label': 'Total Angle (deg)'
+                },
+                'notes': "The above plot was calculated by BEST. See A.N. Popov and G.P. Bourenkov Acta Cryst. "
+                         "(2003). D59, 1145-1153, G.P. Bourenkov and A.N. Popov Acta Cryst. (2006). D62, 58-64"
+            },
+        ]
+    }
 
 def single_report(dataset, options):
     if options.get('anomalous'):

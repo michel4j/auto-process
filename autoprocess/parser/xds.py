@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 """
 Parsers for XDS Files
 
@@ -96,13 +98,12 @@ def parse_xplan(filename='XPLAN.LP'):
 
     stats = correct_info['statistics'][-2]
     res_reason = 'N/A'
-    print(correct_info['statistics'])
-    for stats in correct_info['statistics'][:-1]:
+    for stats in correct_info['standard_errors'][:-1]:
         if stats['i_sigma'] < 0.5:
             res_reason = 'Resolution limit is based on I/Sigma(I) > 0.5'
             break
         res_reason = 'Resolution limit is based on detector edge'
-    resolution = float(stats['shell'])
+    resolution = float(stats['resol_range'][-1])
     mosaicity = correct_info['summary']['mosaicity']
 
     distance = round(xtal.resol_to_dist(

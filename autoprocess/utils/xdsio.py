@@ -101,6 +101,7 @@ def write_xds_input(jobs, parameters):
     params['sigma'] = params.get('sigma', 6)
     params['friedel'] = str(not params.get('anomalous', False)).upper()
     params['space_group'] = params.get('reference_spacegroup', params.get('space_group', 0))
+    params['resolution'] = params.get('resolution', 1.0)
     params['detector_yaxis'] = (
         0.0,
         numpy.cos(numpy.radians(params['two_theta'])),
@@ -163,6 +164,7 @@ def write_xds_input(jobs, parameters):
         "MINIMUM_ZETA= 0.05\n"
         "TRUSTED_REGION=0.00 1.414\n"
         "TEST_RESOLUTION_RANGE= 50.0 1.0\n"
+        "RESOLUTION_SHELLS= {resolution:3.0f}\n"
         "TOTAL_SPINDLE_ROTATION_RANGES= 90 360 30\n"
         "STARTING_ANGLES_OF_SPINDLE_ROTATION= 0 180 15\n"
         "VALUE_RANGE_FOR_TRUSTED_DETECTOR_PIXELS= 6000 30000\n"

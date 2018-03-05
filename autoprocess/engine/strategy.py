@@ -29,7 +29,6 @@ def calc_strategy(data_info, options={}):
     if os.path.exists('GXPARM.XDS'):
         misc.backup_files('XPARM.XDS')
         shutil.copy('GXPARM.XDS', 'XPARM.XDS')
-
     run_info = {'mode': options.get('mode'), 'anomalous': options.get('anomalous', False)}
     run_info.update(data_info)
     xdsio.write_xds_input("XPLAN", run_info)

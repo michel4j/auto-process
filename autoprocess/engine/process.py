@@ -10,6 +10,7 @@ import msgpack
 import numpy
 
 import autoprocess.errors
+from autoprocess.parser import xds
 from autoprocess.engine import indexing, spots, integration, scaling, solver
 from autoprocess.engine import symmetry, strategy, conversion
 from autoprocess.utils import dataset, misc, log, xtal
@@ -458,6 +459,9 @@ class Manager(object):
         if self.options.get('mode') == 'screen' and next_step == 'strategy':
             self.run_position = (0, 'strategy')
             for dset in self.datasets.values():
+                if not 'resolution' in overwrite:
+                    first_correct = xds.parse_correct('CORRECT.LP.first')
+                    overwrite['resolution'] = first_correct['resolution']
                 self.run_step('strategy', dset, overwrite=overwrite)
                 # calculate and report the angles of the spindle from
                 # the three axes

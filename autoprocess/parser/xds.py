@@ -96,6 +96,7 @@ def parse_xplan(filename='XPLAN.LP'):
 
     stats = correct_info['statistics'][-2]
     res_reason = 'N/A'
+    print(correct_info['statistics'])
     for stats in correct_info['statistics'][:-1]:
         if stats['i_sigma'] < 0.5:
             res_reason = 'Resolution limit is based on I/Sigma(I) > 0.5'

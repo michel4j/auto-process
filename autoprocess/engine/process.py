@@ -378,9 +378,10 @@ class Manager(object):
                                                  self.datasets.values()[i - 1].results['correction']['output_file'])
                         _ref_sg = self.datasets.values()[0].results['correction']['summary']['spacegroup']
                         step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg})
-
-
                     self.run_step(step, dset, overwrite=step_ovw)
+                    if step == 'correction':
+                        dset.results['first_correction'] = copy.deepcopy(dset.results['correction'])
+
             next_step = 'symmetry'
 
         # Check Spacegroup and scale the datasets

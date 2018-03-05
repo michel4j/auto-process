@@ -40,7 +40,7 @@ def calc_strategy(data_info, options={}):
 
         programs.best(data_info, options)
         info.update(best.parse_best())
-    except autoprocess.errors.ProcessError, e:
+    except autoprocess.errors.ProcessError as e:
         return {'step': 'strategy', 'success': True, 'reason': str(e), 'data': info}
     
     return {'step': 'strategy', 'success': True, 'data': info}

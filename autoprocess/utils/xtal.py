@@ -218,11 +218,12 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
         logistic_score(completeness, 100.0, 85),
         logistic_score(r_meas, 1, 15),
         logistic_score(i_sigma, 50, 10),
-        logistic_score(mosaicity, 0.1, 0.5),
+        logistic_score(mosaicity, 0.05, 0.5),
         logistic_score(std_spindle, 0.0, 0.1),
         logistic_score(std_spot, 0.0, 2),
         logistic_score(ice_rings, 0, 10),
     ])
+
     if DEBUG:
         names = ['Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Ice']
         vals = [resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, ice_rings]

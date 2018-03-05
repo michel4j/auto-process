@@ -1,16 +1,15 @@
 import copy
 import gzip
 import os
+import subprocess
 import sys
 import time
-import subprocess
 from collections import OrderedDict
 
 import msgpack
 import numpy
 
 import autoprocess.errors
-from autoprocess.parser import xds
 from autoprocess.engine import indexing, spots, integration, scaling, solver
 from autoprocess.engine import symmetry, strategy, conversion
 from autoprocess.utils import dataset, misc, log, xtal
@@ -99,12 +98,16 @@ class DataSet(object):
             _overall.update(self.results['strategy']['prediction_all'])
             _overall['resolution'] = [self.results['strategy']['resolution'], 0]
 
+            # lo resolution i_sigma
+            tbl = misc.Table(self.results['first_correction']['standard_errors'])
+            indices = [i for i, r in enumerate(tbl['resol_range']) if r[1] >= 4.0]
+            _isigma = numpy.array(tbl['i_sigma'])[indices].mean()
+
             # Average out the low resolution to approx the same level ~ 4.0 A
             t = misc.rTable(self.results['strategy']['details']['shell_statistics'])
             _shells = numpy.array(map(float, t['max_resolution'][:-1]))
-            _isigma = numpy.array(t['average_i_over_sigma'][:-1])
-            _rmeas = numpy.array(t['R_factor'][:-1])
-            _compl = numpy.array(t['completeness'][:-1]) * 100.0
+            # _compl = numpy.array(t['completeness'][:-1]) * 100.0
+            _compl = self.results['strategy']['completeness']
 
             sel = (_shells > 4.0)
 
@@ -115,16 +118,16 @@ class DataSet(object):
             else:
                 # simple average
                 low_res = {
-                    'i_sigma': _isigma[sel].mean(),
-                    'r_meas': _rmeas[sel].mean(),
-                    'completeness': _compl.mean(),
+                    'i_sigma':_isigma,
+                    'r_meas': 15.0, # constant since r-factor is not reliable for screening
+                    'completeness': _compl,
                     'shell': _shells[sel][-1],
                 }
         else:
             _shells = numpy.array(map(float, t['shell'][:-1]))
             _isigma = numpy.array(t['i_sigma'][:-1])
             _rmeas = numpy.array(t['r_meas'][:-1])
-            _compl = numpy.array(t['completeness'][:-1])
+            # _compl = numpy.array(t['completeness'][:-1])
             _nrefl = numpy.array(t['compared'][:-1])
             _unique = numpy.array(t['unique'][:-1])
             _possible = numpy.array(t['possible'][:-1])
@@ -143,19 +146,11 @@ class DataSet(object):
                     'shell': _shells[sel][-1],
                 }
 
-        if self.results.get('image_analysis') is not None:
-            ice_rings = self.results['image_analysis'].get('summary', {}).get('ice_rings', -1)
-        else:
-            ice_rings = -1
-
-        score = xtal.score_crystal(_overall['resolution'][0],
-                                   low_res['completeness'],
-                                   low_res['r_meas'],
-                                   low_res['i_sigma'],
-                                   _overall['mosaicity'],
-                                   _overall['stdev_spot'],
-                                   _overall['stdev_spindle'],
-                                   ice_rings)
+        score = xtal.score_crystal(
+            _overall['resolution'][0], low_res['completeness'], low_res['r_meas'],
+            low_res['i_sigma'],  _overall['mosaicity'],  _overall['stdev_spot'],
+            _overall['stdev_spindle']
+        )
         self.results['crystal_score'] = score
         return score
 
@@ -434,7 +429,6 @@ class Manager(object):
 
                     logger.info('(%s) Initial Score: %0.2f' % (dset.name, _score))
 
-
             self.save_checkpoint()
             next_step = 'scaling'
 
@@ -566,4 +560,3 @@ class Manager(object):
         out = subprocess.check_output(['sync'])
         logger.info("Done in: %s" % (used_time))
         time.sleep(2.0)
-

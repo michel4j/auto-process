@@ -126,14 +126,10 @@ def parse_xplan(filename='XPLAN.LP'):
     ])
     starts = numpy.unique(completeness[:,0])
     ranges = numpy.unique(completeness[:,1])
-    mat = numpy.zeros((starts.shape[0], ranges.shape[0]))
-
-    for row in completeness:
-        i = starts.index(row[0])
-        j = ranges.index(row[1])
-        mat[j, i] = row[2]
-
-    print(mat)
+    statistics = {
+        str(tot): completeness[completeness[:,1]==tot][:,2].tolist() for tot in ranges
+    }
+    statistics['start_angle'] = starts.tolist()
 
 
     info = {
@@ -177,6 +173,7 @@ def parse_xplan(filename='XPLAN.LP'):
             'redundancy': cmpl_plan['multiplicity']
         },
         'details': {
+            'completeness_statistics': statistics
         }
     }
     return info

@@ -291,7 +291,7 @@ class Manager(object):
         log.log_to_file(os.path.join(self.options['directory'], 'auto.log'))
 
         self._start_time = time.time()
-        run_steps = ['initialize', 'image_analysis', 'spot_search',
+        run_steps = ['initialize', 'spot_search',
                      'indexing', 'integration', 'correction', 'symmetry',
                      'strategy',
                      ]
@@ -312,7 +312,7 @@ class Manager(object):
             cur_pos, next_step = (0, 'initialize')
 
         # Fist initialize and index all datasets
-        _sub_steps = ['initialize', 'image_analysis', 'spot_search', 'indexing']
+        _sub_steps = ['initialize', 'spot_search', 'indexing']
         step_ovw = {}
         if next_step in _sub_steps:
             for i, dset in enumerate(self.datasets.values()):

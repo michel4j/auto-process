@@ -836,10 +836,16 @@ def screening_report(dataset, options):
             ]
         }
     ]
+
     if dataset['results']['strategy']['details'].get('shell_statistics'):
         report.extend([
             predicted_quality_report(dataset, options),
             screening_analysis_report(dataset, options)
+        ])
+    else:
+        report.extend([
+            standard_error_report(dataset, options),
+            shell_statistics_report(dataset, options),
         ])
 
     return report

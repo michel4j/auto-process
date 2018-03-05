@@ -17,7 +17,7 @@ def initialize(data_info, options={}):
     xdsio.write_xds_input('XYCORR INIT', run_info)
     try:
         programs.xds_par()
-    except autoprocess.errors.ProcessError, e:
+    except autoprocess.errors.ProcessError as e:
         return {'step': 'initialize', 'success':False, 'reason': str(e)}
     
     if misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf',
@@ -33,7 +33,7 @@ def analyse_image(data_info, options={}):
 
     try:
         programs.distl(data_info['reference_image'])
-    except autoprocess.errors.ProcessError, e:
+    except autoprocess.errors.ProcessError as e:
         return {'step': 'image_analysis', 'success':False, 'reason': str(e)}
     
     if not misc.file_requirements('distl.log'):
@@ -52,7 +52,7 @@ def find_spots(data_info, options={}):
     xdsio.write_xds_input('COLSPOT', run_info)
     try:
         programs.xds_par()
-    except autoprocess.errors.ProcessError, e:
+    except autoprocess.errors.ProcessError as e:
         return {'step': 'spot_search','success': False, 'reason': str(e)}
 
     if misc.file_requirements('SPOT.XDS'):

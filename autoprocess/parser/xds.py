@@ -126,7 +126,7 @@ def parse_xplan(filename='XPLAN.LP'):
     ])
     starts = numpy.unique(completeness[:,0])
     ranges = numpy.unique(completeness[:,1])
-    mat = numpy.zeros((starts.shape[0]), ranges.shape[0])
+    mat = numpy.zeros((starts.shape[0], ranges.shape[0]))
 
     for row in completeness:
         i = starts.index(row[0])

@@ -732,7 +732,6 @@ def alt_screening_analysis_report(dataset, options):
     total_angles = strategy['details']['completeness_statistics'].keys()[:]
     total_angles.remove('start_angle')
     total_angles = sorted(total_angles, key=lambda x: float(x))
-    print total_angles
     return {
         'title': 'Detailed Screening Analysis',
         'content': [

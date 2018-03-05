@@ -78,9 +78,11 @@ def parse_correct(filename='CORRECT.LP'):
     for stats in info['standard_errors'][:-1]:
         if stats['i_sigma'] < 0.5:
             info['summary']['stderr_method'] = 'Resolution limit is based on I/Sigma(I) > 0.5'
+            info['summary']['stderr_resolution'] = float(stats['resol_range'][-1])
             break
-        info['summary']['stderr_method'] = 'Resolution limit is based on detector edge'
-    info['summary']['stderr_resolution'] = float(stats['resol_range'][-1])
+        else:
+            info['summary']['stderr_method'] = 'Resolution limit is based on detector edge'
+            info['summary']['stderr_resolution'] = float(stats['resol_range'][-1])
             
     # parse GXPARM.XDS and update with more accurate cell parameters
     xparm = parse_xparm('GXPARM.XDS')
@@ -147,9 +149,9 @@ def parse_xplan(filename='XPLAN.LP'):
              'redundancy': cmpl_plan['multiplicity']
         },
         'prediction_hi': {
-            'R_factor': stats['r_exp'],
+            'R_factor': correct_info['statistics'][-2]['r_exp'],
             'average_error': -0.99,
-            'average_i_over_sigma': stats['i_sigma'],
+            'average_i_over_sigma': correct_info['statistics'][-2]['i_sigma'],
             'average_intensity': -99,
             'completeness': cmpl_plan.get('completeness', -99) / 100.,
             'fract_overload': 0.0,

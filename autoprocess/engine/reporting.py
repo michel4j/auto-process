@@ -693,6 +693,7 @@ def screening_analysis_report(dataset, options):
     start_angles = sorted(strategy['details']['completeness_statistics'].keys())
     delta_resolutions.remove('angle')
     start_angles.remove('start_angle')
+    print(strategy['details']['completeness_statistics'])
     return {
         'title': 'Detailed Screening Analysis',
         'content': [
@@ -727,7 +728,7 @@ def screening_analysis_report(dataset, options):
         ]
     }
 
-def alternate_screening__report(dataset, options):
+def alternate_screening_report(dataset, options):
     strategy = dataset['results']['strategy']
     delta_resolutions = sorted(strategy['details']['delta_statistics'].keys())
     start_angles = sorted(strategy['details']['completeness_statistics'].keys())

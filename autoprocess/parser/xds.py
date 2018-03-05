@@ -119,6 +119,23 @@ def parse_xplan(filename='XPLAN.LP'):
         if osc['resolution'] <= resolution:
             break
     delta = round(max(0.2, osc['delta_angle'] - mosaicity), 2)
+
+    completeness = numpy.array([
+        (v['start_angle'], v['end_angle'] - v['start_angle'], v['completeness'])
+        for v in raw_info['completeness_statistics']
+    ])
+    starts = numpy.unique(completeness[:,0])
+    ranges = numpy.unique(completeness[:,1])
+    mat = numpy.zeros((starts.shape[0]), ranges.shape[0])
+
+    for row in completeness:
+        i = starts.index(row[0])
+        j = ranges.index(row[1])
+        mat[j, i] = row[2]
+
+    print(mat)
+
+
     info = {
         'distance': distance,
         'completeness': cmpl_plan.get('completeness', -99),

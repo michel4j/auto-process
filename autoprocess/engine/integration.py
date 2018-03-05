@@ -45,7 +45,7 @@ def integrate(data_info, options={}):
         _pd.start()
         programs.xds_par()
         info = xds.parse_integrate()
-    except autoprocess.errors.ProcessError, e:
+    except autoprocess.errors.ProcessError as e:
         _pd.stop()
 
         return {'step': 'integration', 'success': False, 'reason': str(e)}
@@ -109,7 +109,7 @@ def correct(data_info, options={}):
         stat_info = xds.parse_xdsstat()
         info.update(stat_info)
 
-    except autoprocess.errors.ProcessError, e:
+    except autoprocess.errors.ProcessError as e:
         return {'step': 'correction', 'success': False, 'reason': str(e)}
 
     if info.get('failure') is None:

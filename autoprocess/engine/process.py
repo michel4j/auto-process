@@ -372,12 +372,18 @@ class Manager(object):
                     step_ovw.update(overwrite)
 
                     # special pre-step handling  for correction
-                    if step == 'correction' and i > 0 and self.options.get('mode') in ['merge', 'mad']:
+                    if step == 'correction':
+
+                        ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+                        logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
+
                         # update parameters with reference after correction
-                        _ref_file = os.path.join('..',
-                                                 self.datasets.values()[i - 1].results['correction']['output_file'])
-                        _ref_sg = self.datasets.values()[0].results['correction']['summary']['spacegroup']
-                        step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg})
+                        if i > 0 and self.options.get('mode') in ['merge', 'mad']:
+                            _ref_file = os.path.join(
+                                '..', self.datasets.values()[i - 1].results['correction']['output_file']
+                            )
+                            _ref_sg = self.datasets.values()[0].results['correction']['summary']['spacegroup']
+                            step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg})
 
                     self.run_step(step, dset, overwrite=step_ovw)
             next_step = 'symmetry'
@@ -430,8 +436,7 @@ class Manager(object):
                     _score = dset.score()
 
                     logger.info('(%s) Initial Score: %0.2f' % (dset.name, _score))
-                ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-                logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
+
 
             self.save_checkpoint()
             next_step = 'scaling'

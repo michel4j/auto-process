@@ -17,7 +17,7 @@ SHARE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file_
 
 
 def save_report(datasets, options):
-    directory = options['command_dir']
+    directory = options['directory']
     report = {
         'id': None,
         'directory': directory,

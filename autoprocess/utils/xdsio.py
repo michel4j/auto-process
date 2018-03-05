@@ -164,7 +164,7 @@ def write_xds_input(jobs, parameters):
         "MINIMUM_ZETA= 0.05\n"
         "TRUSTED_REGION=0.00 1.414\n"
         "TEST_RESOLUTION_RANGE= 50.0 1.0\n"
-        "RESOLUTION_SHELLS= {resolution:3.0f}\n"
+        "RESOLUTION_SHELLS= {resolution:5.2f}\n"
         "TOTAL_SPINDLE_ROTATION_RANGES= 90 360 30\n"
         "STARTING_ANGLES_OF_SPINDLE_ROTATION= 0 180 15\n"
         "VALUE_RANGE_FOR_TRUSTED_DETECTOR_PIXELS= 6000 30000\n"

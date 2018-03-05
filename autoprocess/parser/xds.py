@@ -70,7 +70,7 @@ def parse_correct(filename='CORRECT.LP'):
             info['summary'].update( info['statistics'][-1] )
             del info['summary']['shell']
             
-    if info['summary']['spacegroup'] == 1:
+    if info['summary']['spacegroup'] == 1 and filename != 'CORRECT.LP.first':
         shutil.copy(filename, 'CORRECT.LP.first')
             
     # parse GXPARM.XDS and update with more accurate cell parameters
@@ -82,7 +82,7 @@ def parse_correct(filename='CORRECT.LP'):
 def parse_xplan(filename='XPLAN.LP'):
     raw_info = utils.parse_file(filename, config='xplan.ini')
     index_info = parse_idxref()
-    correct_info = parse_correct()
+    correct_info = parse_correct('CORRECT.LP.first')
 
     start_plan = {}
     for start_plan in raw_info['summary']:

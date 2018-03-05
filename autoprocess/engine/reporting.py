@@ -854,7 +854,7 @@ def screening_report(dataset, options):
             'content': [
                 screening_summary_table(dataset, options),
                 strategy_table(dataset, options),
-                kappa_analysis_table(dataset, options),
+                #kappa_analysis_table(dataset, options),
                 lattice_table(dataset, options),
                 spacegroup_table(dataset, options),
             ]

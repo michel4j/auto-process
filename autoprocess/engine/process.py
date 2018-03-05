@@ -458,35 +458,36 @@ class Manager(object):
                 self.run_step('strategy', dset, overwrite=overwrite)
                 # calculate and report the angles of the spindle from
                 # the three axes
-                xoptions = {}
-                xoptions.update(self.options)
-                xoptions.update(overwrite)
-                xalign_options = xoptions.get('xalign', {'vectors': ("", ""), 'method': 0})
-                self.options['xalign'] = xalign_options
 
-                logger.info('Goniometer parameters for re-orienting crystal:')
-                info = dset.results['correction']['parameters']
-                _mode = {0: 'MAIN', 1: 'CUSP'}[xalign_options['method']]
-                isols, pars = kappa.get_solutions(info, orientations=xalign_options['vectors'], mode=_mode)
-                if pars['mode'] == 'MAIN':
-                    descr = u'v1\u2225omega, v2\u2225omega-beam plane'
-                    html_descr = 'v1 parallel to omega, v2 perpendicular to the omega-beam plane'
-                else:
-                    descr = u'v1\u27C2omega & beam, v2\u2225v1-omega plane'
-                    html_descr = 'v1 parallel to both omega & beam, v2 perpendicular to the v1-omega plane'
-                logger.info("%6s %6s  %s: %s" % ("Kappa", "Phi", "(v1,v2)", descr))
-                logger.info("-" * 58)
-                sols = []
-                for isol in isols:
-                    txt = ", ".join(["(%s)" % v for v in [",".join(p) for p in isol[1:]]])
-                    logger.info("%6.1f %6.1f  %s" % (isol[0][0], isol[0][1], txt))
-                    sols.append((isol[0][0], isol[0][1], txt))
-                logger.info("-" * 58)
-                dset.results['strategy']['details']['crystal_alignment'] = {
-                    'method': html_descr,
-                    'solutions': sols,
-                    'goniometer': pars['goniometer']
-                }
+                # xoptions = {}
+                # xoptions.update(self.options)
+                # xoptions.update(overwrite)
+                # xalign_options = xoptions.get('xalign', {'vectors': ("", ""), 'method': 0})
+                # self.options['xalign'] = xalign_options
+                #
+                # logger.info('Goniometer parameters for re-orienting crystal:')
+                # info = dset.results['correction']['parameters']
+                # _mode = {0: 'MAIN', 1: 'CUSP'}[xalign_options['method']]
+                # isols, pars = kappa.get_solutions(info, orientations=xalign_options['vectors'], mode=_mode)
+                # if pars['mode'] == 'MAIN':
+                #     descr = u'v1\u2225omega, v2\u2225omega-beam plane'
+                #     html_descr = 'v1 parallel to omega, v2 perpendicular to the omega-beam plane'
+                # else:
+                #     descr = u'v1\u27C2omega & beam, v2\u2225v1-omega plane'
+                #     html_descr = 'v1 parallel to both omega & beam, v2 perpendicular to the v1-omega plane'
+                # logger.info("%6s %6s  %s: %s" % ("Kappa", "Phi", "(v1,v2)", descr))
+                # logger.info("-" * 58)
+                # sols = []
+                # for isol in isols:
+                #     txt = ", ".join(["(%s)" % v for v in [",".join(p) for p in isol[1:]]])
+                #     logger.info("%6.1f %6.1f  %s" % (isol[0][0], isol[0][1], txt))
+                #     sols.append((isol[0][0], isol[0][1], txt))
+                # logger.info("-" * 58)
+                # dset.results['strategy']['details']['crystal_alignment'] = {
+                #     'method': html_descr,
+                #     'solutions': sols,
+                #     'goniometer': pars['goniometer']
+                # }
             self.save_checkpoint()
 
         # check quality and covert formats     

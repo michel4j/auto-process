@@ -460,8 +460,7 @@ class Manager(object):
             self.run_position = (0, 'strategy')
             for dset in self.datasets.values():
                 if not 'resolution' in overwrite:
-                    first_correct = xds.parse_correct('CORRECT.LP.first')
-                    overwrite['resolution'] = first_correct['resolution']
+                    overwrite['resolution'] = dset.results['first_correction']['summary']['stderr_resolution']
                 self.run_step('strategy', dset, overwrite=overwrite)
                 # calculate and report the angles of the spindle from
                 # the three axes

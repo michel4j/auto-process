@@ -74,6 +74,13 @@ def parse_correct(filename='CORRECT.LP'):
             
     if info['summary']['spacegroup'] == 1 and filename != 'CORRECT.LP.first':
         shutil.copy(filename, 'CORRECT.LP.first')
+
+    for stats in info['standard_errors'][:-1]:
+        if stats['i_sigma'] < 0.5:
+            info['summary']['stderr_method'] = 'Resolution limit is based on I/Sigma(I) > 0.5'
+            break
+        info['summary']['stderr_method'] = 'Resolution limit is based on detector edge'
+    info['summary']['stderr_resolution'] = float(stats['resol_range'][-1])
             
     # parse GXPARM.XDS and update with more accurate cell parameters
     xparm = parse_xparm('GXPARM.XDS')
@@ -96,14 +103,8 @@ def parse_xplan(filename='XPLAN.LP'):
         if cmpl_plan['total_angle'] >= 180.:
             break
 
-    stats = correct_info['statistics'][-2]
-    res_reason = 'N/A'
-    for stats in correct_info['standard_errors'][:-1]:
-        if stats['i_sigma'] < 0.5:
-            res_reason = 'Resolution limit is based on I/Sigma(I) > 0.5'
-            break
-        res_reason = 'Resolution limit is based on detector edge'
-    resolution = float(stats['resol_range'][-1])
+    res_reason = correct_info['summary']['stderr_method']
+    resolution = correct_info['summary']['stderr_resolution']
     mosaicity = correct_info['summary']['mosaicity']
 
     distance = round(xtal.resol_to_dist(

@@ -108,6 +108,8 @@ def correct(data_info, options={}):
         programs.xdsstat('XDS_ASCII.HKL')
         stat_info = xds.parse_xdsstat()
         info.update(stat_info)
+        ISa = info['correction_factors']['parameters'][0].get('ISa', -1)
+        _logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (data_info['name'], ISa))
 
     except autoprocess.errors.ProcessError as e:
         return {'step': 'correction', 'success': False, 'reason': str(e)}

@@ -35,8 +35,8 @@ def integrate(data_info, options={}):
     # check if we are screening
     _screening = options.get('mode') == 'screen'
 
-    xdsio.write_xds_input("DEFPIX INTEGRATE", run_info)
-    if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS'):
+    xdsio.write_xds_input("DEFPIX INTEGRATE CORRECT", run_info)
+    if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS', 'CORRECT.LP'):
         return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
 
     _pd = FileProgressDisplay('PROGRESS', descr=step_descr)
@@ -45,6 +45,7 @@ def integrate(data_info, options={}):
         _pd.start()
         programs.xds_par()
         info = xds.parse_integrate()
+        info['statistics'] = xds.parse_correct()
     except autoprocess.errors.ProcessError as e:
         _pd.stop()
 

@@ -99,7 +99,7 @@ class DataSet(object):
             _overall['resolution'] = [self.results['strategy']['resolution'], 0]
 
             # lo resolution i_sigma
-            tbl = misc.Table(self.results['first_correction']['standard_errors'])
+            tbl = misc.Table(self.results['integration']['statistics']['standard_errors'])
             indices = [i for i, r in enumerate(tbl['resol_range']) if r[1] >= 4.0]
             _isigma = numpy.array(tbl['i_sigma'])[indices].mean()
 
@@ -277,6 +277,13 @@ class Manager(object):
                 logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
                 sys.exit(1)
 
+
+    def screen(self, resume_from=None, single=False, overwrite={}):
+        pass
+
+    def process(self, resume_from=None, single=False, overwrite={}):
+        pass
+
     def run(self, resume_from=None, single=False, overwrite={}):
         """
         resume_from is a tuple of the form
@@ -285,13 +292,7 @@ class Manager(object):
 
         # Create a log file also
         log.log_to_file(os.path.join(self.options['directory'], 'auto.log'))
-
         self._start_time = time.time()
-        run_steps = ['initialize', 'spot_search',
-                     'indexing', 'integration', 'correction', 'symmetry',
-                     'strategy',
-                     ]
-
         _header = '------ AutoProcess({}) - {} [{:d} dataset(s)] ------'.format(
             VERSION, self.options['mode'].upper(), len([name for name in self.datasets.keys() if name != 'combined'])
         )
@@ -302,6 +303,13 @@ class Manager(object):
 
         logger.debug('Computer system: %d nodes' % (_num_nodes))
         logger.debug('Computer nodes: "%s"' % _env_hosts)
+
+        run_steps = ['initialize', 'spot_search',
+                     'indexing', 'integration', 'correction', 'symmetry',
+                     'strategy',
+                     ]
+
+
         if resume_from is not None:
             cur_pos, next_step = resume_from
         else:
@@ -329,8 +337,6 @@ class Manager(object):
 
                     # skip this step based on the properties
                     if j < _sub_steps.index(next_step): continue
-                    if self.options.get('mode') != 'screen' and step == 'image_analysis': continue
-
                     self.run_step(step, dset, overwrite=step_ovw)
 
                     # Special post processing after indexing
@@ -374,9 +380,10 @@ class Manager(object):
                                                  self.datasets.values()[i - 1].results['correction']['output_file'])
                         _ref_sg = self.datasets.values()[0].results['correction']['summary']['spacegroup']
                         step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg})
-                    self.run_step(step, dset, overwrite=step_ovw)
-                    if step == 'correction':
-                        dset.results['first_correction'] = copy.deepcopy(dset.results['correction'])
+                    if step == 'correction' and self.options.get('mode') == 'screen':
+                        dset.results['correction'] = copy.deepcopy(dset.results['integration']['statistics'])
+                    else:
+                        self.run_step(step, dset, overwrite=step_ovw)
 
             next_step = 'symmetry'
 
@@ -454,40 +461,39 @@ class Manager(object):
             self.run_position = (0, 'strategy')
             for dset in self.datasets.values():
                 if not 'resolution' in overwrite:
-                    overwrite['resolution'] = dset.results['first_correction']['summary']['stderr_resolution']
+                    overwrite['resolution'] = dset.results['integration']['statistics']['summary']['stderr_resolution']
                 self.run_step('strategy', dset, overwrite=overwrite)
                 # calculate and report the angles of the spindle from
                 # the three axes
+                xoptions = {}
+                xoptions.update(self.options)
+                xoptions.update(overwrite)
+                xalign_options = xoptions.get('xalign', {'vectors': ("", ""), 'method': 0})
+                self.options['xalign'] = xalign_options
 
-                # xoptions = {}
-                # xoptions.update(self.options)
-                # xoptions.update(overwrite)
-                # xalign_options = xoptions.get('xalign', {'vectors': ("", ""), 'method': 0})
-                # self.options['xalign'] = xalign_options
-                #
-                # logger.info('Goniometer parameters for re-orienting crystal:')
-                # info = dset.results['correction']['parameters']
-                # _mode = {0: 'MAIN', 1: 'CUSP'}[xalign_options['method']]
-                # isols, pars = kappa.get_solutions(info, orientations=xalign_options['vectors'], mode=_mode)
-                # if pars['mode'] == 'MAIN':
-                #     descr = u'v1\u2225omega, v2\u2225omega-beam plane'
-                #     html_descr = 'v1 parallel to omega, v2 perpendicular to the omega-beam plane'
-                # else:
-                #     descr = u'v1\u27C2omega & beam, v2\u2225v1-omega plane'
-                #     html_descr = 'v1 parallel to both omega & beam, v2 perpendicular to the v1-omega plane'
-                # logger.info("%6s %6s  %s: %s" % ("Kappa", "Phi", "(v1,v2)", descr))
-                # logger.info("-" * 58)
-                # sols = []
-                # for isol in isols:
-                #     txt = ", ".join(["(%s)" % v for v in [",".join(p) for p in isol[1:]]])
-                #     logger.info("%6.1f %6.1f  %s" % (isol[0][0], isol[0][1], txt))
-                #     sols.append((isol[0][0], isol[0][1], txt))
-                # logger.info("-" * 58)
-                # dset.results['strategy']['details']['crystal_alignment'] = {
-                #     'method': html_descr,
-                #     'solutions': sols,
-                #     'goniometer': pars['goniometer']
-                # }
+                logger.info('Goniometer parameters for re-orienting crystal:')
+                info = dset.results['correction']['parameters']
+                _mode = {0: 'MAIN', 1: 'CUSP'}[xalign_options['method']]
+                isols, pars = kappa.get_solutions(info, orientations=xalign_options['vectors'], mode=_mode)
+                if pars['mode'] == 'MAIN':
+                    descr = u'v1\u2225omega, v2\u2225omega-beam plane'
+                    html_descr = 'v1 parallel to omega, v2 perpendicular to the omega-beam plane'
+                else:
+                    descr = u'v1\u27C2omega & beam, v2\u2225v1-omega plane'
+                    html_descr = 'v1 parallel to both omega & beam, v2 perpendicular to the v1-omega plane'
+                logger.info("%6s %6s  %s: %s" % ("Kappa", "Phi", "(v1,v2)", descr))
+                logger.info("-" * 58)
+                sols = []
+                for isol in isols:
+                    txt = ", ".join(["(%s)" % v for v in [",".join(p) for p in isol[1:]]])
+                    logger.info("%6.1f %6.1f  %s" % (isol[0][0], isol[0][1], txt))
+                    sols.append((isol[0][0], isol[0][1], txt))
+                logger.info("-" * 58)
+                dset.results['strategy']['details']['crystal_alignment'] = {
+                    'method': html_descr,
+                    'solutions': sols,
+                    'goniometer': pars['goniometer']
+                }
             self.save_checkpoint()
 
         # check quality and covert formats     

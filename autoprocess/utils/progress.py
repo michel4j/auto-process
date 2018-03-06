@@ -224,8 +224,8 @@ class ProgDisplay(threading.Thread):
         pos = 0
         txt2 = ' %4.1f%%' % (0.0)
         while not self._stopped:
-            _t = time.strftime('%b%d %H:%M:%S')
-            txt1 = '%s| %s ' % (_t, self.descr)
+            _t = time.strftime('%b/%d %H:%M:%S')
+            txt1 = '%s %s ' % (_t, self.descr)
             if obj is not None:
                 l = int((obj[0] - self.data_range[0]) * self.length / self.total)
                 r = int((obj[1] - self.data_range[0] + 1) * self.length / self.total)

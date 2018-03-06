@@ -303,7 +303,7 @@ class rTable(Table):
 class sTable(Table):
     def __init__(self, t):
         self.table = PrettyTable(header=False)
-        self.table.field_names = [t[0]]
+        self.table.field_names = t[0]
         for row in t:
             self.table.add_row(row)
 

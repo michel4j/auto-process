@@ -465,7 +465,7 @@ class Manager(object):
                 self.run_step('strategy', dset, overwrite=overwrite)
 
                 strategy = reporting.get_strategy(dset.results)
-                strategy_table = misc.Table([
+                strategy_table = misc.rTable([
                     {
                         'Resolution': '{:0.2f}'.format(strategy['resolution']),
                         'Attenuation': '{:0.1f}'.format(strategy['attenuation']),
@@ -476,7 +476,7 @@ class Manager(object):
                         'Overlaps?': strategy['overlaps'],
                     }
                 ])
-                logger.info(strategy_table)
+                logger.info('\n'+strategy_table)
 
                 # calculate and report the angles of the spindle from
                 # the three axes

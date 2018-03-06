@@ -474,7 +474,7 @@ class Manager(object):
                         ['Exposure Rate (deg/sec)', '{:0.2f}'.format(strategy['exposure_rate'])],
                         ['Overlaps?', strategy['overlaps']],
                 ])
-                logger.info('\n{}'.format(str(strategy_table))0
+                logger.info('\n{}'.format(str(strategy_table)))
 
                 # calculate and report the angles of the spindle from
                 # the three axes

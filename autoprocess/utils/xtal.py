@@ -213,6 +213,7 @@ def logistic_score(x, best=1, fair=0.5):
 
 
 def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings=0):
+    print(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle)
     scores = numpy.array([
         logistic_score(resolution, 1.0, 3.5),
         logistic_score(completeness, 100.0, 85),
@@ -253,6 +254,9 @@ def score_crystal_old(resolution, completeness, r_meas, i_sigma, mosaicity, std_
 
     return sum(score)
 
+
+def score_screening(resolution, completeness, i_sigma, mosaicity):
+    pass
 
 def average_cell(cell_and_weights):
     """Average a series of cell parameters together with weights and return the average cell and standard deviations

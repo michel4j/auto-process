@@ -36,7 +36,7 @@ def integrate(data_info, options={}):
     _screening = options.get('mode') == 'screen'
 
     xdsio.write_xds_input("DEFPIX INTEGRATE CORRECT", run_info)
-    if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS', 'CORRECT.LP'):
+    if not misc.file_requirements('X-CORRECTIONS.cbf', 'Y-CORRECTIONS.cbf', 'XPARM.XDS'):
         return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
 
     _pd = FileProgressDisplay('PROGRESS', descr=step_descr)

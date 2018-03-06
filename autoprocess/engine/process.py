@@ -465,17 +465,19 @@ class Manager(object):
                 self.run_step('strategy', dset, overwrite=overwrite)
 
                 strategy = reporting.get_strategy(dset.results)
-                strategy_table = misc.rTable([
+                strategy_table = misc.rTable(
                     {
-                        'Resolution': '{:0.2f}'.format(strategy['resolution']),
-                        'Attenuation': '{:0.1f}'.format(strategy['attenuation']),
-                        'Start Angle': '{:0.0f}'.format(strategy['start_angle']),
-                        'Maximum Delta Angle': '{:0.2f}'.format(strategy['max_delta']),
-                        'Minimum Angle Range': '{:0.1f}'.format(strategy['total_angle']),
-                        'Exposure Rate (deg/sec)': '{:0.2f}'.format(strategy['exposure_rate']),
-                        'Overlaps?': strategy['overlaps'],
+                        'Resolution': ['{:0.2f}'.format(strategy['resolution'])],
+                        'Attenuation': ['{:0.1f}'.format(strategy['attenuation'])],
+                        'Start Angle': ['{:0.0f}'.format(strategy['start_angle'])],
+                        'Maximum Delta Angle': ['{:0.2f}'.format(strategy['max_delta'])],
+                        'Minimum Angle Range': ['{:0.1f}'.format(strategy['total_angle'])],
+                        'Exposure Rate (deg/sec)': [
+                            '{:0.2f}'.format(strategy['exposure_rate']) if strategy['exposure_rate'] > 0 else 'N/C'
+                        ],
+                        'Overlaps?': [strategy['overlaps']],
                     }
-                ])
+                )
                 logger.info('\n'+strategy_table)
 
                 # calculate and report the angles of the spindle from

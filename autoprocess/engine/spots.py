@@ -9,7 +9,6 @@ _logger = log.get_module_logger(__name__)
 
 def initialize(data_info, options={}):
     os.chdir(data_info['working_directory'])
-    _logger.info('Creating correction tables ...')
 
     run_info = {'mode': options.get('mode')}
     run_info.update(data_info)

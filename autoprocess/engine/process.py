@@ -437,7 +437,7 @@ class Manager(object):
                     logger.info('(%s) Initial Score: %0.2f' % (dset.name, _score))
 
             self.save_checkpoint()
-            next_step = 'scaling'
+            next_step = 'strategy' if self.options.get('mode') != 'screen' else 'scaling'
 
         if next_step == 'scaling':
 

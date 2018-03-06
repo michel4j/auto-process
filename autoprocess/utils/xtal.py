@@ -213,7 +213,6 @@ def logistic_score(x, best=1, fair=0.5):
 
 
 def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings=0):
-    print(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle)
     scores = numpy.array([
         logistic_score(resolution, 1.0, 3.5),
         logistic_score(completeness, 100.0, 85),
@@ -231,32 +230,7 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
         for name, contrib, val in zip(names, scores, vals):
             print('\t{} : {:0.3f} ({:0.3f})'.format(name, contrib, val))
 
-    return numpy.exp(numpy.log(scores).mean())
-
-
-def score_crystal_old(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings=0):
-    score = [1.0,
-             -0.20 * score_penalty(resolution, 1.0, 6.0),
-             -0.20 * score_penalty(completeness, 100, 0),
-             -0.10 * score_penalty(r_meas, 1, 50),
-             -0.10 * score_penalty(i_sigma, 100, 1),
-             -0.10 * score_penalty(mosaicity, 0.01, 5),
-             -0.10 * score_penalty(std_spindle, 0.01, 3),
-             -0.05 * score_penalty(std_spot, 1, 4),
-             -0.05 * score_penalty(ice_rings, 0, 8),
-             ]
-    if DEBUG:
-        names = ['Root', 'Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot',
-                 'Ice']
-        vals = [1, resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, ice_rings]
-        for name, contrib, val in zip(names, score, vals):
-            print('\t\t{} : {:0.3f} ({:0.3f})'.format(name, contrib, val))
-
-    return sum(score)
-
-
-def score_screening(resolution, completeness, i_sigma, mosaicity):
-    pass
+    return numpy.exp(numpy.log(scores[~numpy.isnan(scores)]).mean())
 
 def average_cell(cell_and_weights):
     """Average a series of cell parameters together with weights and return the average cell and standard deviations

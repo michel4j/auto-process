@@ -466,13 +466,15 @@ class Manager(object):
 
                 strategy = reporting.get_strategy(dset.results)
                 strategy_table = misc.Table([
-                        ['Resolution', '{:0.2f}'.format(strategy['resolution'])],
-                        ['Attenuation', '{:0.1f}'.format(strategy['attenuation'])],
-                        ['Start Angle', '{:0.0f}'.format(strategy['start_angle'])],
-                        ['Maximum Delta Angle', '{:0.2f}'.format(strategy['max_delta'])],
-                        ['Minimum Angle Range', '{:0.1f}'.format(strategy['total_angle'])],
-                        ['Exposure Rate (deg/sec)', '{:0.2f}'.format(strategy['exposure_rate'])],
-                        ['Overlaps?', strategy['overlaps']],
+                    {
+                        'Resolution': '{:0.2f}'.format(strategy['resolution']),
+                        'Attenuation': '{:0.1f}'.format(strategy['attenuation']),
+                        'Start Angle': '{:0.0f}'.format(strategy['start_angle']),
+                        'Maximum Delta Angle': '{:0.2f}'.format(strategy['max_delta']),
+                        'Minimum Angle Range': '{:0.1f}'.format(strategy['total_angle']),
+                        'Exposure Rate (deg/sec)': '{:0.2f}'.format(strategy['exposure_rate']),
+                        'Overlaps?': strategy['overlaps'],
+                    }
                 ])
                 logger.info(strategy_table)
 

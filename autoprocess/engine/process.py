@@ -466,6 +466,7 @@ class Manager(object):
 
                 strategy = reporting.get_strategy(dset.results)
                 strategy_table = misc.sTable([
+                        ['Recommended Strategy', ''],
                         ['Resolution', '{:0.2f}'.format(strategy['resolution'])],
                         ['Attenuation', '{:0.1f}'.format(strategy['attenuation'])],
                         ['Start Angle', '{:0.0f}'.format(strategy['start_angle'])],
@@ -474,7 +475,8 @@ class Manager(object):
                         ['Exposure Rate (deg/sec)', '{:0.2f}'.format(strategy['exposure_rate'])],
                         ['Overlaps?', strategy['overlaps']],
                 ])
-                logger.info('\n{}'.format(str(strategy_table)))
+                for line in str(strategy_table).splitlines():
+                    logger.info(line)
 
                 # calculate and report the angles of the spindle from
                 # the three axes

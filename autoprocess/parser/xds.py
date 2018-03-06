@@ -86,10 +86,10 @@ def parse_correct(filename='CORRECT.LP'):
 
     info['summary']['lowres_isigma'] = numpy.array([
         stats['i_sigma'] for stats in info['standard_errors'][:-1] if stats['resol_range'][1] > 4.0
-    ])
+    ]).mean()
     info['summary']['lowres_rmeas'] = numpy.array([
         stats['i_sigma'] for stats in info['statistics'][:-1] if float(stats['shell']) > 4.0
-    ])
+    ]).mean()
     # parse GXPARM.XDS and update with more accurate cell parameters
     xparm = parse_xparm('GXPARM.XDS')
     info['parameters'] = xparm

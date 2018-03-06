@@ -4,6 +4,7 @@ import autoprocess.errors
 import time
 import os
 
+
 if "check_output" not in dir( subprocess ): # duck punch it in!
     def f(*popenargs, **kwargs):
         r"""Run command with arguments and return its output as a byte string.
@@ -33,7 +34,7 @@ def _execute_command(args, out_file=None):
         std_out = open(out_file, 'a')
     try:    
         output = subprocess.check_output(args, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         raise autoprocess.errors.ProcessError(e.output.strip())
     
     std_out.write(output)
@@ -128,6 +129,7 @@ def best(data_info, options={}):
     except IOError:
         raise autoprocess.errors.ProcessError('Could not create command file')
     _execute_command(["sh", "best.com"], out_file="best.log")
+
 
 def xtriage(filename, options={}):
     command  = "#!/bin/csh \n"

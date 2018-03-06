@@ -463,7 +463,19 @@ class Manager(object):
                 if not 'resolution' in overwrite:
                     overwrite['resolution'] = dset.results['integration']['statistics']['summary']['stderr_resolution']
                 self.run_step('strategy', dset, overwrite=overwrite)
-                print(dset.results['strategy'])
+
+                strategy = dset.results['strategy']
+                strategy_table = misc.Table([
+                        ['Resolution', '{:0.2f}'.format(strategy['resolution'])],
+                        ['Attenuation', '{:0.1f}'.format(strategy['attenuation'])],
+                        ['Start Angle', '{:0.0f}'.format(strategy['start_angle'])],
+                        ['Maximum Delta Angle', '{:0.2f}'.format(strategy['max_delta'])],
+                        ['Minimum Angle Range', '{:0.1f}'.format(strategy['total_angle'])],
+                        ['Exposure Rate (deg/sec)', '{:0.2f}'.format(strategy['exposure_rate'])],
+                        ['Overlaps?', strategy['overlaps']],
+                ])
+                logger.info(strategy_table)
+
                 # calculate and report the angles of the spindle from
                 # the three axes
                 xoptions = {}

@@ -286,8 +286,8 @@ class FileProgressDisplay(threading.Thread):
         progress = 0.0
         pos = 0
         while not self._stopped:
-            _t = time.strftime('%b%d %H:%M:%S')
-            txt1 = '%s| %s ' % (_t, self.descr)
+            _t = time.strftime('%b\%d %H:%M:%S')
+            txt1 = '%s %s ' % (_t, self.descr)
             if pos >= 20 and os.path.exists(self.filename): # Update every 1 seconds cycles
                 pos = 0
                 with open(self.filename, 'r') as progress_file:
@@ -300,6 +300,6 @@ class FileProgressDisplay(threading.Thread):
             pos += 1
             if not self._stopped:
                 time.sleep(0.1)
-        _t = time.strftime('%b%d %H:%M:%S')
-        txt = '%s| %s. %4.1f%% done.\n' % (_t, self.descr, 100)
+        _t = time.strftime('%b\%d %H:%M:%S')
+        txt = '%s %s. %4.1f%% done.\n' % (_t, self.descr, 100)
         self.refresh(txt, force=True)

@@ -565,7 +565,6 @@ class Manager(object):
         checkpoint = self.save_checkpoint()
 
         # Save summaries
-        import reporting
         logger.info('Generating Reports ...')
         reporting.save_report(checkpoint['datasets'], self.options)
         logger.info('    HTML: report.html ')

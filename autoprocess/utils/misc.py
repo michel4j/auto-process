@@ -300,6 +300,16 @@ class rTable(Table):
         self.hidden_columns = []
 
 
+class sTable(Table):
+    def __init__(self, t):
+        self.table = PrettyTable()
+        for row in t:
+            self.table.add_row(row)
+
+    def __str__(self):
+        return self.table.get_string()
+
+
 # Ordered Dict from Django
 
 class SortedDict(dict):

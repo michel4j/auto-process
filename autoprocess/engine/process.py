@@ -10,7 +10,7 @@ import msgpack
 import numpy
 
 import autoprocess.errors
-from autoprocess.engine import indexing, spots, integration, scaling, solver
+from autoprocess.engine import indexing, spots, integration, scaling, solver, reporting
 from autoprocess.engine import symmetry, strategy, conversion
 from autoprocess.utils import dataset, misc, log, xtal
 from autoprocess.utils import kappa
@@ -464,7 +464,7 @@ class Manager(object):
                     overwrite['resolution'] = dset.results['integration']['statistics']['summary']['stderr_resolution']
                 self.run_step('strategy', dset, overwrite=overwrite)
 
-                strategy = dset.results['strategy']
+                strategy = reporting.get_strategy(dset.results)
                 strategy_table = misc.Table([
                         ['Resolution', '{:0.2f}'.format(strategy['resolution'])],
                         ['Attenuation', '{:0.1f}'.format(strategy['attenuation'])],

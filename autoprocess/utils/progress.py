@@ -245,8 +245,8 @@ class ProgDisplay(threading.Thread):
                 time.sleep(0.1)
 
         bar = d[1] * self.length
-        _t = time.strftime('%b%d %H:%M:%S')
-        txt = '%s| %s. %4.1f%% done.\n' % (_t, self.descr, 100)
+        _t = time.strftime('%b/%d %H:%M:%S')
+        txt = '%s %s. %4.1f%% done.\n' % (_t, self.descr, 100)
         self.refresh(txt, force=True)
 
 

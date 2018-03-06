@@ -28,9 +28,9 @@ def integrate(data_info, options={}):
     if options.get('optimize', False) and os.path.exists('GXPARM.XDS'):
         misc.backup_files('XPARM.XDS')
         shutil.copy('GXPARM.XDS', 'XPARM.XDS')
-        step_descr = 'Optimizing %d frames of `%s` ...' % (num_frames, data_info['name'])
+        step_descr = '- Optimizing %d frames of `%s` ...' % (num_frames, data_info['name'])
     else:
-        step_descr = 'Integrating %d frames of `%s` ...' % (num_frames, data_info['name'])
+        step_descr = '- Integrating %d frames of `%s` ...' % (num_frames, data_info['name'])
 
     # check if we are screening
     _screening = options.get('mode') == 'screen'

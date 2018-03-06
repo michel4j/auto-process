@@ -486,7 +486,7 @@ class Manager(object):
                 xalign_options = xoptions.get('xalign', {'vectors': ("", ""), 'method': 0})
                 self.options['xalign'] = xalign_options
 
-                logger.info('Calculating goniometer parameters for re-orienting crystal ...')
+                logger.info('Calculating Kappa goniometer parameters ...')
                 info = dset.results['correction']['parameters']
                 _mode = {0: 'MAIN', 1: 'CUSP'}[xalign_options['method']]
                 isols, pars = kappa.get_solutions(info, orientations=xalign_options['vectors'], mode=_mode)

@@ -306,6 +306,7 @@ class sTable(Table):
         self.table.field_names = t[0]
         for row in t[1:]:
             self.table.add_row(row)
+        self.table.align[t[0][0]] = "l"
 
     def __str__(self):
         return self.table.get_string()

@@ -84,72 +84,30 @@ class DataSet(object):
     def score(self):
         # full data processing
         if 'scaling' in self.results:
-            _overall = copy.deepcopy(self.results['scaling']['summary'])
-            _overall['mosaicity'] = self.results['correction']['summary']['mosaicity']
-            _overall['stdev_spot'] = self.results['correction']['summary']['stdev_spot']
-            _overall['stdev_spindle'] = self.results['correction']['summary']['stdev_spindle']
-            t = misc.Table(self.results['scaling']['statistics'])
+            mosaicity = self.results['scaling']['summary']['mosaicity']
+            stdev_spot = self.results['scaling']['summary']['stdev_spot']
+            stdev_spindle = self.results['scaling']['summary']['stdev_spindle']
+            resolution = self.results['scaling']['summary']['resolution'][0]
+            completeness = self.results['scaling']['summary']['completeness']
+        elif 'correction' in self.results:
+            mosaicity = self.results['correction']['summary']['mosaicity']
+            stdev_spot = self.results['correction']['summary']['stdev_spot']
+            stdev_spindle = self.results['correction']['summary']['stdev_spindle']
+            resolution = self.results['correction']['summary']['resolution'][0]
+            completeness = self.results['correction']['summary']['completeness']
         else:
-            _overall = copy.deepcopy(self.results['correction']['summary'])
-            t = misc.Table(self.results['correction']['statistics'])
+            return 0.0
+
+        i_sigma = self.results['integration']['statistics']['summary']['lowres_isigma']
+        r_meas = self.results['integration']['statistics']['summary']['lowres_rmeas']
 
         # screening
-        if 'strategy' in self.results and 'shell_statistics' in self.results['strategy'].get('details', {}):
-            _overall.update(self.results['strategy']['prediction_all'])
-            _overall['resolution'] = [self.results['strategy']['resolution'], 0]
-
-            # lo resolution i_sigma
-            tbl = misc.Table(self.results['integration']['statistics']['standard_errors'])
-            indices = [i for i, r in enumerate(tbl['resol_range']) if r[1] >= 4.0]
-            _isigma = numpy.array(tbl['i_sigma'])[indices].mean()
-
-            # Average out the low resolution to approx the same level ~ 4.0 A
-            t = misc.rTable(self.results['strategy']['details']['shell_statistics'])
-            _shells = numpy.array(map(float, t['max_resolution'][:-1]))
-            # _compl = numpy.array(t['completeness'][:-1]) * 100.0
-            _compl = self.results['strategy']['completeness']
-
-            sel = (_shells > 4.0)
-
-            if sel.sum() == len(_shells):
-                low_res = dict(zip(t.keys(), t.row(-1)))
-            elif sel.sum() == 0:
-                low_res = dict(zip(t.keys(), t.row(0)))
-            else:
-                # simple average
-                low_res = {
-                    'i_sigma':_isigma,
-                    'r_meas': 15.0, # constant since r-factor is not reliable for screening
-                    'completeness': _compl,
-                    'shell': _shells[sel][-1],
-                }
-        else:
-            _shells = numpy.array(map(float, t['shell'][:-1]))
-            _isigma = numpy.array(t['i_sigma'][:-1])
-            _rmeas = numpy.array(t['r_meas'][:-1])
-            # _compl = numpy.array(t['completeness'][:-1])
-            _nrefl = numpy.array(t['compared'][:-1])
-            _unique = numpy.array(t['unique'][:-1])
-            _possible = numpy.array(t['possible'][:-1])
-            sel = (_shells > 4.0)
-
-            if sel.sum() == len(_shells) or _nrefl[sel].any() == 0:
-                low_res = dict(zip(t.keys(), t.row(-1)))
-            elif sel.sum() == 0:
-                low_res = dict(zip(t.keys(), t.row(0)))
-            else:
-                # weighted by number of reflections
-                low_res = {
-                    'i_sigma': (_isigma[sel] * _nrefl[sel]).mean() / _nrefl[sel].mean(),
-                    'r_meas': (_rmeas[sel] * _nrefl[sel]).mean() / _nrefl[sel].mean(),
-                    'completeness': 100.0 * _unique[sel].sum() / _possible[sel].sum(),
-                    'shell': _shells[sel][-1],
-                }
+        if 'strategy' in self.results:
+            resolution = self.results['strategy']['resolution']
+            completeness = self.results['strategy']['completeness']
 
         score = xtal.score_crystal(
-            _overall['resolution'][0], low_res['completeness'], low_res['r_meas'],
-            low_res['i_sigma'],  _overall['mosaicity'],  _overall['stdev_spot'],
-            _overall['stdev_spindle']
+            resolution, completeness, r_meas, i_sigma, mosaicity, stdev_spot, stdev_spindle
         )
         self.results['crystal_score'] = score
         return score

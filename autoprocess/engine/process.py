@@ -478,7 +478,7 @@ class Manager(object):
                         'Overlaps?': [strategy['overlaps']],
                     }
                 )
-                logger.info('\n'+strategy_table)
+                logger.info('\n'+str(strategy_table))
 
                 # calculate and report the angles of the spindle from
                 # the three axes

@@ -94,6 +94,7 @@ class CommandProtocol(protocol.ProcessProtocol):
 
     def processEnded(self, reason):
         rc = reason.value.exitCode
+        subprocess.check_call(['sync'])
         if rc == 0:
             try:
                 if self.json_file:

@@ -83,13 +83,13 @@ class DataSet(object):
 
     def score(self):
         # full data processing
-        if 'scaling' in self.results:
-            mosaicity = self.results['scaling']['summary']['mosaicity']
-            stdev_spot = self.results['scaling']['summary']['stdev_spot']
-            stdev_spindle = self.results['scaling']['summary']['stdev_spindle']
-            resolution = self.results['scaling']['summary']['resolution'][0]
-            completeness = self.results['scaling']['summary']['completeness']
-        elif 'correction' in self.results:
+        # if 'scaling' in self.results:
+        #     mosaicity = self.results['scaling']['summary']['mosaicity']
+        #     stdev_spot = self.results['scaling']['summary']['stdev_spot']
+        #     stdev_spindle = self.results['scaling']['summary']['stdev_spindle']
+        #     resolution = self.results['scaling']['summary']['resolution'][0]
+        #     completeness = self.results['scaling']['summary']['completeness']
+        if 'correction' in self.results:
             mosaicity = self.results['correction']['summary']['mosaicity']
             stdev_spot = self.results['correction']['summary']['stdev_spot']
             stdev_spindle = self.results['correction']['summary']['stdev_spindle']

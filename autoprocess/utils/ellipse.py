@@ -42,7 +42,7 @@ __docformat__ = 'restructuredtext'
 
 import numpy
 from collections import namedtuple
-Ellipse = namedtuple("Ellipse", ["center_1", "center_2", "angle", "half_long_axis", "half_short_axis"])
+Ellipse = namedtuple("Ellipse", ["cy", "cx", "angle", "half_long_axis", "half_short_axis"])
 
 
 def fit_ellipse(pty, ptx):

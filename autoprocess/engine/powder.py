@@ -1,14 +1,21 @@
-#!/usr/bin/env python
+from __future__ import unicode_literals
 
-import re
-import numpy
-import os
+import inspect
 import json
-from autoprocess.libs.imageio import read_image
-from autoprocess.utils import xdi
-from autoprocess.utils.ellipse import fit_ellipse
-from scipy import signal, interp, optimize, interpolate
+import os
+import re
+import shutil
 import warnings
+
+import numpy
+import subprocess32 as subprocess
+from scipy import interpolate
+
+from autoprocess.libs.imageio import read_image
+from autoprocess.utils import xdi, fitio, log, misc
+from autoprocess.utils.ellipse import fit_ellipse
+
+SHARE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'share')
 
 try:
     from scipy.signal import savgol_filter
@@ -21,6 +28,30 @@ XSTEP = 0.05
 BACKSTOP_OFFSET = 200
 CENTER_SEARCH_LIMIT = 500
 
+logger = log.get_module_logger('powder')
+
+
+class Fit2DFile(object):
+    def __init__(self, filename, format):
+        self.rawfile = filename
+        self.format = format
+        path, ext = os.path.splitext(self.rawfile)
+        if self.format == 'TIFF':
+            self.filename = '{}.{}'.format(path, 'tiff')
+        else:
+            self.filename = self.rawfile
+        self.name = os.path.basename(path)
+
+    def __enter__(self):
+        if self.format == 'TIFF':
+            os.symlink(self.rawfile, self.filename)
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.format == 'TIFF':
+            os.unlink(self.filename)
+        return True
+
 
 def peak_width(a, x, w=30):
     left = numpy.where(a[x - w:x] > a[x] / 2)
@@ -31,7 +62,7 @@ def peak_width(a, x, w=30):
 
 
 def find_peaks(y, width=11, sensitivity=0.01, smooth=True):
-    yfunc = interpolate.interp1d(numpy.arange(len(y)), y)
+    yfunc = interpolate.interp1d(numpy.arange(len(y)), y, fill_value='extrapolate')
     width = width if width % 2 else width + 1  # force width to be odd
     hw = width // 2
     hw = hw if hw % 2 else hw + 1  # force width to be odd
@@ -44,13 +75,23 @@ def find_peaks(y, width=11, sensitivity=0.01, smooth=True):
     data_str = (yp > 0.0).tostring()
 
     def get_peak(pos):
-        return pos, yfunc(pos), 2*peak_width(y, int(pos), width) + 1
+        return pos, yfunc(pos), 2 * peak_width(y, int(pos), width) + 1
 
     peak_positions = [get_peak(m.start() + 1.5) for m in re.finditer(peak_str, data_str)]
     ymax = max(y)
     return numpy.array([
         v for v in peak_positions if (v[1] >= sensitivity * ymax and v[2])
     ])
+
+
+def peak_search(xy, width=11, sensitivity=0.01, smooth=True):
+    peaks = find_peaks(xy[:, 1], width=width, sensitivity=sensitivity, smooth=smooth)
+    xfunc = interpolate.interp1d(numpy.arange(len(xy[:, 0])), xy[:, 0], fill_value='extrapolate')
+    x = xfunc(peaks[:, 0])
+    w = xfunc(peaks[:, 0] + peaks[:, 2]) - x
+    peaks[:, 0] = x
+    peaks[:, 2] = w
+    return peaks
 
 
 def baseline(values):
@@ -85,66 +126,17 @@ def norm_curve(s):
     return ns
 
 
-def calc_shift(original, match):
-    s1 = norm_curve(original)
-    s2 = norm_curve(match)
-    sel = numpy.isfinite(s1) & numpy.isfinite(s2)
-    z = signal.fftconvolve(s1[sel], s2[sel][::-1])
-    lags = numpy.arange(z.size) - (s2.size - 1)
-    return (lags[numpy.argmax(numpy.abs(z))])
-
-
-def calc_scale(original, match):
-    s1 = norm_curve(original)
-    s2 = norm_curve(match)
-    sel = numpy.isfinite(s1) & numpy.isfinite(s2)
-    params = [0, 1.0]
-    x = numpy.arange(sel.sum())
-    out, result = optimize.leastsq(prof_err, params[:], args=(match, original, x), maxfev=25000)
-    offset, scale = out
-    return offset, scale
-
-
-def corr_shift(s1, s2):
-    corr = signal.correlate(s1, s2)
-    return numpy.where(corr == corr.max())[0] % s1.shape[0]
-
-
-def prof_err(coeffs, p1, p2, x):
-    offset, scale = coeffs[:]
-    ynew = interp((x + offset) * scale, p1, x)
-    return (numpy.log(p2) - numpy.log(ynew)) * p1
-
-
-def fit_geom(x, y):
-    try:
-        ellipse = fit_ellipse(y, x)
-        tilt = numpy.arctan2(ellipse.half_long_axis - ellipse.half_short_axis, ellipse.half_short_axis)
-        cos_tilt = numpy.cos(tilt)
-        sin_tilt = numpy.sin(tilt)
-        angle = (ellipse.angle + numpy.pi / 2.0) % numpy.pi
-        cos_tpr = numpy.cos(angle)
-        sin_tpr = numpy.sin(angle)
-        rot2 = numpy.arcsin(sin_tilt * sin_tpr)  # or pi-
-        rot1 = numpy.arccos(
-            min(1.0, max(-1.0, (cos_tilt / numpy.sqrt(1 - sin_tpr * sin_tpr * sin_tilt * sin_tilt)))))  # + or -
-        if cos_tpr * sin_tilt > 0:
-            rot1 = -rot1
-        rot3 = 0
-        return (rot1, rot2, rot3)
-    except:
-        pass
-
 class PeakSorter(object):
-    def __init__(self, reference):
-        self.reference = reference
+    def __init__(self, reference, max_size=10):
+        self.reference = reference[reference[:, 1].argsort()[::-1][:max_size]]
+        # self.reference = reference
         self.tree = [[] for i in range(self.reference.shape[0])]
 
     def add_peaks(self, peaks, angle):
         for x, y, w in peaks:
-            diffs = numpy.abs(self.reference[:,0] - x)
+            diffs = numpy.abs(self.reference[:, 0] - x)
             idx = numpy.argmin(diffs)
-            if diffs[idx] <= self.reference[idx,2] and y >= self.reference[idx,1]*0.2:
+            if diffs[idx] <= self.reference[idx, 2] and y >= self.reference[idx, 1] * 0.2:
                 self.tree[idx].append([x, float(angle)])
 
 
@@ -159,13 +151,13 @@ class FrameProfiler(object):
         self.mask = (self.frame.data > 0.0) & (self.frame.data < self.frame.header['saturated_value'])
 
     def r2q(self, r):
-        return 2*numpy.pi/r
+        return 2 * numpy.pi / r
 
     def r2tt(self, r):
-        return numpy.degrees(numpy.arctan(r/self.frame.header['distance']))
+        return numpy.degrees(numpy.arctan(r / self.frame.header['distance']))
 
     def transform(self, size=180, rot=(None, None)):
-        rsize, asize = max(self.nx, self.ny)/2, size
+        rsize, asize = max(self.nx, self.ny) / 2, size
 
         r = self.radii(rotx=rot[0], roty=rot[1])[self.mask]
         a = self.azimuth(rotx=rot[0], roty=rot[1])[self.mask]
@@ -238,31 +230,188 @@ class FrameProfiler(object):
 
     def azimuth(self, rotx=None, roty=None):
         if rotx is None or roty is None:
-            rotx, roty = self.rot_x, self.rot_y
-        x = (self.x_axis - self.cx) * numpy.cos(rotx)
-        y = (self.y_axis - self.cy) * numpy.cos(roty)
+            rotx, roty = numpy.radians(self.rot_x), numpy.radians(self.rot_y)
+        xo = (self.x_axis - self.cx)
+        yo = (self.y_axis - self.cy)
+        x = xo * numpy.cos(rotx)
+        y = yo * numpy.cos(roty)
         return numpy.arctan2(x[:, None], y[None, :])
 
     def radii(self, rotx=None, roty=None):
         if rotx is None or roty is None:
-            rotx, roty = self.rot_x, self.rot_y
-        x = (self.x_axis - self.cx) * numpy.cos(rotx)
-        y = (self.y_axis - self.cy) * numpy.cos(roty)
+            rotx, roty = numpy.radians(self.rot_x), numpy.radians(self.rot_y)
+        xo = (self.x_axis - self.cx)
+        yo = (self.y_axis - self.cy)
+        x = xo * numpy.cos(rotx)
+        y = yo * numpy.cos(roty)
         return (numpy.hypot(x[:, None], y[None, :]))
 
-    def save_xdi(self, prof, filename):
+
+class FrameAnalyser(object):
+    def __init__(self, filename, directory=None):
+        self.filename = os.path.abspath(filename)
+        self.directory = directory or os.getcwd()
+        self.profiler = FrameProfiler(filename)
+        self.frame = self.profiler.frame
+        self.cx, self.cy = self.frame.header['beam_center']
+        self.rot_x, self.rot_y = 0.0, 0.0
+        self.mask = (self.frame.data > 0.0) & (self.frame.data < self.frame.header['saturated_value'])
+        self.size = min(self.profiler.nx - self.cx, self.cx, self.profiler.ny - self.cy, self.profiler.ny)
+        dbdir = os.path.join(os.environ['HOME'], '.config/autoprocess')
+        if not os.path.exists(dbdir):
+            os.makedirs(dbdir)
+        self.db_file = os.path.join(dbdir, 'powder.idb')
+        if not os.path.exists(self.db_file):
+            logger.warning('Calibration file missing! Must perform at least one calibrate before integrating')
+
+        if not os.path.exists(self.directory):
+            os.mkdirs(self.directory)
+            os.chdir(self.directory)
+
+    def get_xy(self, twotheta, azimuth):
+        r = self.frame.header['distance'] * numpy.tan(numpy.radians(twotheta)) / self.frame.header['pixel_size']
+        return self.cx + r * numpy.sin(numpy.radians(azimuth)), self.cy + r * numpy.cos(numpy.radians(azimuth))
+
+    def find_rings(self, samples=40, width=10):
+        peak_sorter = None
+        sizes = []
+
+        for angle in numpy.arange(0., 360., 360 / samples):
+            prof = self.integrate_angle(angle, width=width)
+            peaks = peak_search(prof, width=50, sensitivity=0.1)
+            sizes.append(peaks[:, 2].max())
+            if not peak_sorter:
+                peak_sorter = PeakSorter(peaks, max_size=10)
+            else:
+                peak_sorter.add_peaks(peaks, angle)
+        width = numpy.median(sizes) / self.frame.header['pixel_size']
+        coords = numpy.array(peak_sorter.tree[0])
+        x, y = self.get_xy(coords[:, 0], coords[:, 1])
+        ellipse = zip(x, y)
+        rings = [self.get_xy(group[0][0], group[0][1]) for group in peak_sorter.tree[1:]]
+
+        return {
+            'ellipse': ellipse,
+            'rings': rings,
+            'ring_width': width,
+        }
+
+    def show_rings(self, samples=40, width=4):
+        from matplotlib import pyplot as plt
+        peak_sorter = None
+        sizes = []
+        plt.imshow(self.frame.data)
+        for angle in numpy.arange(0., 360., 360 / samples):
+            prof = self.integrate_angle(angle, width=width)
+            peaks = peak_search(prof, width=50, sensitivity=0.1)
+            sizes.append(peaks[:, 2].max())
+            if not peak_sorter:
+                peak_sorter = PeakSorter(peaks, max_size=5)
+            else:
+                peak_sorter.add_peaks(peaks, angle)
+        width = numpy.median(sizes) / self.frame.header['pixel_size']
+
+        for i, group in enumerate(peak_sorter.tree):
+            if len(group) < 0.5 * samples: continue
+            coords = numpy.array(group)
+            x, y = self.get_xy(coords[:, 0], coords[:, 1])
+            plt.scatter(y, x, s=5)
+        plt.show()
+        coords = numpy.array(peak_sorter.tree[0])
+        x, y = self.get_xy(coords[:, 0], coords[:, 1])
+        ellipse = zip(x, y)
+        rings = [self.get_xy(group[0][0], group[0][1]) for group in peak_sorter.tree[1:]]
+
+        return {
+            'ellipse': ellipse,
+            'rings': rings,
+            'ring_width': width * 5,
+        }
+
+    def fit_ellipses(self, samples=120, width=10):
+        peak_sorter = None
+        for angle in numpy.arange(30., 360., 360 / samples):
+            prof = self.integrate_angle(angle, width=width)
+            peaks = peak_search(prof, width=4, sensitivity=0.3)
+            if not peak_sorter:
+                peak_sorter = PeakSorter(peaks)
+            else:
+                peak_sorter.add_peaks(peaks, angle)
+        fits = []
+        for i, group in enumerate(peak_sorter.tree):
+            if len(group) < 0.5 * samples: continue
+            coords = numpy.array(group)
+            x, y = self.get_xy(coords[:, 0], coords[:, 1])
+            fits.append(self.fit_points(x, y))
+        return fits
+
+    def calibrate(self):
+        from xvfbwrapper import Xvfb
+        params = self.find_rings()
+        for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
+            params[key] = self.frame.header[key]
+
+        dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
+        with Fit2DFile(self.filename, self.frame.header['file_format']) as imgfile:
+            params['file_name'] = imgfile.filename
+            params['directory'] = self.directory
+            params['data_name'] = imgfile.name
+            params['db_file'] = self.db_file
+            if os.path.exists(self.db_file):
+                logger.warning('Calibration file will be overwritten')
+            fitio.write_calib_macro(params, macro_file='calib.mac')
+
+            with Xvfb() as xvfb:
+                args = ['fit2d', '-dim{0:0.0f}x{0:0.0f}'.format(dim), '-maccalib.mac']
+                output = subprocess.check_output(args, timeout=120)
+                with open('fit2d.log', 'a') as handle:
+                    handle.write(output)
+            data_file = '{}.chi'.format(params['data_name'])
+            if os.path.exists(data_file):
+                data = numpy.loadtxt(data_file, skiprows=4)
+                self.save_xdi(data, '{}.xdi'.format(params['data_name']))
+                self.report(params, data)
+
+    def integrate(self, intensity=False):
+        from xvfbwrapper import Xvfb
+        params = {}
+        for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
+            params[key] = self.frame.header[key]
+        dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
+        with Fit2DFile(self.filename, self.frame.header['file_format']) as imgfile:
+            params['file_name'] = imgfile.filename
+            params['data_name'] = imgfile.name
+            params['directory'] = self.directory
+            params['intensity'] = intensity
+            params['db_file'] = self.db_file
+            if not os.path.exists(self.db_file):
+                logger.error('Calibration file missing! Must perform at least one calibrate before integrating')
+                raise IOError('File not found!')
+
+            fitio.write_integrate_macro(params, macro_file='integrate.mac')
+            with Xvfb() as xvfb:
+                args = ['fit2d', '-dim{0:0.0f}x{0:0.0f}'.format(dim), '-macintegrate.mac']
+                output = subprocess.check_output(args, timeout=120)
+                with open('fit2d.log', 'a') as handle:
+                    handle.write(output)
+        data_file = '{}.chi'.format(params['data_name'])
+        if os.path.exists(data_file):
+            data = numpy.loadtxt(data_file, skiprows=4)
+            self.save_xdi(data, '{}.xdi'.format(params['data_name']))
+            self.report(params, data)
+
+
+    def save_xdi(self, src, filename):
         data_types = {
             'names': ['twotheta', 'd', 'Q', 'counts'],
             'formats': [float, float, float, int],
         }
-        sel = prof[:,0] > 0
-        src = prof[sel,:]
         data = numpy.zeros(src.shape[0], dtype=data_types)
-        tt = numpy.arctan((src[:,0] * self.frame.header['pixel_size'])/self.frame.header['distance'])
+        tt = numpy.radians(src[:, 0])
 
-        data['Q'] = (4*numpy.pi/self.frame.header['wavelength'])*numpy.sin(tt/2)
+        data['Q'] = (4 * numpy.pi / self.frame.header['wavelength']) * numpy.sin(tt / 2)
         data['twotheta'] = numpy.degrees(tt)
-        data['d'] = self.frame.header['wavelength'] / (2*numpy.sin(tt/2))
+        data['d'] = self.frame.header['wavelength'] / (2 * numpy.sin(tt / 2))
         data['counts'] = src[:, 1]
         units = {
             'twotheta': 'degrees',
@@ -270,7 +419,7 @@ class FrameProfiler(object):
         }
         comments = 'Azimuthal Profile'
         xdi_data = xdi.XDIData(data=data, comments=comments, version='AutoProcess/4.0')
-        xdi_data['Mono.name'] =  'Si 111'
+        xdi_data['Mono.name'] = 'Si 111'
 
         for i, name in enumerate(data_types['names']):
             key = 'Column.{}'.format(i + 1)
@@ -278,90 +427,195 @@ class FrameProfiler(object):
 
         xdi_data.save(filename)
 
+    def read_db(self):
+        if not os.path.exists(self.db_file):
+            logger.error('Calibration file missing! Must perform at least one calibrate before integrating')
+            return {}
+        else:
+            with open(self.db_file, 'r') as handle:
+                data = handle.read()
+            lines = data.split('\n')
+            return dict(zip(lines[0::2], lines[1::2]))
 
-def calibrate(filename):
-    # initialize
-    calc = FrameProfiler(filename)
+    def report(self, params, data):
+        directory = params['directory']
+        info = self.read_db()
+        report = {
+            'id': None,
+            'directory': directory,
+            'filename': 'report.json',
+            'score': 0.0,
+            'data_id': None,
+        }
 
-    # pass 1
-    cx = calc.cx
-    cy = calc.cy
-    calc.transform(size=30)
+        report_file = os.path.join(directory, report['filename'])
+        text_file = os.path.join(directory, 'report.txt')
 
-    # Calculate approximate center
-    for i in range(2):
-        calc.cx = cx
-        calc.cy = cy
-        calc.transform(size=30)
-        data = calc.rdata
-        data, offsets = calc.shiftr(data)
+        # read previous json_file and obtain id from it if one exists:
+        if os.path.exists(report_file):
+            old_report = misc.load_json(report_file)
+            report['id'] = old_report.get('id')
 
-        adx, ady = calc.from_polar(-calc.ri[offsets], calc.ai)
-        vx, vy = calc.cx - adx.mean(), calc.cy - ady.mean()
-        cx = calc.cx - 2 * vx
-        cy = calc.cy - 2 * vy
+        report['kind'] = 'XRD Profile'
+        report['title'] = '{} XRD Profile'.format(params['data_name'])
+        report['details'] = [
+            {
+                'title': report['title'],
+                'content': [
+                    calib_table(params, info),
+                    profile_plot(params, data),
+                ]
+            }
+        ]
 
-    calc.cx = cx
-    calc.cy = cy
-    calc.transform(size=90)
-    data = calc.rdata
+        # save
+        with open(report_file, 'w') as handle:
+            json.dump(report, handle)
 
-    # circles
-    sel = data > 0
-    data[data <= 0] = 0
-    prof = data.sum(axis=0) / sel.sum(axis=0)
-    pks = find_peaks(prof, width=5)
-    peaks = pks[pks[:,0] > BACKSTOP_OFFSET]
+        shutil.copy(os.path.join(SHARE_DIR, 'report.html'), directory)
+        shutil.copy(os.path.join(SHARE_DIR, 'report.min.js'), directory)
+        shutil.copy(os.path.join(SHARE_DIR, 'report.min.css'), directory)
 
-    peak_sorter = PeakSorter(peaks)
-    for i in range(data.shape[0]):
-        a = calc.i2a(i)
-        prof = data[i, :]
-        lpks = find_peaks(prof, width=5, sensitivity=0.05)
-        if lpks.shape[0] == 0: continue
-        sel = lpks[:,0] > BACKSTOP_OFFSET
-        peak_sorter.add_peaks(lpks[sel], a)
+    def radial_average(self, params=None):
+        # initialize
+
+        if params:
+            self.profiler.cx = params.get('cx', self.profiler.cx)
+            self.profiler.cy = params.get('cy', self.profiler.cy)
+            self.profiler.rot_x = params.get('rotx', self.profiler.rot_x)
+            self.profiler.rot_y = params.get('roty', self.profiler.rot_y)
+
+        prof = self.profiler.profile()
+        fileroot, ext = os.path.splitext(self.filename)
+        self.profiler.save_xdi(prof, '{}.xdi'.format(fileroot))
+
+        peaks = find_peaks(prof[:, 1], width=5)
+        return prof
+
+    def fit_points(self, x, y):
+        try:
+            ellipse = fit_ellipse(y, x)
+            tilt = numpy.arctan2(ellipse.half_long_axis - ellipse.half_short_axis, ellipse.half_short_axis)
+            angle = (ellipse.angle + numpy.pi / 2.0) % numpy.pi
+            cos_tilt = numpy.cos(tilt)
+            sin_tilt = numpy.sin(tilt)
+            cos_tpr = numpy.cos(angle)
+            sin_tpr = numpy.sin(angle)
+            rot2 = numpy.arcsin(sin_tilt * sin_tpr)  # or pi-
+            rot1 = numpy.arccos(
+                min(1.0, max(-1.0, (cos_tilt / numpy.sqrt(1 - sin_tpr * sin_tpr * sin_tilt * sin_tilt)))))  # + or -
+            if cos_tpr * sin_tilt > 0:
+                rot1 = -rot1
+            rot3 = 0
+            return {
+                'tilt': numpy.degrees(tilt),
+                'angle': numpy.degrees(angle),
+                'rotation': 0.0,
+                'success': True,
+                'rotx': numpy.degrees(rot1),
+                'roty': numpy.degrees(rot2),
+                'cx': ellipse.cx,
+                'cy': ellipse.cy,
+            }
+        except:
+            return {
+                'tilt': 0.0,
+                'angle': 0.0,
+                'rotation': 0.0,
+                'rotx': 0.0,
+                'roty': 0.0,
+                'success': False
+            }
+
+    def integrate_angle(self, angle, width=2):
+        """Bresenham's line algorithm"""
+        azimuth = numpy.radians(angle)
+        x, y = int(self.cx), int(self.cy)
+        x2 = int(self.size * numpy.sin(azimuth))
+        y2 = int(self.size * numpy.cos(azimuth))
+        lw = width
+
+        steep = 0
+        coords = []
+        dx = abs(x2 - x)
+        if (x2 - x) > 0:
+            sx = 1
+        else:
+            sx = -1
+        dy = abs(y2 - y)
+        if (y2 - y) > 0:
+            sy = 1
+        else:
+            sy = -1
+        if dy > dx:
+            steep = 1
+            x, y = y, x
+            dx, dy = dy, dx
+            sx, sy = sy, sx
+        d = (2 * dy) - dx
+
+        for i in range(0, dx):
+            if steep:
+                coords.append((y, x))
+            else:
+                coords.append((x, y))
+            while d >= 0:
+                y = y + sy
+                d = d - (2 * dx)
+            x = x + sx
+            d = d + (2 * dy)
+        coords.append((x2, y2))
+
+        data = numpy.zeros((len(coords), 3))
+        n = 0
+        for ix, iy in coords:
+            ix = max(1, ix)
+            iy = max(1, iy)
+            data[n][0] = n
+            src = self.frame.data[ix - lw:ix + lw, iy - lw:iy + lw]
+            sel = src & self.mask[ix - lw:ix + lw, iy - lw:iy + lw]
+            if sel.sum():
+                val = src[sel].mean()
+            else:
+                val = numpy.nan
+            data[n][2] = val
+            d = numpy.sqrt((ix - coords[0][0]) ** 2 + (iy - coords[0][1]) ** 2) * self.frame.header['pixel_size']
+            data[n][1] = numpy.degrees(numpy.arctan(d / self.frame.header['distance']))
+            n += 1
+        return data[:, 1:]
 
 
-    rots = []
-    for i, group in enumerate(peak_sorter.tree):
-        if len(group) < 10: continue
-        coords = numpy.array(group)
-        rvals = calc.i2r(coords[:,0])
-        x, y = calc.from_polar(rvals, coords[:,1])
-        rot = fit_geom(x, y)
-        if rot:
-            rots.append(rot)
-            rotx, roty, _ = rot
-            calc.transform(size=90, rot=(rotx*10, roty))
-            calc.rot_x, calc.rot_y = rotx, roty
-
-    if rots:
-        rotx, roty, rotz = numpy.array(rots).mean(axis=0)
-        calc.rot_x, calc.rot_y = rotx, roty
-        prof = calc.profile()
-
-        fileroot, ext = os.path.splitext(filename)
-        calc.save_xdi(prof, '{}.xdi'.format(fileroot))
-
-        peaks = find_peaks(prof[:,1], width=5)
-        print json.dumps({'peak_count': len(peaks)})
+def calib_table(params, db_info):
+    return {
+        'title': 'Experiment Parameters',
+        'kind': 'table',
+        'header': 'column',
+        'data': [
+            ['Wavelength (A)', '{:0.4f}'.format(params['wavelength'])],
+            ['Detector Distance (mm)', '{:0.4f}'.format(params['distance'])],
+            ['Detector Pixel Size (um)', '{:0.4f}'.format(params['pixel_size'])],
+            ['File Format', params['file_format']],
+            ['Detector Tilt (deg)', '{:0.4f}'.format(numpy.degrees(float(db_info['TILT_ANGLE'])))],
+            ['Detector Tilt Rotation (deg)', '{:0.2f}'.format(numpy.degrees(float(db_info['TILT_ROTATION'])))],
+            ['Beam Center (pix)', '{:0.2f}, {:0.2f}'.format(float(db_info['X_BEAM_CENTRE']),
+                                                            params['detector_size'][1] - float(
+                                                                db_info['Y_BEAM_CENTRE']))],
+        ],
+    }
 
 
-def radial_profile(filename, cx=None, cy=None, rotx=None, roty=None):
-    # initialize
-    calc = FrameProfiler(filename)
-    if cx and cy:
-        calc.cx = cx
-        calc.cy = cy
-    if rotx and roty:
-        calc.rot_x = rotx
-        calc.rot_y = roty
-
-    prof = calc.profile()
-    fileroot, ext = os.path.splitext(filename)
-    calc.save_xdi(prof, '{}.xdi'.format(fileroot))
-
-    peaks = find_peaks(prof[:,1], width=5)
-    print json.dumps({'peak_count': len(peaks)})
-
+def profile_plot(params, data):
+    return {
+        'kind': 'lineplot',
+        'data': {
+            'x': ['Two Theta'] + [row for row in data[:, 0]],
+            'y1': [['Intensity'] + [row for row in data[:, 1]], ],
+            'y1-label': 'Integrated Intensity'
+        },
+        'notes': inspect.cleandoc(
+            """
+            *  The above plots use data generated by Fit2D. A P Hammersley, S O Svensson, M Hanfland, A N Fitch, 
+            and D Hausermann, High Pressure Research, 14, pp235-248, (1996).
+            """
+        )
+    }

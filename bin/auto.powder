@@ -10,11 +10,14 @@ from autoprocess.engine import powder
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Perform azimuthal integration of powder pattern')
     parser.add_argument('files', nargs='+', help='Files to integrate or calibrate')
-    parser.add_argument('--calib', help='Perform calibrationi using LaB6 reference', action="store_true")
+    parser.add_argument('--calib', help='Perform calibrationi using clear rings reference', action="store_true")
+    parser.add_argument('--dir', help='Working Directory', action="store_true")
 
     args = parser.parse_args()
     if args.calib:
-        powder.calibrate(args.files[0])
+        p = powder.FrameAnalyser(args.files[0])
+        p.calibrate()
     else:
         for filename in args.files:
-            powder.radial_profile(filename)
+            p = powder.FrameAnalyser(args.files[0])
+            p.integrate()

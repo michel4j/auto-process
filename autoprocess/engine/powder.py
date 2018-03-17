@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 import warnings
-
+import re
 import numpy
 import subprocess32 as subprocess
 from scipy import interpolate
@@ -248,21 +248,56 @@ class FrameProfiler(object):
 
 
 class FrameAnalyser(object):
-    def __init__(self, filename):
-        self.filename = os.path.abspath(filename)
+    def __init__(self, *files):
+        self.files = [os.path.abspath(filename) for filename in misc.uniquify(files)]
+        self.filename = self.files[0]
         self.directory = os.getcwd()
-        self.profiler = FrameProfiler(filename)
-        self.frame = self.profiler.frame
-        self.cx, self.cy = self.frame.header['beam_center']
-        self.rot_x, self.rot_y = 0.0, 0.0
-        self.mask = (self.frame.data > 0.0) & (self.frame.data < self.frame.header['saturated_value'])
-        self.size = min(self.profiler.nx - self.cx, self.cx, self.profiler.ny - self.cy, self.profiler.ny)
         dbdir = os.path.join(os.path.expanduser('~'), '.config/autoprocess')
         if not os.path.exists(dbdir):
             os.makedirs(dbdir)
         self.db_file = os.path.join(dbdir, 'powder.idb')
         if not os.path.exists(self.db_file):
             logger.warning('Calibration file missing! Must perform at least one calibrate before integrating')
+
+        # prepare xdi_headers
+        self.data_types = {
+            'names': ['twotheta', 'd', 'Q', 'counts'],
+            'formats': [float, float, float, int],
+        }
+        self.data = {}
+        self.first_column = None
+        self.frame_name = '0000'
+
+    def add_data(self, d):
+        name = self.frame_name
+        self.data_types['names'].insert(-1, name)
+        self.data_types['formats'].insert(-1, int)
+
+        if not 'counts' in self.data:
+            self.first_column = name
+            tt = numpy.radians(d[:, 0])
+            self.data['Q'] = (4 * numpy.pi / self.frame.header['wavelength']) * numpy.sin(tt / 2)
+            self.data['twotheta'] = numpy.degrees(tt)
+            self.data['d'] = self.frame.header['wavelength'] / (2 * numpy.sin(tt / 2))
+            self.data['counts'] = numpy.copy(d[:, 1])
+            self.data[name] = d[:, 1]
+        else:
+            self.data['counts'] += d[: ,1]
+            self.data[name] = d[:,1]
+
+
+    def set_file(self, filename):
+        self.filename = filename
+        self.profiler = FrameProfiler(self.filename)
+        self.frame = self.profiler.frame
+        self.mask = (self.frame.data > 0.0) & (self.frame.data < self.frame.header['saturated_value'])
+        self.cx, self.cy = self.frame.header['beam_center']
+        self.rot_x, self.rot_y = 0.0, 0.0
+        self.size = min(self.profiler.nx - self.cx, self.cx, self.profiler.ny - self.cy, self.profiler.ny)
+        file_pattern = re.compile('^(?P<base>.+)_(?P<num>\d{3,6})(?P<ext>\.?[\w.]+)?$')
+        m = file_pattern.match(os.path.basename(filename)).groupdict()
+        self.frame_name = m['num']
+        self.group_name = m['base']
 
     def get_xy(self, twotheta, azimuth):
         r = self.frame.header['distance'] * numpy.tan(numpy.radians(twotheta)) / self.frame.header['pixel_size']
@@ -285,11 +320,12 @@ class FrameAnalyser(object):
         x, y = self.get_xy(coords[:, 0], coords[:, 1])
         ellipse = zip(x, y)
         rings = [self.get_xy(group[0][0], group[0][1]) for group in peak_sorter.tree[1:]]
-
+        angles = [group[0][0] for group in peak_sorter.tree[1:]]
         return {
             'ellipse': ellipse,
             'rings': rings,
             'ring_width': width,
+            'angles': angles,
         }
 
     def show_rings(self, samples=40, width=4):
@@ -342,8 +378,26 @@ class FrameAnalyser(object):
         return fits
 
     def calibrate(self):
+        self.set_file(self.files[0])
         from xvfbwrapper import Xvfb
+        logger.info('Detecting strong rings in frame {}:{} ...'.format(self.group_name, self.frame_name))
         params = self.find_rings()
+        if len(params['rings']) > 5:
+            logger.info(
+                'Sufficient number ({}) of rings at: {} deg'.format(
+                    len(params['rings']),
+                    ', '.join(['{:0.1f}'.format(a) for a in params['angles']])
+                )
+            )
+        else:
+            logger.warning(
+                'Insufficient number ({}) of rings found at: {} deg'.format(
+                    len(params['rings']),
+                    ', '.join(['{:0.1f}'.format(a) for a in params['angles']])
+                )
+            )
+            logger.warning('Calibration may fail. Use a frame with clearly separated diffraction rings!')
+
         for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
             params[key] = self.frame.header[key]
 
@@ -353,75 +407,80 @@ class FrameAnalyser(object):
             params['directory'] = self.directory
             params['data_name'] = imgfile.name
             params['db_file'] = self.db_file
-            if os.path.exists(self.db_file):
-                logger.warning('Calibration file will be overwritten')
             fitio.write_calib_macro(params, macro_file='calib.mac')
 
             with Xvfb() as xvfb:
                 args = ['fit2d', '-dim{0:0.0f}x{0:0.0f}'.format(dim), '-maccalib.mac']
-                logger.info(' '.join(args))
+                logger.info('Running calibration through fit2d ...')
+                if os.path.exists(self.db_file):
+                    logger.warning('Calibration file will be overwritten')
                 output = subprocess.check_output(args, timeout=120)
-                with open('fit2d.log', 'a') as handle:
-                    handle.write(output)
+                os.remove('calib.mac')
             data_file = '{}.chi'.format(params['data_name'])
             if os.path.exists(data_file):
                 data = numpy.loadtxt(data_file, skiprows=4)
-                self.save_xdi(data, '{}.xdi'.format(params['data_name']))
-                self.report(params, data)
+                self.add_data(data)
+                os.remove(data_file)
+
+        self.report(params, self.data)
+        self.save_xdi('{}.xdi'.format(self.group_name))
 
     def integrate(self, intensity=False):
         from xvfbwrapper import Xvfb
         params = {}
-        for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
-            params[key] = self.frame.header[key]
-        dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
-        with Fit2DFile(self.filename, self.frame.header['file_format']) as imgfile:
-            params['file_name'] = imgfile.filename
-            params['data_name'] = imgfile.name
-            params['directory'] = self.directory
-            params['intensity'] = intensity
-            params['db_file'] = self.db_file
-            if not os.path.exists(self.db_file):
-                logger.error('Calibration file missing! Must perform at least one calibrate before integrating')
-                raise IOError('File not found!')
 
-            fitio.write_integrate_macro(params, macro_file='integrate.mac')
-            with Xvfb() as xvfb:
-                args = ['fit2d', '-dim{0:0.0f}x{0:0.0f}'.format(dim), '-macintegrate.mac']
-                output = subprocess.check_output(args, timeout=120)
-                with open('fit2d.log', 'a') as handle:
-                    handle.write(output)
-        data_file = '{}.chi'.format(params['data_name'])
-        if os.path.exists(data_file):
-            data = numpy.loadtxt(data_file, skiprows=4)
-            self.save_xdi(data, '{}.xdi'.format(params['data_name']))
-            self.report(params, data)
+        for filename in self.files:
+            self.set_file(filename)
+            logger.info('Integrating frame {}: {} ...'.format(self.group_name, self.frame_name))
+            for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
+                params[key] = self.frame.header[key]
+            dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
 
+            with Fit2DFile(self.filename, self.frame.header['file_format']) as imgfile:
+                params['file_name'] = imgfile.filename
+                params['data_name'] = imgfile.name
+                params['directory'] = self.directory
+                params['intensity'] = intensity
+                params['db_file'] = self.db_file
+                if not os.path.exists(self.db_file):
+                    logger.error('Calibration file missing! Must perform at least one calibrate before integrating')
+                    raise IOError('File not found!')
 
-    def save_xdi(self, src, filename):
-        data_types = {
-            'names': ['twotheta', 'd', 'Q', 'counts'],
-            'formats': [float, float, float, int],
-        }
-        data = numpy.zeros(src.shape[0], dtype=data_types)
-        tt = numpy.radians(src[:, 0])
+                fitio.write_integrate_macro(params, macro_file='integrate.mac')
+                with Xvfb() as xvfb:
+                    args = ['fit2d', '-dim{0:0.0f}x{0:0.0f}'.format(dim), '-macintegrate.mac']
+                    output = subprocess.check_output(args, timeout=120)
+                    os.remove('integrate.mac')
+            data_file = '{}.chi'.format(params['data_name'])
+            if os.path.exists(data_file):
+                data = numpy.loadtxt(data_file, skiprows=4)
+                self.add_data(data)
+                os.remove(data_file)
 
-        data['Q'] = (4 * numpy.pi / self.frame.header['wavelength']) * numpy.sin(tt / 2)
-        data['twotheta'] = numpy.degrees(tt)
-        data['d'] = self.frame.header['wavelength'] / (2 * numpy.sin(tt / 2))
-        data['counts'] = src[:, 1]
+        self.save_xdi('{}.xdi'.format(self.group_name))
+        self.report(params, self.data)
+
+    def save_xdi(self, filename):
+        logger.info('Saving XDI formatted data: {}'.format(filename))
+        if len(self.files)  == 1:
+            i = self.data_types['names'].index(self.frame_name)
+            self.data_types['names'].pop(i)
+            self.data_types['formats'].pop(i)
+        rec_data = numpy.zeros(self.data['counts'].shape[0], dtype=self.data_types)
+        for key in self.data_types['names']:
+            rec_data[key] = self.data[key]
+
         units = {
             'twotheta': 'degrees',
             'd': 'Angstrom',
         }
         comments = 'Azimuthal Profile'
-        xdi_data = xdi.XDIData(data=data, comments=comments, version='AutoProcess/4.0')
+        xdi_data = xdi.XDIData(data=rec_data, comments=comments, version='AutoProcess/4.0')
         xdi_data['Mono.name'] = 'Si 111'
 
-        for i, name in enumerate(data_types['names']):
+        for i, name in enumerate(self.data_types['names']):
             key = 'Column.{}'.format(i + 1)
             xdi_data[key] = (name, units.get(name))
-
         xdi_data.save(filename)
 
     def read_db(self):
@@ -605,8 +664,8 @@ def profile_plot(params, data):
     return {
         'kind': 'lineplot',
         'data': {
-            'x': ['Two Theta'] + [row for row in data[:, 0]],
-            'y1': [['Intensity'] + [row for row in data[:, 1]], ],
+            'x': ['Two Theta'] + [row for row in data['twotheta']],
+            'y1': [['Intensity'] + [row for row in data['counts']], ],
             'y1-label': 'Integrated Intensity'
         },
         'notes': inspect.cleandoc(

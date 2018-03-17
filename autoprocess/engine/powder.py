@@ -257,7 +257,7 @@ class FrameAnalyser(object):
         self.rot_x, self.rot_y = 0.0, 0.0
         self.mask = (self.frame.data > 0.0) & (self.frame.data < self.frame.header['saturated_value'])
         self.size = min(self.profiler.nx - self.cx, self.cx, self.profiler.ny - self.cy, self.profiler.ny)
-        dbdir = os.path.join(os.environ['HOME'], '.config/autoprocess')
+        dbdir = os.path.join(os.path.expanduser('~'), '.config/autoprocess')
         if not os.path.exists(dbdir):
             os.makedirs(dbdir)
         self.db_file = os.path.join(dbdir, 'powder.idb')

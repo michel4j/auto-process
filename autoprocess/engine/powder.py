@@ -359,6 +359,7 @@ class FrameAnalyser(object):
 
             with Xvfb() as xvfb:
                 args = ['fit2d', '-dim{0:0.0f}x{0:0.0f}'.format(dim), '-maccalib.mac']
+                logger.info(' '.join(args))
                 output = subprocess.check_output(args, timeout=120)
                 with open('fit2d.log', 'a') as handle:
                     handle.write(output)

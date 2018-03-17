@@ -1,4 +1,4 @@
-import json
+import numpy
 import copy
 
 CALIB_TEMPLATE = """
@@ -37,6 +37,8 @@ GEOMETRY COR.
 YES
 CONSERVE INT.
 {intensity}
+MAX. ANGLE
+{max_angle:0.2f}
 O.K.
 OUTPUT
 CHIPLOT
@@ -74,6 +76,8 @@ WAVELENGTH
 O.K.
 CONSERVE INT.
 {intensity}
+MAX. ANGLE
+{max_angle:0.2f}
 O.K.
 OUTPUT
 CHIPLOT
@@ -85,7 +89,7 @@ EXIT FIT2D
 YES
 """
 
-def write_calib_macro(params, macro_file='macro.mac'):
+def write_calib_macro(parameters, macro_file='macro.mac'):
     """
     Create calib macro file for fit2d
     params = {
@@ -106,15 +110,26 @@ def write_calib_macro(params, macro_file='macro.mac'):
     """
 
     # Fix Fit2D geometry
-    params = copy.deepcopy(params)
+    max_x = max(
+        parameters['detector_size'][0] - parameters['beam_center'][0],
+        parameters['beam_center'][0],
+    )
+    max_y = max(
+        parameters['detector_size'][1] - parameters['beam_center'][1],
+        parameters['beam_center'][1],
+    )
+    max_r = 0.99 * numpy.sqrt(max_y ** 2 + max_x ** 2) * parameters['pixel_size']
+    max_angle = numpy.degrees(numpy.arctan(max_r / parameters['distance']))
 
+    params = copy.deepcopy(parameters)
     params.update({
         'beam_x': params['beam_center'][0],
         'beam_y': params['detector_size'][1] - params['beam_center'][1],
         'rings': [(x, params['detector_size'][1] - y) for x, y in params['rings']],
         'ellipse': [(x, params['detector_size'][1] - y) for x, y in params['ellipse']],
         'pixel_size': 1000*params['pixel_size'],
-        'intensity': 'YES' if params.get('intensity') else 'NO'
+        'intensity': 'YES' if params.get('intensity') else 'NO',
+        'max_angle': max_angle
     })
 
     coords_text = [
@@ -136,7 +151,7 @@ def write_calib_macro(params, macro_file='macro.mac'):
         outfile.write(macro)
 
 
-def write_integrate_macro(params, macro_file='integrate.mac'):
+def write_integrate_macro(parameters, macro_file='integrate.mac'):
     """
     Create calib macro file for fit2d
     params = {
@@ -158,12 +173,24 @@ def write_integrate_macro(params, macro_file='integrate.mac'):
     """
 
     # Fix Fit2D geometry
-    params = copy.deepcopy(params)
+    max_x = max(
+        parameters['detector_size'][0] - parameters['beam_center'][0],
+        parameters['beam_center'][0],
+    )
+    max_y = max(
+        parameters['detector_size'][1] - parameters['beam_center'][1],
+        parameters['beam_center'][1],
+    )
+    max_r = 0.99 * numpy.sqrt(max_y ** 2 + max_x ** 2) * parameters['pixel_size']
+    max_angle = numpy.degrees(numpy.arctan(max_r / parameters['distance']))
+
+    params = copy.deepcopy(parameters)
     params.update({
         'beam_x': params['beam_center'][0],
         'beam_y': params['detector_size'][1] - params['beam_center'][1],
         'pixel_size': 1000*params['pixel_size'],
-        'intensity': 'YES' if params.get('intensity') else 'NO'
+        'intensity': 'YES' if params.get('intensity') else 'NO',
+        'max_angle': max_angle
     })
 
     macro = INTEGRATE_TEMPLATE.format(**params)

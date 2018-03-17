@@ -321,6 +321,7 @@ class FrameAnalyser(object):
         ellipse = zip(x, y)
         rings = [self.get_xy(group[0][0], group[0][1]) for group in peak_sorter.tree[1:]]
         angles = [group[0][0] for group in peak_sorter.tree[1:]]
+
         return {
             'ellipse': ellipse,
             'rings': rings,

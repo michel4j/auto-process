@@ -41,7 +41,7 @@ O.K.
 OUTPUT
 CHIPLOT
 FILE NAME
-{data_name}-int.chi
+{data_name}.chi
 O.K.
 EXIT
 SET-UP

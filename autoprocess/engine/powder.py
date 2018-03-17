@@ -248,9 +248,9 @@ class FrameProfiler(object):
 
 
 class FrameAnalyser(object):
-    def __init__(self, filename, directory=None):
+    def __init__(self, filename):
         self.filename = os.path.abspath(filename)
-        self.directory = directory or os.getcwd()
+        self.directory = os.getcwd()
         self.profiler = FrameProfiler(filename)
         self.frame = self.profiler.frame
         self.cx, self.cy = self.frame.header['beam_center']
@@ -263,10 +263,6 @@ class FrameAnalyser(object):
         self.db_file = os.path.join(dbdir, 'powder.idb')
         if not os.path.exists(self.db_file):
             logger.warning('Calibration file missing! Must perform at least one calibrate before integrating')
-
-        if not os.path.exists(self.directory):
-            os.mkdirs(self.directory)
-            os.chdir(self.directory)
 
     def get_xy(self, twotheta, azimuth):
         r = self.frame.header['distance'] * numpy.tan(numpy.radians(twotheta)) / self.frame.header['pixel_size']

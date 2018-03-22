@@ -432,7 +432,6 @@ class FrameAnalyser(object):
 
         for filename in self.files:
             self.set_file(filename)
-            logger.info('Integrating frame {}: {} ...'.format(self.group_name, self.frame_name))
             for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
                 params[key] = self.frame.header[key]
             dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
@@ -449,9 +448,10 @@ class FrameAnalyser(object):
 
                 fitio.write_integrate_macro(params, macro_file='integrate.mac')
                 with Xvfb() as xvfb:
+                    logger.info('Integrating frame {}: {} ...'.format(self.group_name, self.frame_name))
                     args = ['fit2d', '-dim{0:0.0f}x{0:0.0f}'.format(dim), '-macintegrate.mac']
                     output = subprocess.check_output(args, timeout=120, stderr=subprocess.STDOUT)
-                    os.remove('integrate.mac')
+                os.remove('integrate.mac')
             data_file = '{}.chi'.format(params['data_name'])
             if os.path.exists(data_file):
                 data = numpy.loadtxt(data_file, skiprows=4)

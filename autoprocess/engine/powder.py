@@ -463,11 +463,11 @@ class FrameAnalyser(object):
 
     def save_xdi(self, filename):
         logger.info('Saving XDI formatted data: {}'.format(filename))
-        if len(self.files)  == 1:
+        if len(self.files) == 1:
             i = self.data_types['names'].index(self.frame_name)
             self.data_types['names'].pop(i)
             self.data_types['formats'].pop(i)
-        rec_data = numpy.zeros(self.data['counts'].shape[0], dtype=self.data_types)
+        rec_data = numpy.zeros(self.data['twotheta'].shape[0], dtype=self.data_types)
         for key in self.data_types['names']:
             rec_data[key] = self.data[key]
 

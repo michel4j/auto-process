@@ -285,7 +285,6 @@ class FrameAnalyser(object):
             self.data['counts'] += d[: ,1]
             self.data[name] = d[:,1]
 
-
     def set_file(self, filename):
         self.filename = filename
         self.profiler = FrameProfiler(self.filename)
@@ -309,10 +308,10 @@ class FrameAnalyser(object):
 
         for angle in numpy.arange(0., 360., 360 / samples):
             prof = self.integrate_angle(angle, width=width)
-            peaks = peak_search(prof, width=50, sensitivity=0.1)
+            peaks = peak_search(prof, width=50, sensitivity=0.05)
             sizes.append(peaks[:, 2].max())
             if not peak_sorter:
-                peak_sorter = PeakSorter(peaks, max_size=10)
+                peak_sorter = PeakSorter(peaks, max_size=12)
             else:
                 peak_sorter.add_peaks(peaks, angle)
         width = numpy.median(sizes) / self.frame.header['pixel_size']
@@ -336,7 +335,7 @@ class FrameAnalyser(object):
         plt.imshow(self.frame.data)
         for angle in numpy.arange(0., 360., 360 / samples):
             prof = self.integrate_angle(angle, width=width)
-            peaks = peak_search(prof, width=50, sensitivity=0.1)
+            peaks = peak_search(prof, width=50, sensitivity=0.05)
             sizes.append(peaks[:, 2].max())
             if not peak_sorter:
                 peak_sorter = PeakSorter(peaks, max_size=5)

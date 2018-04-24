@@ -302,16 +302,16 @@ class FrameAnalyser(object):
         r = self.frame.header['distance'] * numpy.tan(numpy.radians(twotheta)) / self.frame.header['pixel_size']
         return self.cx + r * numpy.sin(numpy.radians(azimuth)), self.cy + r * numpy.cos(numpy.radians(azimuth))
 
-    def find_rings(self, samples=40, width=10):
+    def find_rings(self, samples=40, width=2):
         peak_sorter = None
         sizes = []
 
         for angle in numpy.arange(0., 360., 360 / samples):
             prof = self.integrate_angle(angle, width=width)
-            peaks = peak_search(prof, width=50, sensitivity=0.05)
+            peaks = peak_search(prof, width=21, sensitivity=0.05)
             sizes.append(peaks[:, 2].max())
             if not peak_sorter:
-                peak_sorter = PeakSorter(peaks, max_size=12)
+                peak_sorter = PeakSorter(peaks, max_size=20)
             else:
                 peak_sorter.add_peaks(peaks, angle)
         width = numpy.median(sizes) / self.frame.header['pixel_size']
@@ -328,7 +328,7 @@ class FrameAnalyser(object):
             'angles': angles,
         }
 
-    def show_rings(self, samples=40, width=4):
+    def show_rings(self, samples=40, width=3):
         from matplotlib import pyplot as plt
         peak_sorter = None
         sizes = []

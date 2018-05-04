@@ -148,11 +148,12 @@ def async_command(command, args, directory='/tmp', user_name='root', json_file=N
 
 
 class IDPService(Interface):
-    def analyse_frame(frame_path, user_name):
+    def analyse_frame(frame_path, user_name, rastering=False):
         """
         Analyse diffraction frame
         :param frame_path: full path to frame
         :param user_name: user name to run as
+        :params rastering: If True, perform scoring for rastering
         :return:
         """
 
@@ -226,9 +227,15 @@ class DPService(service.Service):
     implements(IDPService)
 
     @log.log_call
-    def analyse_frame(self, frame_path, user_name):
+    def analyse_frame(self, frame_path, user_name, rastering=False):
         directory = os.path.dirname(frame_path)
-        return async_command('labelit.distl', [frame_path], directory, user_name=user_name, parser=_distl_output)
+        args = [
+            'distl.signal_strength',
+            'distl.res.outer={}'.format(3.0 if rastering else 1.0),
+            'distl.res.inner=10.0',
+            frame_path,
+        ]
+        return async_command('distl.signal_strength', args, directory, user_name=user_name, parser=_distl_output)
 
     @log.log_call
     def process_mx(self, info, directory, user_name):
@@ -258,7 +265,7 @@ class DPService(service.Service):
 
 components.registerAdapter(DPSPerspective2Service, IDPService, IDPSPerspective)
 
-# twisd stuff goes here
+# twistd stuff goes here
 log_to_twisted()
 application = service.Application('Data Processing Server')
 serviceCollection = service.IServiceCollection(application)

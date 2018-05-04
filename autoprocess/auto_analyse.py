@@ -9,11 +9,15 @@ from autoprocess.parser.distl import parse_distl_string
 from autoprocess.utils.misc import json
 
 
-def run_distl(img):
-    os.chdir(os.path.dirname(img))
+def run_distl(img, rastering=False):
     try:
-        output = subprocess.check_output(['labelit.distl ', img], env=os.environ.copy())
-        subprocess.check_output(['labelit.reset'], env=os.environ.copy())
+        args = [
+            'distl.signal_strength',
+            'distl.res.outer={}'.format(3.0 if rastering else 1.0),
+            'distl.res.inner=10.0',
+            img,
+        ]
+        output = subprocess.check_output(args, env=os.environ.copy())
         results = parse_distl_string(output)
         info = results['summary']
 

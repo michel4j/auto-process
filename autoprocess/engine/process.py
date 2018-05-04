@@ -126,6 +126,7 @@ class Manager(object):
             for dset_info in checkpoint['datasets']:
                 dset = DataSet(info=dset_info, overwrites=overwrites)
                 self.datasets[dset.name] = dset
+
         elif options is not None:
             self.run_position = (0, 'initialize')
             self.options = options
@@ -134,6 +135,9 @@ class Manager(object):
             for img in options.get('images', []):
                 dset = DataSet(filename=img, overwrites=overwrites)
                 self.datasets[dset.name] = dset
+
+            prefix = os.path.commonprefix(self.datasets.keys())
+
 
             # prepare directories
             if self.options.get('directory', None) is None:
@@ -147,7 +151,8 @@ class Manager(object):
                     suffix = 'anom'
                 else:
                     suffix = 'native'
-                directory = os.path.join(self.options['command_dir'], 'proc-{}'.format(suffix))
+                prefix = prefix or 'proc'
+                directory = os.path.join(self.options['command_dir'], '{}-{}'.format(prefix, suffix))
                 if self.options.get('backup') and os.path.exists(directory):
                     for i in range(99):
                         new_directory = '{}.{}'.format(directory, i + 1)

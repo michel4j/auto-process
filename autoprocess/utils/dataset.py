@@ -1,19 +1,19 @@
-
-import os
-import sys
 import fnmatch
+import os
 import re
-import numpy
-import json
-from scipy.ndimage import measurements
-from scipy.ndimage import filters
+import sys
 
-from autoprocess.utils import misc
-from autoprocess.libs.imageio import read_header, read_image
-from autoprocess.utils.log import get_module_logger
+import numpy
+from scipy.ndimage import filters
+from scipy.ndimage import measurements
+
 import autoprocess.errors
+from autoprocess.libs.imageio import read_header, read_image
+from autoprocess.utils import misc
+from autoprocess.utils.log import get_module_logger
 
 _logger = get_module_logger(__name__)
+
 
 def _all_files(root, patterns='*'):
     """ 
@@ -25,32 +25,32 @@ def _all_files(root, patterns='*'):
     sfiles = []
     for name in files:
         for pattern in patterns:
-            if fnmatch.fnmatch(name,pattern):
+            if fnmatch.fnmatch(name, pattern):
                 sfiles.append(name)
     sfiles.sort()
     return sfiles
 
+
 def detect_beam_peak(filename):
-    img_info =read_image(filename)
+    img_info = read_image(filename)
     img = img_info.image
     img_array = numpy.fromstring(img.tostring(), numpy.uint32)
     img_array.shape = img.size[1], img.size[0]
-      
+
     # filter the array so that features less than 8 pixels wide are blurred out
     # assumes that beam center is at least 8 pixels wide
     arr = filters.gaussian_filter(img_array, 8)
     beam_y, beam_x = measurements.maximum_position(arr)
-    
+
     # valid beam centers must be within the center 1/5 region of the detector surface
     shape = img_array.shape
-    cmin = [2 * v/5 for v in shape]
-    cmax = [3 * v/5 for v in shape]
+    cmin = [2 * v / 5 for v in shape]
+    cmax = [3 * v / 5 for v in shape]
     good = False
     if cmin[0] < beam_y < cmax[0] and cmin[1] < beam_x < cmax[1]:
         good = True
-        
+
     return beam_x, beam_y, good
-    
 
 
 def get_parameters(img_file):
@@ -73,46 +73,46 @@ def get_parameters(img_file):
     else:
         _logger.error("Filename `%s` not recognized as dataset." % filename)
         raise autoprocess.errors.DatasetError('Filename not recognized')
-        
-    file_list = list( _all_files(directory, xds_template) )
+
+    file_list = list(_all_files(directory, xds_template))
     frame_count = len(file_list)
     if frame_count == 0:
         _logger.error("Dataset not found")
         raise autoprocess.errors.DatasetError('Dataset not found')
-        
+
     fm = file_pattern.search(file_list[0])
-    first_frame = int (fm.group('num'))
+    first_frame = int(fm.group('num'))
     _dataset_name = fm.group('base')
     if _dataset_name[-1] in ['_', '.', '-']:
-        _dataset_name = _dataset_name[:-1]    
-    
+        _dataset_name = _dataset_name[:-1]
+
     _overwrite_beam = False
-    if first_frame == 0: 
+    if first_frame == 0:
         first_frame = 1
         _ow_beam_x, _ow_beam_y, _overwrite_beam = detect_beam_peak(os.path.join(directory, file_list[0]))
         if _overwrite_beam:
             _logger.info('%s: New beam origin from frame 000 [%d, %d].' % (_dataset_name, _ow_beam_x, _ow_beam_y))
         file_list = file_list[1:]
-        frame_count = len(file_list) 
-        
+        frame_count = len(file_list)
+
     reference_image = os.path.join(directory, file_list[0])
     if not (os.path.isfile(reference_image) and os.access(reference_image, os.R_OK)):
         _logger.info("File '%s' not found, or unreadable." % reference_image)
         sys.exit(1)
-                
+
     info = read_header(reference_image)
     info['energy'] = misc.wavelength_to_energy(info['wavelength'])
     info['first_frame'] = first_frame
     info['frame_count'] = frame_count
     info['name'] = _dataset_name
-    info['file_template'] = os.path.join(directory, xds_template)        
+    info['file_template'] = os.path.join(directory, xds_template)
     if _overwrite_beam:
         info['beam_center'] = (_ow_beam_x, _ow_beam_y)
-    
+
     # Generate a list of wedges. each wedge is a tuple. The first value is the
     # first frame number and the second is the number of frames in the wedge
     wedges = []
-    _wedge = [0,0]
+    _wedge = [0, 0]
     for i, f in enumerate(file_list):
         _fm = file_pattern.match(f)
         _fn = int(_fm.group('num'))
@@ -133,13 +133,13 @@ def get_parameters(img_file):
     # up to 4 degrees per wedge starting at 0 and 45 and 90
 
     spot_range = []
-    _spot_span = int(4.0//info['delta_angle']) # frames in 4 deg
+    _spot_span = int(4.0 // info['delta_angle'])  # frames in 4 deg
     _first_wedge = wedges[0]
-    
+
     for _ang in [0.0, 45.0, 90.0]:
-        _rs = _first_wedge[0] + int(_ang//info['delta_angle'])
+        _rs = _first_wedge[0] + int(_ang // info['delta_angle'])
         _re = _rs + _spot_span
-        _exp_set  = set(range(_rs, _re))
+        _exp_set = set(range(_rs, _re))
         for wedge in wedges:
             _obs_set = set(range(wedge[0], wedge[0] + wedge[1]))
             _range = (_exp_set & _obs_set)
@@ -150,7 +150,7 @@ def get_parameters(img_file):
     missing = []
     for i, wedge in enumerate(wedges):
         if i > 0:
-            _re = wedge[0]-1
+            _re = wedge[0] - 1
             missing.append([_rs, _re])
         _rs = wedge[0] + wedge[1]
 
@@ -163,4 +163,3 @@ def get_parameters(img_file):
     info['skip_range'] = missing
     info['max_delphi'] = info['delta_angle'] * biggest_wedge[1]
     return info
-

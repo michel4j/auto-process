@@ -81,7 +81,7 @@ def write_xds_input(jobs, parameters):
         detector = 'CCDCHESS'
     elif 'pilatus' in params.get('detector_type').lower():
         detector = 'PILATUS'
-        params['min_spot_size'] = numpy.ceil(params.get('min_spot_size', 9) / (params['pixel_size'] / .05))
+        params['min_spot_size'] = numpy.ceil(params.get('min_spot_size', 3) / (params['pixel_size'] / .05))
     elif 'eiger' in params.get('detector_type').lower():
         detector = 'EIGER'
     else:

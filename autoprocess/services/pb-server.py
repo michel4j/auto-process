@@ -212,7 +212,7 @@ class DPSPerspective2Service(pb.Root):
         return self.service.process_mx(*args, **kwargs)
 
     def remote_process_misc(self, *args, **kwargs):
-        return self.service.process_mx(*args, **kwargs)
+        return self.service.process_misc(*args, **kwargs)
 
     def remote_process_xrd(self, *args, **kwargs):
         return self.service.process_xrd(*args, **kwargs)

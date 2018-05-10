@@ -230,7 +230,6 @@ class DPService(service.Service):
     def analyse_frame(self, frame_path, user_name, rastering=False):
         directory = os.path.dirname(frame_path)
         args = [
-            'distl.signal_strength',
             'distl.res.outer={}'.format(3.0 if rastering else 1.0),
             'distl.res.inner=10.0',
             frame_path,

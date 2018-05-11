@@ -250,6 +250,8 @@ class DPService(service.Service):
     @log.log_call
     def process_misc(self, info, directory, user_name):
         args = [
+	   '-d',
+	   directory,
            info['file_names'][0]
         ]
         return async_command('msg', args, directory, user_name=user_name, json_file='report.json')

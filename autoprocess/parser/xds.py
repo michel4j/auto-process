@@ -167,7 +167,7 @@ def parse_xplan(filename='XPLAN.LP'):
             'redundancy': cmpl_plan['multiplicity']
         },
         'prediction_hi': {
-            'R_factor': correct_info['outer_shell']['r_exp'],
+            'R_factor': correct_info['summary']['outer_shell']['r_exp'],
             'average_error': -0.99,
             'average_i_over_sigma': correct_info['summary']['outer_shell']['i_sigma'],
             'average_intensity': -99,

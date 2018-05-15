@@ -221,7 +221,7 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
     scores = numpy.array([
         logistic(resolution, x0=2.0, weight=0.2, width=6, invert=True),
         logistic(completeness, x0=75, weight=0.2, width=0.25),
-        logistic(r_meas, x0=7, weight=0.2, width=1, invert=True),
+        logistic(r_meas, x0=6, weight=0.2, width=1, invert=True),
         logistic(i_sigma, x0=30, weight=0.1, width=0.1),
         logistic(mosaicity, x0=0.3, weight=0.1, width=30, invert=True),
         logistic(std_spindle, x0=1.0, weight=0.05, width=2, invert=True),

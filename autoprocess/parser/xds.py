@@ -169,7 +169,7 @@ def parse_xplan(filename='XPLAN.LP'):
         'prediction_hi': {
             'R_factor': correct_info['outer_shell']['r_exp'],
             'average_error': -0.99,
-            'average_i_over_sigma': correct_info['outer_shell']['i_sigma'],
+            'average_i_over_sigma': correct_info['summary']['outer_shell']['i_sigma'],
             'average_intensity': -99,
             'completeness': cmpl_plan.get('completeness', -99) / 100.,
             'fract_overload': 0.0,

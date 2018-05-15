@@ -124,7 +124,16 @@ def _filter_spots(sigma=0, unindexed=False, filename='SPOT.XDS'):
         new_sel = new_sel & (new_list[:,-3] != 0) & (new_list[:,-3] != 0) & (new_list[:,-3] != 0)
 
     numpy.savetxt(filename, new_list[new_sel,:], fmt=fmt)
-    
+
+
+def harvest_index():
+    info = xds.parse_idxref()
+    if info.get('failure_code') == 0:
+        return {'step': 'indexing', 'success':True, 'data': info}
+    else:
+        return {'step': 'indexing','success':False, 'reason': info['failure']}
+
+
 def auto_index(data_info, options={}):
     os.chdir(data_info['working_directory'])
     _logger.info('Determining lattice orientation and parameters ...')

@@ -33,15 +33,15 @@ _lattice_rules = {
 }
 
 
-def resolution_shells(resolution, num=10.0):
+def resolution_shells(resolution, num=12):
     def _angle(resol):
-        return numpy.arcsin(0.5 * 1.0 / resol)
+        return 2*numpy.arcsin(0.5 * 1.0 / resol)
 
     def _resol(angl):
-        return round(0.5 * 1.0 / numpy.sin(angl), 2)
+        return round(0.5 * 1.0 / numpy.sin(0.5*angl), 2)
 
     max_angle = _angle(resolution)
-    min_angle = _angle(25.0)
+    min_angle = _angle(5.0)
     angles = numpy.linspace(min_angle, max_angle, num)
     return map(_resol, angles)
 
@@ -212,25 +212,31 @@ def logistic_score(x, best=1, fair=0.5):
     return 1 / (1 + numpy.exp(-t))
 
 
-def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, ice_rings=0):
+def logistic(x, x0=0.0, weight=1.0, width=1.0, invert=False):
+    mult = 1 if invert else -1
+    return weight / (1 + numpy.exp(mult*width*(x - x0)))
+
+
+def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, rejected_fraction):
     scores = numpy.array([
-        logistic_score(resolution, 1.0, 3.5),
-        logistic_score(completeness, 100.0, 85),
-        logistic_score(r_meas, 1, 15),
-        logistic_score(i_sigma, 50, 10),
-        logistic_score(mosaicity, 0.05, 0.5),
-        logistic_score(std_spindle, 0.0, 0.1),
-        logistic_score(std_spot, 0.0, 2),
-        logistic_score(ice_rings, 0, 10),
+        logistic(resolution, x0=2.5, weight=0.25, width=5, invert=True),
+        logistic(completeness, x0=70, weight=0.25, width=0.25),
+        logistic(r_meas, x0=8, weight=0.1, width=1, invert=True),
+        logistic(i_sigma, x0=20, weight=0.1, width=0.06),
+        logistic(mosaicity, x0=0.3, weight=0.1, width=40, invert=True),
+        logistic(std_spindle, x0=1.0, weight=0.05, width=2, invert=True),
+        logistic(std_spot, x0=2.0, weight=0.05, width=2, invert=True),
+        logistic(rejected_fraction, x0=0.1, weight=0.1,  width=6, invert=True),
     ])
 
     if DEBUG:
-        names = ['Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Ice']
-        vals = [resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, ice_rings]
+        names = ['Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Rejected']
+        vals = [resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, rejected_fraction]
         for name, contrib, val in zip(names, scores, vals):
             print('\t{} : {:0.3f} ({:0.3f})'.format(name, contrib, val))
 
-    return numpy.exp(numpy.log(scores[~numpy.isnan(scores)]).mean())
+    return scores.sum()
+
 
 def average_cell(cell_and_weights):
     """Average a series of cell parameters together with weights and return the average cell and standard deviations

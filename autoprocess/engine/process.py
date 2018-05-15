@@ -23,7 +23,6 @@ _MAX_RMEAS_FACTOR = 2
 
 _STEP_FUNCTIONS = {
     'initialize': spots.initialize,
-    'image_analysis': spots.analyse_image,
     'spot_search': spots.find_spots,
     'indexing': indexing.auto_index,
     'integration': integration.integrate,
@@ -35,9 +34,18 @@ _STEP_FUNCTIONS = {
     'solve-small': solver.solve_small_molecule
 }
 
+_HARVEST_FUNCTIONS = {
+    'initialize': spots.harvest_initialize,
+    'spot_search': spots.harvest_spots,
+    'indexing': indexing.harvest_index,
+    'integration': integration.harvest_integrate,
+    'correction': integration.harvest_correct,
+}
+
 
 class DataSet(object):
-    def __init__(self, filename=None, info=None, overwrites={}):
+    def __init__(self, filename=None, info=None, overwrites=None):
+        overwrites = {} if overwrites is None else overwrites
         if filename is not None:
             self.parameters = dataset.get_parameters(filename)
             self.parameters.update(overwrites)  # overwrite parameters
@@ -82,24 +90,28 @@ class DataSet(object):
         self.results = info.get('results', {})
 
     def score(self):
-        # full data processing
-        # if 'scaling' in self.results:
-        #     mosaicity = self.results['scaling']['summary']['mosaicity']
-        #     stdev_spot = self.results['scaling']['summary']['stdev_spot']
-        #     stdev_spindle = self.results['scaling']['summary']['stdev_spindle']
-        #     resolution = self.results['scaling']['summary']['resolution'][0]
-        #     completeness = self.results['scaling']['summary']['completeness']
-        if 'correction' in self.results:
-            mosaicity = self.results['correction']['summary']['mosaicity']
-            stdev_spot = self.results['correction']['summary']['stdev_spot']
-            stdev_spindle = self.results['correction']['summary']['stdev_spindle']
-            resolution = self.results['correction']['summary']['resolution'][0]
-            completeness = self.results['correction']['summary']['completeness']
-        else:
+
+        # can't calculate score if not 'correction' metadata
+        if not 'correction' in self.results:
             return 0.0
 
-        i_sigma = self.results['integration']['statistics']['summary']['lowres_isigma']
-        r_meas = self.results['integration']['statistics']['summary']['lowres_rmeas']
+        mosaicity = self.results['correction']['summary']['mosaicity']
+        stdev_spot = self.results['correction']['summary']['stdev_spot']
+        stdev_spindle = self.results['correction']['summary']['stdev_spindle']
+        resolution = self.results['correction']['summary']['resolution'][0]
+        completeness = self.results['correction']['summary']['completeness']
+
+        reflections = self.results['correction']['total_reflections']
+        rejected = self.results['correction'].get('rejected', 0)
+        rejected_fraction = float(rejected)/reflections
+
+        if 'scaling' in self.results:
+            i_sigma = self.results['scaling']['summary']['inner_shell']['i_sigma']
+            r_meas = self.results['scaling']['summary']['inner_shell']['r_meas']
+
+        else:
+            i_sigma = self.results['correction']['summary']['inner_shell']['i_sigma']
+            r_meas = self.results['correction']['summary']['inner_shell']['r_meas']
 
         # screening
         if 'strategy' in self.results:
@@ -107,7 +119,7 @@ class DataSet(object):
             completeness = self.results['strategy']['completeness']
 
         score = xtal.score_crystal(
-            resolution, completeness, r_meas, i_sigma, mosaicity, stdev_spot, stdev_spindle
+            resolution, completeness, r_meas, i_sigma, mosaicity, stdev_spot, stdev_spindle, rejected_fraction
         )
         self.results['crystal_score'] = score
         return score
@@ -210,7 +222,7 @@ class Manager(object):
             msgpack.dump(info, handle)
         return info
 
-    def run_step(self, step, dset, overwrite={}, optional=False):
+    def run_step(self, step, dset, overwrite={}, optional=False, colonize=False):
         """
         Runs the specified step with optional overwritten parameters
         and record the results in the dataset object.
@@ -222,11 +234,14 @@ class Manager(object):
         step_parameters.update(dset.parameters)
         step_parameters.update(overwrite)
 
-        # symmetry needs an extra parameter
-        if step == 'symmetry':
-            _out = _STEP_FUNCTIONS[step](step_parameters, dset, self.options)
+        if colonize and step in _HARVEST_FUNCTIONS:
+            _out = _HARVEST_FUNCTIONS[step]
         else:
-            _out = _STEP_FUNCTIONS[step](step_parameters, self.options)
+            # symmetry needs an extra parameter
+            if step == 'symmetry':
+                _out = _STEP_FUNCTIONS[step](step_parameters, dset, self.options)
+            else:
+                _out = _STEP_FUNCTIONS[step](step_parameters, self.options)
 
         dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
         if _out.get('data') is not None:
@@ -247,7 +262,7 @@ class Manager(object):
     def process(self, resume_from=None, single=False, overwrite={}):
         pass
 
-    def run(self, resume_from=None, single=False, overwrite={}):
+    def run(self, resume_from=None, single=False, colonize=False, overwrite={}):
         """
         resume_from is a tuple of the form
             (dataset_index, 'step')
@@ -300,7 +315,7 @@ class Manager(object):
 
                     # skip this step based on the properties
                     if j < _sub_steps.index(next_step): continue
-                    self.run_step(step, dset, overwrite=step_ovw)
+                    self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
 
                     # Special post processing after indexing
                     if step == 'indexing':
@@ -346,7 +361,7 @@ class Manager(object):
                     if step == 'correction' and self.options.get('mode') == 'screen':
                         dset.results['correction'] = copy.deepcopy(dset.results['integration']['statistics'])
                     else:
-                        self.run_step(step, dset, overwrite=step_ovw)
+                        self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
 
             next_step = 'symmetry'
 
@@ -371,7 +386,7 @@ class Manager(object):
                     continue
                 if self.options.get('mode') in ['simple', 'screen'] and overwrite.get('sg_overwrite') is None:
                     # automatic spacegroup determination
-                    self.run_step('symmetry', dset)
+                    self.run_step('symmetry', dset, colonize=colonize)
                     ref_sginfo = dset.results['symmetry']
                 else:
                     # tranfer symmetry info from reference to this dataset and update with specific reindex matrix
@@ -389,7 +404,7 @@ class Manager(object):
                     # 'reference_data': ref_sginfo.get('reference_data'), # will be none for single data sets
                     'message': 'Reindexing & refining',
                 })
-                self.run_step('correction', dset, overwrite=step_ovw)
+                self.run_step('correction', dset, overwrite=step_ovw, colonize=colonize)
                 cell_str = "%0.6g %0.6g %0.6g %0.6g %0.6g %0.6g" % tuple(
                     dset.results['correction']['summary']['unit_cell'])
                 logger.info('Refined cell: %s' % cell_str)
@@ -425,7 +440,7 @@ class Manager(object):
             for dset in self.datasets.values():
                 if not 'resolution' in overwrite:
                     overwrite['resolution'] = dset.results['integration']['statistics']['summary']['stderr_resolution']
-                self.run_step('strategy', dset, overwrite=overwrite)
+                self.run_step('strategy', dset, overwrite=overwrite, colonize=colonize)
 
                 strategy = reporting.get_strategy(dset.results)
                 strategy_table = misc.sTable([

@@ -2,6 +2,7 @@ import fnmatch
 import os
 import re
 import sys
+import glob
 
 import numpy
 from scipy.ndimage import filters
@@ -51,6 +52,13 @@ def detect_beam_peak(filename):
         good = True
 
     return beam_x, beam_y, good
+
+def import_parameters(inp_file):
+    with open(inp_file, 'r') as handle:
+        data = handle.read()
+        file_template = re.findall('^NAME_TEMPLATE_OF_DATA_FRAMES=(.+)$', data, re.MULTILINE)[0]
+    img_file = glob.glob(file_template)[0]
+    return get_parameters(img_file)
 
 
 def get_parameters(img_file):

@@ -10,6 +10,20 @@ from autoprocess.utils.progress import FileProgressDisplay, ProgDisplay, ProgChe
 _logger = log.get_module_logger(__name__)
 
 
+def harvest_integrate():
+    if not misc.file_requirements('INTEGRATE.LP', 'CORRECT.LP'):
+        return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
+    else:
+        info = xds.parse_integrate()
+        info['statistics'] = xds.parse_correct()
+
+    if info.get('failure') is None:
+        info['output_file'] = 'INTEGRATE.HKL'
+        return {'step': 'integration', 'success': True, 'data': info}
+    else:
+        return {'step': 'integration', 'success': False, 'reason': info['failure']}
+
+
 def integrate(data_info, options={}):
     os.chdir(data_info['working_directory'])
     run_info = {'mode': options.get('mode')}
@@ -67,6 +81,27 @@ def integrate(data_info, options={}):
         return {'step': 'integration', 'success': True, 'data': info}
     else:
         return {'step': 'integration', 'success': False, 'reason': info['failure']}
+
+
+def harvest_correct():
+    if not misc.file_requirements('CORRECT.LP', 'GXPARM.XDS', 'XDS_ASCII.HKL'):
+        return {'step': 'integration', 'success': False, 'reason': 'Required files missing'}
+    else:
+        info = xds.parse_integrate()
+        programs.xdsstat('XDS_ASCII.HKL')
+        stat_info = xds.parse_xdsstat()
+        info.update(stat_info)
+        ISa = info['correction_factors']['parameters'][0].get('ISa', -1)
+        _logger.info('I/Sigma(I) Asymptote [ISa]: %0.1f' % (ISa))
+
+    if info.get('failure') is None:
+        info['output_file'] = 'XDS_ASCII.HKL'
+        if len(info.get('statistics', [])) > 1 and info.get('summary') is not None:
+            info['summary']['resolution'] = xtal.select_resolution(info['statistics'])
+
+        return {'step': 'correction', 'success': True, 'data': info}
+    else:
+        return {'step': 'correction', 'success': False, 'reason': info['failure']}
 
 
 def correct(data_info, options={}):

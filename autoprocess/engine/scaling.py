@@ -19,7 +19,7 @@ def _check_chisq(result):
                 return False
     return True
 
-  
+
 def scale_datasets(dsets, options={}, message="Scaling"):
     os.chdir(options['directory'])
     
@@ -53,6 +53,7 @@ def scale_datasets(dsets, options={}, message="Scaling"):
                  'output_file': out_file,
                  'crystal': 'cryst1',
                  'inputs': [{'input_file': in_file, 'resolution': resol}],
+                 'shells': xtal.resolution_shells(resol),
                 })
             if options.get('backup', False):
                 misc.backup_files(out_file, 'XSCALE.LP')
@@ -63,14 +64,17 @@ def scale_datasets(dsets, options={}, message="Scaling"):
         else:
             _logger.info("Scaling `%s` in `%s` %s ... " % (dset.name, sg_name, suffix_txt))
         inputs = []
+        resols = []
         for dset in dsets.values():
             dres = dset.results
             resol = options.get('resolution', dres['correction']['summary']['resolution'][0])
+            resols.append(resol)
             in_file = dres['correction']['output_file']
             inputs.append({'input_file': in_file, 'resolution': resol})
         sections = [{
             'anomalous': options.get('anomalous', False),
             'strict_absorption': _check_chisq(dres['correction']),
+            'shells': xtal.resolution_shells(min(resols)),
             'output_file': "XSCALE.HKL",
             'inputs': inputs,}]
         if options.get('backup', False):
@@ -120,6 +124,7 @@ def scale_datasets(dsets, options={}, message="Scaling"):
             info['summary']['resolution'] = resol
             
             dsets[name].results['scaling'].update(info)
+            print(info['summary'].keys())
             dsets[name].log.append((time.time(), 'scaling', True, None))
 
     misc.backup_files('XSCALE.LP', 'XSCALE.HKL')

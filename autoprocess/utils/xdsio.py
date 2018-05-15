@@ -385,6 +385,10 @@ def write_xscale_input(params):
             file_text += "UNIT_CELL_CONSTANTS=%6.2f %6.2f %6.2f %4.2f %4.2f %4.2f \n" % tuple(section['unit_cell'])
         file_text += "FRIEDEL'S_LAW=%s\n" % (friedel[section.get('anomalous', False)])
         file_text += "STRICT_ABSORPTION_CORRECTION=%s\n" % (friedel[params.get('strict_absorption', False)])
+        if section.get('shells') is not None:
+            shells = ['%0.2f' % x for x in section['shells']]
+            file_text += 'RESOLUTION_SHELLS= %s\n' % ' '.join(shells)
+
         for _input in section['inputs']:
             if _input.get('reference', False):
                 star = '*'

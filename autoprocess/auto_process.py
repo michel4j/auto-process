@@ -22,10 +22,13 @@ def main():
         app.run()      
     else:
         try:
-            chkpt = misc.load_chkpt()
+            if opt.get('import'):
+                chkpt = None
+            else:
+                chkpt = misc.load_chkpt()
             app = Manager(checkpoint=chkpt, options=opt)
-            if opt.get('zap', False):
-                app.run()
+            if opt.get('zap', False) or opt.get('import'):
+                app.run(colonize=opt.get('import'))
             else:                
                 app.run(resume_from=opt.get('resume_from', chkpt['run_position']))
         except IOError:

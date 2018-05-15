@@ -58,11 +58,11 @@ Examples:
 def process_options(params, usage=PROCESS_USAGE):
     try:
         opts, args = getopt.gnu_getopt(params, 
-                        "msahbt:xz", 
+                        "msahbt:xzi",
                         ["help", "dir=", "mad","screen","anom", "nonchiral",
-                         "backup", "zap","task=", "prefix=", "solve-small="])
+                         "backup", "zap","import", "task=", "prefix=", "solve-small="])
     except:
-        print usage
+        print(usage)
             
     # Parse options
     options = {
@@ -103,6 +103,9 @@ def process_options(params, usage=PROCESS_USAGE):
             options['backup'] = True
         if o in ('-z', '--zap'):
             options['zap'] = True
+        if o in ('-i', '--import'):
+            options['import'] = True
+            options['directory'] = options.get('directory', os.getcwd())
         if o in ('-t', '--task'):
             st = a.split(',')
             if len(st) == 1:

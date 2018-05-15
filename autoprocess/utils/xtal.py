@@ -221,21 +221,17 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
     scores = numpy.array([
         logistic(resolution, x0=2.0, weight=0.2, width=6, invert=True),
         logistic(completeness, x0=75, weight=0.2, width=0.25),
-        logistic(r_meas, x0=5, weight=0.2, width=1, invert=True),
-        logistic(i_sigma, x0=40, weight=0.1, width=0.1),
+        logistic(r_meas, x0=7, weight=0.2, width=1, invert=True),
+        logistic(i_sigma, x0=30, weight=0.1, width=0.1),
         logistic(mosaicity, x0=0.3, weight=0.1, width=30, invert=True),
         logistic(std_spindle, x0=1.0, weight=0.05, width=2, invert=True),
         logistic(std_spot, x0=2.0, weight=0.05, width=2, invert=True),
         logistic(rejected_fraction, x0=0.1, weight=0.1,  width=6, invert=True),
     ])
-
-    if DEBUG:
-        names = ['Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Rejected']
-        vals = [resolution, completeness, r_meas, i_sigma, mosaicity, std_spindle, std_spot, rejected_fraction]
-        for name, contrib, val in zip(names, scores, vals):
-            print('\t{} : {:0.3f} ({:0.3f})'.format(name, contrib, val))
-
-    return scores.sum()
+    weights = numpy.array([0.2, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05, 0.1])
+    names = ['Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Rejected']
+    values = [resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, rejected_fraction]
+    return scores.sum(), zip(names, scores/weights, values)
 
 
 def average_cell(cell_and_weights):

@@ -118,10 +118,13 @@ class DataSet(object):
             resolution = self.results['strategy']['resolution']
             completeness = self.results['strategy']['completeness']
 
-        score = xtal.score_crystal(
+        score, scores = xtal.score_crystal(
             resolution, completeness, r_meas, i_sigma, mosaicity, stdev_spot, stdev_spindle, rejected_fraction
         )
         self.results['crystal_score'] = score
+        logger.debug('Scoring Details:')
+        for name, quality, val in scores:
+            logger.debug('\t{:>20}:\t[{:g}] {:5.2f}'.format(name, val, quality))
         return score
 
 

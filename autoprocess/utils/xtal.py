@@ -219,10 +219,10 @@ def logistic(x, x0=0.0, weight=1.0, width=1.0, invert=False):
 
 def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, rejected_fraction):
     scores = numpy.array([
-        logistic(resolution, x0=2.5, weight=0.25, width=5, invert=True),
-        logistic(completeness, x0=70, weight=0.25, width=0.25),
-        logistic(r_meas, x0=8, weight=0.1, width=1, invert=True),
-        logistic(i_sigma, x0=20, weight=0.1, width=0.06),
+        logistic(resolution, x0=2.0, weight=0.25, width=5, invert=True),
+        logistic(completeness, x0=80, weight=0.25, width=0.25),
+        logistic(r_meas, x0=6, weight=0.1, width=1, invert=True),
+        logistic(i_sigma, x0=40, weight=0.1, width=0.06),
         logistic(mosaicity, x0=0.3, weight=0.1, width=40, invert=True),
         logistic(std_spindle, x0=1.0, weight=0.05, width=2, invert=True),
         logistic(std_spot, x0=2.0, weight=0.05, width=2, invert=True),

@@ -511,7 +511,7 @@ class Manager(object):
             # file format conversions
             self.run_position = (i, 'conversion')
             if self.options.get('mode') != 'screen':
-
+                logger.debug(self.run_position)
                 if self.options.get('mode') == 'merge' and i > 0:
                     pass  # do not convert
                 else:

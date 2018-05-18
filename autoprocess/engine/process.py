@@ -511,22 +511,19 @@ class Manager(object):
             # file format conversions
             self.run_position = (i, 'conversion')
             if self.options.get('mode') != 'screen':
-                logger.debug(self.run_position)
-                if self.options.get('mode') == 'merge' and i > 0:
-                    pass  # do not convert
-                else:
-                    _step_options = {}
-                    _step_options.update(self.options)
-                    _step_options['file_root'] = dset.name
+                if self.options.get('mode') == 'merge' and dset.name != 'combined': continue
+                _step_options = {}
+                _step_options.update(self.options)
+                _step_options['file_root'] = dset.name
 
-                    _out = conversion.convert_formats(dset, _step_options)
+                _out = conversion.convert_formats(dset, _step_options)
+                dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
+                if not _out['success']:
                     dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-                    if not _out['success']:
-                        dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-                        logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
-                    else:
-                        dset.results['output_files'] = _out.get('data')
-                        logger.info('%s' % (', '.join(_out['data'])))
+                    logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
+                else:
+                    dset.results['output_files'] = _out.get('data')
+                    logger.info('%s' % (', '.join(_out['data'])))
                 self.save_checkpoint()
 
             if self.options.get('solve-small'):

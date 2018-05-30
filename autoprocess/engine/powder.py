@@ -302,7 +302,7 @@ class FrameAnalyser(object):
         r = self.frame.header['distance'] * numpy.tan(numpy.radians(twotheta)) / self.frame.header['pixel_size']
         return self.cx + r * numpy.sin(numpy.radians(azimuth)), self.cy + r * numpy.cos(numpy.radians(azimuth))
 
-    def find_rings(self, samples=40, width=2):
+    def find_rings(self, samples=20, width=2):
         peak_sorter = None
         sizes = []
 
@@ -311,7 +311,7 @@ class FrameAnalyser(object):
             peaks = peak_search(prof, width=21, sensitivity=0.05)
             sizes.append(peaks[:, 2].max())
             if not peak_sorter:
-                peak_sorter = PeakSorter(peaks, max_size=20)
+                peak_sorter = PeakSorter(peaks, max_size=10)
             else:
                 peak_sorter.add_peaks(peaks, angle)
         width = numpy.median(sizes) / self.frame.header['pixel_size']
@@ -324,11 +324,11 @@ class FrameAnalyser(object):
         return {
             'ellipse': ellipse,
             'rings': rings,
-            'ring_width': width,
+            'ring_width': width*5,
             'angles': angles,
         }
 
-    def show_rings(self, samples=40, width=3):
+    def show_rings(self, samples=40, width=2):
         from matplotlib import pyplot as plt
         peak_sorter = None
         sizes = []
@@ -338,7 +338,7 @@ class FrameAnalyser(object):
             peaks = peak_search(prof, width=50, sensitivity=0.05)
             sizes.append(peaks[:, 2].max())
             if not peak_sorter:
-                peak_sorter = PeakSorter(peaks, max_size=5)
+                peak_sorter = PeakSorter(peaks, max_size=10)
             else:
                 peak_sorter.add_peaks(peaks, angle)
         width = numpy.median(sizes) / self.frame.header['pixel_size']
@@ -366,7 +366,7 @@ class FrameAnalyser(object):
             prof = self.integrate_angle(angle, width=width)
             peaks = peak_search(prof, width=4, sensitivity=0.3)
             if not peak_sorter:
-                peak_sorter = PeakSorter(peaks)
+                peak_sorter = PeakSorter(peaks, max_size=20)
             else:
                 peak_sorter.add_peaks(peaks, angle)
         fits = []
@@ -415,7 +415,7 @@ class FrameAnalyser(object):
                 if os.path.exists(self.db_file):
                     logger.warning('Calibration file will be overwritten')
                 subprocess.check_output(args, timeout=120, stderr=subprocess.STDOUT)
-            os.remove('calib.mac')
+            #os.remove('calib.mac')
             data_file = '{}.chi'.format(params['data_name'])
             if os.path.exists(data_file):
                 data = numpy.loadtxt(data_file, skiprows=4)

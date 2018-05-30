@@ -415,7 +415,7 @@ class FrameAnalyser(object):
                 if os.path.exists(self.db_file):
                     logger.warning('Calibration file will be overwritten')
                 subprocess.check_output(args, timeout=120, stderr=subprocess.STDOUT)
-            #os.remove('calib.mac')
+            os.remove('calib.mac')
             data_file = '{}.chi'.format(params['data_name'])
             if os.path.exists(data_file):
                 data = numpy.loadtxt(data_file, skiprows=4)

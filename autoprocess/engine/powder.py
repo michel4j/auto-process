@@ -94,6 +94,16 @@ def peak_search(xy, width=11, sensitivity=0.01, smooth=True):
     return peaks
 
 
+def peak_search2(xo, yo, width=11, sensitivity=0.01, smooth=True):
+    peaks = find_peaks(yo, width=width, sensitivity=sensitivity, smooth=smooth)
+    xfunc = interpolate.interp1d(numpy.arange(len(xo)), xo, fill_value='extrapolate')
+    x = xfunc(peaks[:, 0])
+    w = xfunc(peaks[:, 0] + peaks[:, 2]) - x
+    peaks[:, 0] = x
+    peaks[:, 2] = w
+    return peaks
+
+
 def baseline(values):
     cdev = values.std()
     orig = len(values)
@@ -324,7 +334,7 @@ class FrameAnalyser(object):
         return {
             'ellipse': ellipse,
             'rings': rings,
-            'ring_width': width*5,
+            'ring_width': width * 5,
             'angles': angles,
         }
 

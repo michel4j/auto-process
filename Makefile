@@ -1,6 +1,6 @@
 # This is: AutoProcess
 
-.PHONY: all docs rpm srpm spec tar upload upload-sources upload-srpms upload-rpms
+.PHONY: all archive
 .SILENT:
 
 # version of the program
@@ -10,15 +10,9 @@ SOURCE = autoprocess-$(VERSION).tar
 
 all: archive
 
-#
-#	aliases
-#
-# TODO: does making an rpm depend on making a .srpm first ?
 tar: $(SOURCE)
 	# do nothing
-#
-#	archive
-#
+
 archive: 
 	@echo Running git archive...
 	# use HEAD if tag doesn't exist yet, so that development is easier...

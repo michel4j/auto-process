@@ -7,13 +7,13 @@ import time
 from collections import OrderedDict
 
 import msgpack
-import numpy
+
 
 import autoprocess.errors
 from autoprocess.engine import indexing, spots, integration, scaling, solver, reporting
 from autoprocess.engine import symmetry, strategy, conversion
 from autoprocess.utils import dataset, misc, log, xtal
-from autoprocess.utils import kappa
+
 
 logger = log.get_module_logger(__name__)
 
@@ -459,32 +459,6 @@ class Manager(object):
                 for line in str(strategy_table).splitlines():
                     logger.info(line)
 
-                # calculate and report the angles of the spindle from
-                # the three axes
-                xoptions = {}
-                xoptions.update(self.options)
-                xoptions.update(overwrite)
-                xalign_options = xoptions.get('xalign', {'vectors': ("", ""), 'method': 0})
-                self.options['xalign'] = xalign_options
-
-                logger.info('Calculating Kappa goniometer parameters ...')
-                info = dset.results['correction']['parameters']
-                _mode = {0: 'MAIN', 1: 'CUSP'}[xalign_options['method']]
-                isols, pars = kappa.get_solutions(info, orientations=xalign_options['vectors'], mode=_mode)
-                if pars['mode'] == 'MAIN':
-                    html_descr = 'v1 parallel to omega, v2 perpendicular to the omega-beam plane'
-                else:
-                    html_descr = 'v1 parallel to both omega & beam, v2 perpendicular to the v1-omega plane'
-                sols = []
-                for isol in isols:
-                    txt = ", ".join(["(%s)" % v for v in [",".join(p) for p in isol[1:]]])
-                    sols.append((isol[0][0], isol[0][1], txt))
-                logger.info("-" * 58)
-                dset.results['strategy']['details']['crystal_alignment'] = {
-                    'method': html_descr,
-                    'solutions': sols,
-                    'goniometer': pars['goniometer']
-                }
             self.save_checkpoint()
 
         # check quality and covert formats     

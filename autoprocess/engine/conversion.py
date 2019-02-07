@@ -3,23 +3,24 @@ import os
 import autoprocess.errors
 from autoprocess.utils import programs, misc, log, xdsio
 
-_logger = log.get_module_logger(__name__)
+logger = log.get_module_logger(__name__)
 
-def convert_formats(dset, options={}):
+
+def convert_formats(dataset, options=None):
+    options = options or {}
     os.chdir(options['directory'])
-    
+
     # GENERATE MTZ and CNS output files    
 
-    infile = dset.results['scaling'].get('output_file')
+    infile = dataset.results['scaling'].get('output_file')
     out_file_dir = os.path.dirname(infile)
     out_file_base = os.path.basename(infile)
-    out_file_root = os.path.join(out_file_dir, options.get('file_root', dset.name))
+    out_file_root = os.path.join(out_file_dir, options.get('file_root', dataset.name))
     output_files = []
 
-    _logger.info('Generating MTZ, SHELX & CNS files for `%s` ...' % out_file_base)
-    if not misc.file_requirements(dset.results['scaling'].get('output_file')):
+    logger.info('Generating MTZ, SHELX & CNS files for `%s` ...' % out_file_base)
+    if not misc.file_requirements(dataset.results['scaling'].get('output_file')):
         return {'step': 'conversion', 'success': False, 'reason': 'Required files missing'}
-    
 
     # Create convertion options
     conv_options = []
@@ -29,38 +30,38 @@ def convert_formats(dset, options={}):
         'anomalous': options.get('anomalous', False),
         'input_file': infile,
         'output_file': out_file_root + ".cns",
-        'freeR_fraction': 0.05}) # CNS
+        'freeR_fraction': 0.05})  # CNS
     conv_options.append({
         'resolution': 0,
         'format': 'SHELX',
         'anomalous': options.get('anomalous', False),
         'input_file': infile,
         'output_file': out_file_root + "-shelx.hkl",
-        'freeR_fraction': 0,}) # SHELX
+        'freeR_fraction': 0, })  # SHELX
     conv_options.append({
         'resolution': 0,
-        'format': 'CCP4_F',
+        'format': 'CCP4_I',
         'anomalous': True,
         'input_file': infile,
-        'output_file': out_file_root + ".ccp4f",
-        'freeR_fraction': 0.05,}) # CCP4F for MTZ
-    
+        'output_file': out_file_root + ".ccp4i",
+        'freeR_fraction': 0.05, })  # CCP4I for MTZ
+
     for opt in conv_options:
         try:
             xdsio.write_xdsconv_input(opt)
             programs.xdsconv()
-            
+
             # Special formatting for MTZ
-            if opt['format'] == 'CCP4_F':     
-                mtz_file =   out_file_root + ".mtz"        
+            if opt['format'] == 'CCP4_I':
+                mtz_file = out_file_root + ".mtz"
                 programs.f2mtz(mtz_file)
                 output_files.append(mtz_file)
             else:
                 output_files.append(opt['output_file'])
-                
-        except autoprocess.errors.ProcessError, e:
-            _logger.warning('Error creating %s file: %s' % (opt['format'], e))
-   
+
+        except autoprocess.errors.ProcessError as e:
+            logger.warning('Error creating %s file: %s' % (opt['format'], e))
+
     if len(output_files) == 0:
         return {'step': 'conversion', 'success': False, 'reason': 'No output files generated'}
     else:

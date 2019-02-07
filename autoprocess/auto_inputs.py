@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from __future__ import print_function
 
 import sys
 import warnings
@@ -15,12 +15,12 @@ def main():
     opt = options.process_options(sys.argv[1:], options.INPUTS_USAGE)
     
     if len(opt['images']) >= 1:
-        dset = DataSet(filename=opt['images'][0])
+        dataset = DataSet(filename=opt['images'][0])
         _logger.info('Creating XDS.INP ...')
-        xdsio.write_xds_input('ALL !XYCORR INIT COLSPOT IDXREF DEFPIX INTEGRATE CORRECT', dset.parameters)
+        xdsio.write_xds_input('ALL !XYCORR INIT COLSPOT IDXREF DEFPIX INTEGRATE CORRECT', dataset.parameters)
     else:
         _logger.error('No image specified.')
-        print options.INPUTS_USAGE
+        print(options.INPUTS_USAGE)
         sys.exit(1)
           
 def run():

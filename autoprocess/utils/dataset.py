@@ -94,28 +94,28 @@ def get_parameters(img_file):
     if _dataset_name[-1] in ['_', '.', '-']:
         _dataset_name = _dataset_name[:-1]
 
-    _overwrite_beam = False
-    if first_frame == 0:
-        first_frame = 1
-        _ow_beam_x, _ow_beam_y, _overwrite_beam = detect_beam_peak(os.path.join(directory, file_list[0]))
-        if _overwrite_beam:
-            _logger.info('%s: New beam origin from frame 000 [%d, %d].' % (_dataset_name, _ow_beam_x, _ow_beam_y))
-        file_list = file_list[1:]
-        frame_count = len(file_list)
-
     reference_image = os.path.join(directory, file_list[0])
     if not (os.path.isfile(reference_image) and os.access(reference_image, os.R_OK)):
         _logger.info("File '%s' not found, or unreadable." % reference_image)
         sys.exit(1)
 
     info = read_header(reference_image)
+    _overwrite_beam = False
+    if first_frame == 0:
+        first_frame = 1
+        _ow_beam_x, _ow_beam_y, _overwrite_beam = detect_beam_peak(os.path.join(directory, file_list[0]))
+        if _overwrite_beam:
+            _logger.info('%s: New beam origin from frame 000 [%d, %d].' % (_dataset_name, _ow_beam_x, _ow_beam_y))
+            info['beam_center'] = (_ow_beam_x, _ow_beam_y)
+        file_list = file_list[1:]
+        frame_count = len(file_list)
+
     info['energy'] = misc.wavelength_to_energy(info['wavelength'])
     info['first_frame'] = first_frame
     info['frame_count'] = frame_count
     info['name'] = _dataset_name
     info['file_template'] = os.path.join(directory, xds_template)
-    if _overwrite_beam:
-        info['beam_center'] = (_ow_beam_x, _ow_beam_y)
+
 
     # Generate a list of wedges. each wedge is a tuple. The first value is the
     # first frame number and the second is the number of frames in the wedge

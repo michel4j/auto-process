@@ -93,6 +93,7 @@ def parse_correct(filename='CORRECT.LP'):
     xparm = parse_xparm('GXPARM.XDS')
     info['parameters'] = xparm
     info['summary']['unit_cell'] = xparm['unit_cell']
+    info['summary']['ISa'] = info['correction_factors']['parameters'][0].get('ISa', -1)
     return info
 
 

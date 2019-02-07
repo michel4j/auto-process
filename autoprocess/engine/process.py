@@ -482,7 +482,7 @@ class Manager(object):
                 self.save_checkpoint()
 
             # Scoring
-            logger.info('({}) Final Score: {}'.format(dset.name, log.TermColor.bold('{:0.1f}'.format(dset.score()))))
+            logger.info('({}) Final Score: {}'.format(dset.name, log.TermColor.bold('{:0.2f}'.format(dset.score()))))
 
             # file format conversions
             self.run_position = (i, 'conversion')

@@ -74,16 +74,19 @@ def write_xds_input(jobs, parameters):
 
     params = {}
     params.update(parameters)
+    params['min_valid_value'] = 1
 
     if params.get('detector_type').lower() in ['q4', 'q210', 'q4-2x', 'q210-2x', 'q315', 'q315-2x']:
         detector = 'ADSC'
     elif params.get('detector_type').lower() in ['mar165', 'mx300', 'mx300he', 'mar225', 'mar325']:
         detector = 'CCDCHESS'
+
     elif 'pilatus' in params.get('detector_type').lower():
         detector = 'PILATUS'
         params['min_spot_size'] = 3
         params['profile_grid_size'] = 13
         params['fixed_scale_factor'] = True
+        params['min_valid_value'] = 0
     elif 'eiger' in params.get('detector_type').lower():
         detector = 'EIGER'
     else:
@@ -160,7 +163,7 @@ def write_xds_input(jobs, parameters):
         "QX={pixel_size:7.5f} QY={pixel_size:7.5f}\n"
         "ORGX={beam_center[0]:5.0f}  ORGY={beam_center[1]:5.0f}\n"
         "SENSOR_THICKNESS= {sensor_thickness:0.3f}\n"
-        "MINIMUM_VALID_PIXEL_VALUE= 1\n"
+        "MINIMUM_VALID_PIXEL_VALUE= {min_valid_value}\n"
         "OVERLOAD= {saturated_value}\n"
         "STRONG_PIXEL= {sigma:5.0f}\n"
         "MINIMUM_ZETA= 0.05\n"
@@ -173,7 +176,7 @@ def write_xds_input(jobs, parameters):
         "INCLUDE_RESOLUTION_RANGE=50.0 0.0\n"
         "ROTATION_AXIS= 1.0 0.0 0.0\n"
         "INCIDENT_BEAM_DIRECTION=0.0 0.0 1.0\n"
-        "FRACTION_OF_POLARIZATION=0.95\n"
+        "FRACTION_OF_POLARIZATION=0.99\n"
         "POLARIZATION_PLANE_NORMAL= 0.0 1.0 0.0\n"
         "DIRECTION_OF_DETECTOR_X-AXIS= 1.000 0.000 0.000\n"
         "DIRECTION_OF_DETECTOR_Y-AXIS= {detector_yaxis[0]:0.3f} {detector_yaxis[1]:0.3f} {detector_yaxis[2]:0.3f}\n"

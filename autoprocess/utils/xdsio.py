@@ -7,7 +7,7 @@ import os
 import numpy
 from autoprocess.utils import misc
 
-DEFAULT_DELPHI = 16
+DEFAULT_DELPHI = 8
 
 HOSTS = {
     x.split(':')[0]: int(x.split(':')[1]) for x in os.environ['DPS_NODES'].split()
@@ -173,7 +173,7 @@ def write_xds_input(jobs, parameters):
         "OVERLOAD= {saturated_value}\n"
         "STRONG_PIXEL= {sigma:5.0f}\n"
         "MINIMUM_ZETA= 0.05\n"
-        "TRUSTED_REGION=0.00 1.414\n"
+        "TRUSTED_REGION=0.00 1.2\n"
         "TEST_RESOLUTION_RANGE= 50.0 1.0\n"
         "RESOLUTION_SHELLS= {resolution:5.2f}\n"
         "TOTAL_SPINDLE_ROTATION_RANGES= 90 360 30\n"

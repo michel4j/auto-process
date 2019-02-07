@@ -4,7 +4,7 @@ import logging
 import repr as reprlib
 from logging.handlers import RotatingFileHandler
 
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 IMPORTANT = 25
 logging.addLevelName(IMPORTANT, 'IMPORTANT')
 DEBUGGING = False

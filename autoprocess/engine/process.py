@@ -361,13 +361,12 @@ class Manager(object):
                                                  self.datasets.values()[i - 1].results['correction']['output_file'])
                         _ref_sg = self.datasets.values()[0].results['correction']['summary']['spacegroup']
                         step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg})
-                    if step == 'correction' and self.options.get('mode') == 'screen':
-                        dset.results['correction'] = copy.deepcopy(dset.results['integration']['statistics'])
-                    else:
-                        self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
-                        if step == 'correction':
-                            ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-                            logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
+
+                    self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
+                    if step == 'correction':
+                        ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+                        logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
+                        dset.results['integration']['statistics'] = copy.deepcopy(dset.results['correction'])
 
             next_step = 'symmetry'
 

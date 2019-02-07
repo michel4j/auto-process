@@ -59,7 +59,7 @@ def integrate(data_info, options={}):
         _pd.start()
         programs.xds_par()
         info = xds.parse_integrate()
-        info['statistics'] = xds.parse_correct()
+        #info['statistics'] = xds.parse_correct()
     except autoprocess.errors.ProcessError as e:
         _pd.stop()
 
@@ -144,7 +144,6 @@ def correct(data_info, options={}):
         programs.xdsstat('XDS_ASCII.HKL')
         stat_info = xds.parse_xdsstat()
         info.update(stat_info)
-
 
     except autoprocess.errors.ProcessError as e:
         return {'step': 'correction', 'success': False, 'reason': str(e)}

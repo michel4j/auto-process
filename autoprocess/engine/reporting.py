@@ -176,7 +176,7 @@ def summary_table(datasets, options):
         report['data'][13].append('{:0.1f} %'.format(analysis['summary']['cc_half']))
         report['data'][14].append(
             'N/A' if dataset['parameters']['name'] =='combined' else'{:0.1f}'.format(
-                results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+                results['integration']['statistics']['summary']['ISa']
             )
         )
 

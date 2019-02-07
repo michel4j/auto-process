@@ -365,7 +365,7 @@ class Manager(object):
                     self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
                     if step == 'correction':
                         ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-                        logger.info('(%s) I/Sigma(I) Asymptote [ISa]: %0.1f' % (dset.name, ISa))
+                        logger.info('({}) I/Sigma(I) Asymptote [ISa]: {}'.format(dset.name, log.TermColor.bold('{:0.1f}'.format(ISa))))
                         dset.results['integration']['statistics'] = copy.deepcopy(dset.results['correction'])
 
             next_step = 'symmetry'
@@ -482,7 +482,7 @@ class Manager(object):
                 self.save_checkpoint()
 
             # Scoring
-            logger.info('(%s) Final Score: %0.2f' % (dset.name, dset.score()))
+            logger.info('({}) Final Score: {}'.format(dset.name, log.TermColor.bold('{:0.1f}'.format(dset.score()))))
 
             # file format conversions
             self.run_position = (i, 'conversion')

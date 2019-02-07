@@ -21,6 +21,10 @@ class TermColor(object):
     UNDERLINE = '\033[4m'
 
     @classmethod
+    def bold(cls, text):
+        return '{}{}{}'.format(cls.BOLD, text, cls.ENDC)
+
+    @classmethod
     def warn(cls, text):
         return '{}{}{}'.format(cls.WARNING, text, cls.ENDC)
 

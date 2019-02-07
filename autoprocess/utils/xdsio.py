@@ -71,8 +71,12 @@ def write_xds_input(jobs, parameters):
         'strict_absorption': True or False default False
     }
     """
-
-    params = {}
+    # defaults
+    params = {
+        'min_valid_value': 1,
+        'refine_index': 'CELL BEAM ORIENTATION AXIS',
+        'refine_integrate': 'DISTANCE POSITION BEAM ORIENTATION'
+    }
     params.update(parameters)
     params['min_valid_value'] = 1
 
@@ -87,6 +91,8 @@ def write_xds_input(jobs, parameters):
         params['profile_grid_size'] = 13
         params['fixed_scale_factor'] = True
         params['min_valid_value'] = 0
+        params['saturated_value'] = 1048500
+        params['sensor_thickness'] = 1.0
     elif 'eiger' in params.get('detector_type').lower():
         detector = 'EIGER'
     else:
@@ -194,8 +200,10 @@ def write_xds_input(jobs, parameters):
         extra_text += 'RESOLUTION_SHELLS= {}\n'.format(' '.join(['{:0.2f}'.format(x) for x in params['shells']]))
     if params.get('strict_correction'):
         extra_text += 'STRICT_ABSORPTION_CORRECTION= {}\n'.format(str(params.get('strict_absorption', False)).upper())
-    if params.get('refine_index') is not None:
+    if params.get('refine_index'):
         extra_text += 'REFINE(IDXREF)= {refine_index}\n'
+    if params.get('refine_integrate'):
+        extra_text += 'REFINE(INTEGRATE)= {refine_integrate}\n'
     if params.get('profile_grid_size'):
         extra_text += 'NUMBER_OF_PROFILE_GRID_POINTS_ALONG_ALPHA/BETA= {profile_grid_size}\n'
     if params.get('fixed_scale_factor'):

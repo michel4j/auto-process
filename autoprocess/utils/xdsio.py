@@ -7,7 +7,7 @@ import os
 import numpy
 from autoprocess.utils import misc
 
-DEFAULT_DELPHI = 8.0
+DEFAULT_DELPHI = 16
 
 HOSTS = {
     x.split(':')[0]: int(x.split(':')[1]) for x in os.environ['DPS_NODES'].split()

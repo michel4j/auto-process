@@ -151,16 +151,10 @@ class Manager(object):
                 self.datasets[dset.name] = dset
 
             prefix = os.path.commonprefix(self.datasets.keys())
-
-
             # prepare directories
-            if self.options.get('directory', None) is None:
-                if self.options.get('mode') == 'screen':
-                    suffix = 'screen'
-                elif self.options.get('mode') == 'mad':
-                    suffix = 'mad'
-                elif self.options.get('mode') == 'merge':
-                    suffix = 'merge'
+            if not self.options.get('directory'):
+                if self.options.get('mode') in ['screen', 'mad', 'merge']:
+                    suffix = self.options.get('mode')
                 elif self.options.get('anomalous', False):
                     suffix = 'anom'
                 else:

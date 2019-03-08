@@ -73,12 +73,12 @@ def write_xds_input(jobs, parameters):
     """
     # defaults
     params = {
-        'min_valid_value': 1,
         'refine_index': 'CELL BEAM ORIENTATION AXIS',
         'refine_integrate': 'DISTANCE POSITION BEAM ORIENTATION'
     }
     params.update(parameters)
     params['min_valid_value'] = 1
+    params['profile_grid_size'] = 13
 
     if params.get('detector_type').lower() in ['q4', 'q210', 'q4-2x', 'q210-2x', 'q315', 'q315-2x']:
         detector = 'ADSC'
@@ -88,13 +88,28 @@ def write_xds_input(jobs, parameters):
     elif 'pilatus' in params.get('detector_type').lower():
         detector = 'PILATUS'
         params['min_spot_size'] = 3
-        params['profile_grid_size'] = 13
         params['fixed_scale_factor'] = True
         params['min_valid_value'] = 0
         params['saturated_value'] = 1048500
         params['sensor_thickness'] = 1.0
     elif 'eiger' in params.get('detector_type').lower():
         detector = 'EIGER'
+        params['min_spot_separation'] = 4
+        params['cluster_radius'] = 2
+        params['min_valid_value'] = 0
+        # params['untrusted'] = [
+        #     (0, 4150, 513, 553),
+        #     (0, 4150, 1064, 1104),
+        #     (0, 4150, 1615, 1655),
+        #     (0, 4150, 2166, 2206),
+        #     (0, 4150, 2717, 2757),
+        #     (0, 4150, 3268, 3308),
+        #     (0, 4150, 3819, 3859),
+        #     (1029, 1042, 0, 4371),
+        #     (2069, 2082, 0, 4371),
+        #     (3109, 3122, 0, 4371),
+        # ]
+
     else:
         detector = 'CCDCHESS'
 
@@ -109,7 +124,7 @@ def write_xds_input(jobs, parameters):
     params['batch_size'] = batch_size
     params['delphi'] = delphi
     params['cluster_nodes'] = ' '.join(HOSTS.keys())
-    params['sigma'] = params.get('sigma', 6)
+    params['sigma'] = params.get('sigma', 4)
     params['friedel'] = str(not params.get('anomalous', False)).upper()
     params['space_group'] = params.get('reference_spacegroup', params.get('space_group', 0))
     params['resolution'] = params.get('resolution', 1.0)
@@ -208,6 +223,8 @@ def write_xds_input(jobs, parameters):
         extra_text += 'NUMBER_OF_PROFILE_GRID_POINTS_ALONG_ALPHA/BETA= {profile_grid_size}\n'
     if params.get('fixed_scale_factor'):
         extra_text += 'DATA_RANGE_FIXED_SCALE_FACTOR= {data_range[0]} {data_range[1]} 1.0\n'
+    for rectangle in params.get('untrusted', []):
+        extra_text += 'UNTRUSTED_RECTANGLE= {} {} {} {}\n'.format(*rectangle)
     extra_text = extra_text.format(**params)
 
     with open('XDS.INP', 'w') as outfile:

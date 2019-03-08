@@ -6,7 +6,7 @@ import os
 import shutil
 
 import numpy
-from autoprocess.libs.prettytable import PrettyTable
+from prettytable import PrettyTable
 from autoprocess.utils import gnuplot
 from autoprocess.utils import xtal, misc, log
 from autoprocess.utils.misc import json

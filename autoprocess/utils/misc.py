@@ -1,8 +1,3 @@
-'''
-Created on Mar 24, 2011
-
-@author: michel
-'''
 import functools
 import gzip
 import json
@@ -13,8 +8,8 @@ import shutil
 
 import msgpack
 import numpy
-
-from autoprocess.utils.prettytable import PrettyTable
+from autoprocess.utils import msgpack_numpy
+from prettytable import PrettyTable
 
 # Physical Constants
 _h = 4.13566733e-15  # eV.s
@@ -451,7 +446,7 @@ def load_json(filename):
 
 def load_chkpt(filename='process.chkpt'):
     with gzip.open(filename, 'rb') as handle:
-        info = msgpack.load(handle)
+        info = msgpack.load(handle, object_hook=msgpack_numpy.decode)
     return info
 
 

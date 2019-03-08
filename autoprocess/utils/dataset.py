@@ -9,27 +9,11 @@ from scipy.ndimage import filters
 from scipy.ndimage import measurements
 
 import autoprocess.errors
-from autoprocess.libs.imageio import read_header, read_image
+from autoprocess.libs.imageio import read_image
 from autoprocess.utils import misc
 from autoprocess.utils.log import get_module_logger
 
 logger = get_module_logger(__name__)
-
-
-def _all_files(root, patterns='*'):
-    """ 
-    Return a list of all the files in a directory matching the pattern
-    
-    """
-    patterns = patterns.split(';')
-    _, _, files = os.walk(root).next()
-    sfiles = []
-    for name in files:
-        for pattern in patterns:
-            if fnmatch.fnmatch(name, pattern):
-                sfiles.append(name)
-    sfiles.sort()
-    return sfiles
 
 
 def detect_beam_peak(filename):
@@ -101,17 +85,10 @@ def get_parameters(img_file):
     
     """
     data = read_image(os.path.abspath(img_file))
-
     if not data.header['dataset'] or len(data.header['dataset']['sequence']) == 0:
         logger.error("Dataset not found")
         raise autoprocess.errors.DatasetError('Dataset not found')
 
-    reference_image = data.header['dataset']['name'].format(data.header['dataset']['sequence'][0])
-    if not (os.path.isfile(reference_image) and os.access(reference_image, os.R_OK)):
-        logger.info("File '%s' not found, or unreadable." % reference_image)
-        sys.exit(1)
-
-    data = read_image(reference_image)
     info = data.header
     info['energy'] = misc.wavelength_to_energy(info['wavelength'])
     info['first_frame'] = info['dataset']['sequence'][0]
@@ -143,7 +120,6 @@ def get_parameters(img_file):
 
     info['spot_range'] = spot_range
     info['data_range'] = info['dataset']['sequence'][0], info['dataset']['sequence'][-1]
-    info['reference_image'] = reference_image
     info['background_range'] = (biggest_wedge[0], biggest_wedge[0] + min(10, biggest_wedge[1]) - 1)
     info['skip_range'] = summarize_gaps(info['dataset']['sequence'])
     info['max_delphi'] = info['delta_angle'] * biggest_wedge[1]

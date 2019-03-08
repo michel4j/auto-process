@@ -8,11 +8,10 @@ from collections import OrderedDict
 
 import msgpack
 
-
 import autoprocess.errors
 from autoprocess.engine import indexing, spots, integration, scaling, solver, reporting
 from autoprocess.engine import symmetry, strategy, conversion
-from autoprocess.utils import dataset, misc, log, xtal
+from autoprocess.utils import dataset, misc, log, xtal, msgpack_numpy
 
 
 logger = log.get_module_logger(__name__)
@@ -222,7 +221,7 @@ class Manager(object):
         # Checkpoint file is saved in top-level processing directory
         fname = os.path.join(self.options['directory'], 'process.chkpt')
         with gzip.open(fname, 'wb') as handle:
-            msgpack.dump(info, handle)
+            msgpack.dump(info, handle, default=msgpack_numpy.encode)
         return info
 
     def run_step(self, step, dset, overwrite={}, optional=False, colonize=False):

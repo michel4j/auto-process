@@ -15,3 +15,4 @@ PyYAML==3.13
 zope==4.0b7
 prettytable==0.7.2
 h5py>=2.3.2
+opencv>=2.4.0

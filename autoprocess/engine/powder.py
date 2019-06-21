@@ -408,11 +408,11 @@ class FrameAnalyser(object):
             )
             logger.warning('Calibration may fail. Use a frame with clearly separated diffraction rings!')
 
-        for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
+        for key in ['wavelength', 'distance', 'format', 'detector_size', 'pixel_size', 'beam_center']:
             params[key] = self.frame.header[key]
 
         dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
-        with Fit2DFile(self.filename, self.frame.header['file_format']) as imgfile:
+        with Fit2DFile(self.filename, self.frame.header['format']) as imgfile:
             params['file_name'] = imgfile.filename
             params['directory'] = self.directory
             params['data_name'] = imgfile.name
@@ -441,11 +441,11 @@ class FrameAnalyser(object):
 
         for filename in self.files:
             self.set_file(filename)
-            for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
+            for key in ['wavelength', 'distance', 'format', 'detector_size', 'pixel_size', 'beam_center']:
                 params[key] = self.frame.header[key]
             dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
 
-            with Fit2DFile(self.filename, self.frame.header['file_format']) as imgfile:
+            with Fit2DFile(self.filename, self.frame.header['format']) as imgfile:
                 params['file_name'] = imgfile.filename
                 params['data_name'] = imgfile.name
                 params['directory'] = self.directory

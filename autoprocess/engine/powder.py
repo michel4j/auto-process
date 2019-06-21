@@ -660,7 +660,7 @@ def calib_table(params, db_info):
             ['Wavelength (A)', '{:0.4f}'.format(params['wavelength'])],
             ['Detector Distance (mm)', '{:0.4f}'.format(params['distance'])],
             ['Detector Pixel Size (um)', '{:0.4f}'.format(params['pixel_size'])],
-            ['File Format', params['file_format']],
+            ['File Format', params['format']],
             ['Detector Tilt (deg)', '{:0.4f}'.format(numpy.degrees(float(db_info['TILT_ANGLE'])))],
             ['Detector Tilt Rotation (deg)', '{:0.2f}'.format(numpy.degrees(float(db_info['TILT_ROTATION'])))],
             ['Beam Center (pix)', '{:0.2f}, {:0.2f}'.format(float(db_info['X_BEAM_CENTRE']),

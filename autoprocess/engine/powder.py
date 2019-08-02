@@ -10,6 +10,7 @@ import re
 import numpy
 import subprocess32 as subprocess
 from scipy import interpolate
+from operator import itemgetter
 
 from autoprocess.libs.imageio import read_image
 from autoprocess.utils import xdi, fitio, log, misc
@@ -44,7 +45,10 @@ class Fit2DFile(object):
 
     def __enter__(self):
         if self.format == 'TIFF':
-            os.symlink(self.rawfile, self.filename)
+            try:
+                os.symlink(self.rawfile, self.filename)
+            except OSError:
+                pass
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -139,7 +143,6 @@ def norm_curve(s):
 class PeakSorter(object):
     def __init__(self, reference, max_size=10):
         self.reference = reference[reference[:, 1].argsort()[::-1][:max_size]]
-        # self.reference = reference
         self.tree = [[] for i in range(self.reference.shape[0])]
 
     def add_peaks(self, peaks, angle):
@@ -313,19 +316,29 @@ class FrameAnalyser(object):
         return self.cx + r * numpy.sin(numpy.radians(azimuth)), self.cy + r * numpy.cos(numpy.radians(azimuth))
 
     def find_rings(self, samples=20, width=2):
-        peak_sorter = None
+        # find rings in the image by integrating along radial directions
+        peaks_list = []
         sizes = []
-
+        reference_rings = -1
+        reference = None
         for angle in numpy.arange(0., 360., 360 / samples):
             prof = self.integrate_angle(angle, width=width)
-            peaks = peak_search(prof, width=21, sensitivity=0.05)
+            peaks = peak_search(prof, width=21, sensitivity=0.01)
+            num_rings = len(peaks)
+            if num_rings > reference_rings:
+                reference = peaks
+                reference_rings = len(peaks)
             sizes.append(peaks[:, 2].max())
-            if not peak_sorter:
-                peak_sorter = PeakSorter(peaks, max_size=10)
-            else:
-                peak_sorter.add_peaks(peaks, angle)
+            peaks_list.append((peaks, angle))
+
+        # Group the peaks into bins corresponding to rings
+        peak_sorter = PeakSorter(reference, max_size=20)
+        for peaks, angle in peaks_list:
+            peak_sorter.add_peaks(peaks, angle)
+
         width = numpy.median(sizes) / self.frame.header['pixel_size']
         coords = numpy.array(peak_sorter.tree[0])
+
         x, y = self.get_xy(coords[:, 0], coords[:, 1])
         ellipse = zip(x, y)
         rings = [self.get_xy(group[0][0], group[0][1]) for group in peak_sorter.tree[1:]]
@@ -333,9 +346,9 @@ class FrameAnalyser(object):
 
         return {
             'ellipse': ellipse,
-            'rings': rings,
+            'rings': rings[:10],
             'ring_width': width * 5,
-            'angles': angles,
+            'angles': angles[:10],
         }
 
     def show_rings(self, samples=40, width=2):
@@ -388,8 +401,9 @@ class FrameAnalyser(object):
         return fits
 
     def calibrate(self):
-        self.set_file(self.files[0])
         from xvfbwrapper import Xvfb
+        self.set_file(self.files[0])
+
         logger.info('Detecting strong rings in frame {}:{} ...'.format(self.group_name, self.frame_name))
         params = self.find_rings()
         if len(params['rings']) > 5:
@@ -408,23 +422,24 @@ class FrameAnalyser(object):
             )
             logger.warning('Calibration may fail. Use a frame with clearly separated diffraction rings!')
 
-        for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
+        for key in ['wavelength', 'distance', 'format', 'detector_size', 'pixel_size', 'beam_center']:
             params[key] = self.frame.header[key]
 
         dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
-        with Fit2DFile(self.filename, self.frame.header['file_format']) as imgfile:
+        with Fit2DFile(self.filename, self.frame.header['format']) as imgfile:
             params['file_name'] = imgfile.filename
             params['directory'] = self.directory
             params['data_name'] = imgfile.name
             params['db_file'] = self.db_file
             fitio.write_calib_macro(params, macro_file='calib.mac')
 
-            with Xvfb() as xvfb:
+            with Xvfb():
                 args = ['fit2d', '-dim{0:0.0f}x{0:0.0f}'.format(dim), '-maccalib.mac']
                 logger.info('Running calibration through fit2d ...')
                 if os.path.exists(self.db_file):
                     logger.warning('Calibration file will be overwritten')
-                subprocess.check_output(args, timeout=120, stderr=subprocess.STDOUT)
+                subprocess.call(args, timeout=120, stderr=subprocess.STDOUT)
+
             os.remove('calib.mac')
             data_file = '{}.chi'.format(params['data_name'])
             if os.path.exists(data_file):
@@ -441,11 +456,11 @@ class FrameAnalyser(object):
 
         for filename in self.files:
             self.set_file(filename)
-            for key in ['wavelength', 'distance', 'file_format', 'detector_size', 'pixel_size', 'beam_center']:
+            for key in ['wavelength', 'distance', 'format', 'detector_size', 'pixel_size', 'beam_center']:
                 params[key] = self.frame.header[key]
-            dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
 
-            with Fit2DFile(self.filename, self.frame.header['file_format']) as imgfile:
+            dim = numpy.ceil(max(params['detector_size']) / 1000.) * 1000
+            with Fit2DFile(self.filename, self.frame.header['format']) as imgfile:
                 params['file_name'] = imgfile.filename
                 params['data_name'] = imgfile.name
                 params['directory'] = self.directory
@@ -456,7 +471,7 @@ class FrameAnalyser(object):
                     raise IOError('File not found!')
 
                 fitio.write_integrate_macro(params, macro_file='integrate.mac')
-                with Xvfb() as xvfb:
+                with Xvfb():
                     logger.info('Integrating frame {}: {} ...'.format(self.group_name, self.frame_name))
                     args = ['fit2d', '-dim{0:0.0f}x{0:0.0f}'.format(dim), '-macintegrate.mac']
                     subprocess.check_output(args, timeout=120, stderr=subprocess.STDOUT)
@@ -660,7 +675,7 @@ def calib_table(params, db_info):
             ['Wavelength (A)', '{:0.4f}'.format(params['wavelength'])],
             ['Detector Distance (mm)', '{:0.4f}'.format(params['distance'])],
             ['Detector Pixel Size (um)', '{:0.4f}'.format(params['pixel_size'])],
-            ['File Format', params['file_format']],
+            ['File Format', params['format']],
             ['Detector Tilt (deg)', '{:0.4f}'.format(numpy.degrees(float(db_info['TILT_ANGLE'])))],
             ['Detector Tilt Rotation (deg)', '{:0.2f}'.format(numpy.degrees(float(db_info['TILT_ROTATION'])))],
             ['Beam Center (pix)', '{:0.2f}, {:0.2f}'.format(float(db_info['X_BEAM_CENTRE']),

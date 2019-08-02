@@ -1,8 +1,7 @@
 import numpy
 import copy
 
-CALIB_TEMPLATE = """
-POWDER DIFFRACTION (2-D)
+CALIB_TEMPLATE = """POWDER DIFFRACTION (2-D)
 INPUT
 {file_name}
 O.K.
@@ -21,9 +20,9 @@ X-BEAM CENTRE
 Y-BEAM CENTRE
 {beam_y:0.3f}
 TILT ROTATION
-0.0
+0
 ANGLE OF TILT
-0.0
+0
 DETECTOR ROTATION
 0.0
 O.K.
@@ -138,10 +137,10 @@ def write_calib_macro(parameters, macro_file='macro.mac'):
         '{:14.7E}\n{:14.7E}'.format(x, y) for x, y in params['ellipse']
     ] + [
          '{:12d}'.format(1),
-         '{:14.7E}\n{:14.7E}'.format(params['ellipse'][-1][0]+params['ring_width'], params['ellipse'][-1][1]+params['ring_width']),
-         '{:12d}'.format(len(params['rings'])),
+         '{:14.7E}\n{:14.7E}'.format(params['ellipse'][0][0]+params['ring_width'], params['ellipse'][0][1]+params['ring_width']),
+         '{}'.format(len(params['rings'])),
     ] + [
-        '{:14e}\n{:14e}'.format(x, y) for x, y in params['rings']
+        '{:14.7E}\n{:14.7E}'.format(x, y) for x, y in params['rings']
     ]
 
     params['coordinates'] = '\n'.join(coords_text)

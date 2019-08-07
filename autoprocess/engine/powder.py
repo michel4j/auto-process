@@ -315,7 +315,7 @@ class FrameAnalyser(object):
         r = self.frame.header['distance'] * numpy.tan(numpy.radians(twotheta)) / self.frame.header['pixel_size']
         return self.cx + r * numpy.sin(numpy.radians(azimuth)), self.cy + r * numpy.cos(numpy.radians(azimuth))
 
-    def find_rings(self, samples=20, width=2):
+    def find_rings(self, samples=40, width=2):
         # find rings in the image by integrating along radial directions
         peaks_list = []
         sizes = []
@@ -323,7 +323,7 @@ class FrameAnalyser(object):
         reference = None
         for angle in numpy.arange(0., 360., 360 / samples):
             prof = self.integrate_angle(angle, width=width)
-            peaks = peak_search(prof, width=21, sensitivity=0.01)
+            peaks = peak_search(prof, width=15, sensitivity=0.001)
             num_rings = len(peaks)
             if num_rings > reference_rings:
                 reference = peaks

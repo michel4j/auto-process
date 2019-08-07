@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import sys
 import inspect
 import json
 import os
@@ -141,16 +142,19 @@ def norm_curve(s):
 
 
 class PeakSorter(object):
-    def __init__(self, reference, max_size=10):
+    def __init__(self, reference, max_size=10, width_factor=1):
         self.reference = reference[reference[:, 1].argsort()[::-1][:max_size]]
         self.tree = [[] for i in range(self.reference.shape[0])]
+        self.width_factor = width_factor
 
     def add_peaks(self, peaks, angle):
         for x, y, w in peaks:
             diffs = numpy.abs(self.reference[:, 0] - x)
             idx = numpy.argmin(diffs)
-            if diffs[idx] <= self.reference[idx, 2] and y >= self.reference[idx, 1] * 0.2:
+            if diffs[idx] <= self.width_factor*(self.reference[idx, 2] + w) and y >= self.reference[idx, 1] * 0.2:
                 self.tree[idx].append([x, float(angle)])
+                self.reference[idx, 0] = x # update x position to next peak
+                self.reference[idx, 2] = w
 
 
 class FrameProfiler(object):
@@ -315,7 +319,7 @@ class FrameAnalyser(object):
         r = self.frame.header['distance'] * numpy.tan(numpy.radians(twotheta)) / self.frame.header['pixel_size']
         return self.cx + r * numpy.sin(numpy.radians(azimuth)), self.cy + r * numpy.cos(numpy.radians(azimuth))
 
-    def find_rings(self, samples=40, width=2):
+    def find_rings(self, samples=25, width=2):
         # find rings in the image by integrating along radial directions
         peaks_list = []
         sizes = []
@@ -323,7 +327,7 @@ class FrameAnalyser(object):
         reference = None
         for angle in numpy.arange(0., 360., 360 / samples):
             prof = self.integrate_angle(angle, width=width)
-            peaks = peak_search(prof, width=15, sensitivity=0.001)
+            peaks = peak_search(prof, width=15, sensitivity=0.01)
             num_rings = len(peaks)
             if num_rings > reference_rings:
                 reference = peaks
@@ -331,19 +335,24 @@ class FrameAnalyser(object):
             sizes.append(peaks[:, 2].max())
             peaks_list.append((peaks, angle))
 
+        reference =  peaks_list[0][0]
         # Group the peaks into bins corresponding to rings
-        peak_sorter = PeakSorter(reference, max_size=20)
+        peak_sorter = PeakSorter(reference, max_size=20, width_factor=2)
         for peaks, angle in peaks_list:
             peak_sorter.add_peaks(peaks, angle)
 
         width = numpy.median(sizes) / self.frame.header['pixel_size']
         coords = numpy.array(peak_sorter.tree[0])
+        
+        group_sizes = numpy.array([len(group) for group in peak_sorter.tree])
+        #best_group = numpy.array(peak_sorter.tree[numpy.argmax(group_sizes)])
+        logger.warning('Group Sizes: {}'.format(group_sizes))
 
         x, y = self.get_xy(coords[:, 0], coords[:, 1])
         ellipse = zip(x, y)
         rings = [self.get_xy(group[0][0], group[0][1]) for group in peak_sorter.tree[1:]]
         angles = [group[0][0] for group in peak_sorter.tree[1:]]
-
+        
         return {
             'ellipse': ellipse,
             'rings': rings[:10],
@@ -376,7 +385,7 @@ class FrameAnalyser(object):
         x, y = self.get_xy(coords[:, 0], coords[:, 1])
         ellipse = zip(x, y)
         rings = [self.get_xy(group[0][0], group[0][1]) for group in peak_sorter.tree[1:]]
-
+        
         return {
             'ellipse': ellipse,
             'rings': rings,
@@ -406,17 +415,19 @@ class FrameAnalyser(object):
 
         logger.info('Detecting strong rings in frame {}:{} ...'.format(self.group_name, self.frame_name))
         params = self.find_rings()
-        if len(params['rings']) > 5:
+        if len(params['rings']) > 5 and len(params['ellipse']) >= 5:
             logger.info(
-                'Sufficient number ({}) of rings at: {} deg'.format(
+                'Sufficient number ({}, {}) of rings at: {} deg'.format(
                     len(params['rings']),
+                    len(params['ellipse']),
                     ', '.join(['{:0.1f}'.format(a) for a in params['angles']])
                 )
             )
         else:
             logger.warning(
-                'Insufficient number ({}) of rings found at: {} deg'.format(
+                'Insufficient number ({}, {}) of rings found at: {} deg'.format(
                     len(params['rings']),
+                    len(params['ellipse']),                    
                     ', '.join(['{:0.1f}'.format(a) for a in params['angles']])
                 )
             )
@@ -438,7 +449,7 @@ class FrameAnalyser(object):
                 logger.info('Running calibration through fit2d ...')
                 if os.path.exists(self.db_file):
                     logger.warning('Calibration file will be overwritten')
-                subprocess.call(args, timeout=120, stderr=subprocess.STDOUT)
+                subprocess.check_output(args, timeout=120, stderr=subprocess.STDOUT)
 
             os.remove('calib.mac')
             data_file = '{}.chi'.format(params['data_name'])

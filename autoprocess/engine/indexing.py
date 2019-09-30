@@ -1,10 +1,11 @@
-import os
 import numpy
-from autoprocess.utils.misc import Table
+import os
+
+import autoprocess.errors
 from autoprocess.parser import xds
 from autoprocess.utils import log, misc, programs, xdsio
 from autoprocess.utils.choices import Choices
-import autoprocess.errors
+from autoprocess.utils.misc import Table
 
 _logger = log.get_module_logger(__name__)
 
@@ -50,7 +51,7 @@ def diagnose_index(info):
     distinct = 0
     satelites = 0
     for subtree in subtrees:
-        pct = subtree['population']/float(_local_spots)
+        pct = subtree['population'] / float(_local_spots)
         if pct > 0.2:
             distinct += 1
         elif pct > .05:
@@ -92,7 +93,7 @@ def diagnose_index(info):
     for i, _org in enumerate(_origins):
         if i == 0:
             origin_deviation = _org.get('position')
-        deviation = sum(_org.get('deviation',[0]))
+        deviation = sum(_org.get('deviation', [0]))
         if deviation < best_deviation:
             selected_deviation = i
             best_deviation = deviation
@@ -109,29 +110,28 @@ def diagnose_index(info):
 
 
 def _filter_spots(sigma=0, unindexed=False, filename='SPOT.XDS'):
-    
     new_list = numpy.loadtxt(filename)
     if new_list.shape[1] < 5:
         return
-    fmt = [" %0.2f"] + ["%0.2f"]*2 + ["%0.0f."]
+    fmt = [" %0.2f"] + ["%0.2f"] * 2 + ["%0.0f."]
     if new_list.shape[1] > 7:
-        fmt += ["%d"]*4
+        fmt += ["%d"] * 4
     else:
-        fmt += ["%d"]*3
-        
-    new_sel = (new_list[:,3] > sigma)
-    if unindexed:
-        new_sel = new_sel & (new_list[:,-3] != 0) & (new_list[:,-3] != 0) & (new_list[:,-3] != 0)
+        fmt += ["%d"] * 3
 
-    numpy.savetxt(filename, new_list[new_sel,:], fmt=fmt)
+    new_sel = (new_list[:, 3] > sigma)
+    if unindexed:
+        new_sel = new_sel & (new_list[:, -3] != 0) & (new_list[:, -3] != 0) & (new_list[:, -3] != 0)
+
+    numpy.savetxt(filename, new_list[new_sel, :], fmt=fmt)
 
 
 def harvest_index():
     info = xds.parse_idxref()
     if info.get('failure_code') == 0:
-        return {'step': 'indexing', 'success':True, 'data': info}
+        return {'step': 'indexing', 'success': True, 'data': info}
     else:
-        return {'step': 'indexing','success':False, 'reason': info['failure']}
+        return {'step': 'indexing', 'success': False, 'reason': info['failure']}
 
 
 def auto_index(data_info, options={}):
@@ -141,8 +141,8 @@ def auto_index(data_info, options={}):
     run_info = {'mode': options.get('mode')}
     info = {}
     run_info.update(data_info)
-    if not misc.file_requirements('XDS.INP','SPOT.XDS'):
-        return {'step': 'indexing', 'success':False, 'reason': "Required files not found"}
+    if not misc.file_requirements('XDS.INP', 'SPOT.XDS'):
+        return {'step': 'indexing', 'success': False, 'reason': "Required files not found"}
     try:
 
         xdsio.write_xds_input(jobs, run_info)
@@ -156,21 +156,25 @@ def auto_index(data_info, options={}):
         _aliens_removed = False
         _weak_removed = False
         _spot_adjusted = False
-        
+
         while info.get('failure_code') > 0 and _retries < 8:
             _all_images = (run_info['spot_range'][0] == run_info['data_range'])
             _retries += 1
             _logger.warning('Indexing failed:')
             for prob in diagnosis['problems']:
                 _logger.warning('... {}'.format(PROBLEMS[prob]))
-            
+
             if options.get('backup', False):
                 misc.backup_files('SPOT.XDS', 'IDXREF.LP')
 
             if diagnosis['problems'] & {PROBLEMS.index_origin}:
-                _logger.info('-> Adjusting detector origin ...')
-                run_info['beam_center'] = diagnosis['options'].get('beam_center', run_info['beam_center'])
-                xdsio.write_xds_input('IDXREF', run_info)
+                if not _all_images:
+                    _logger.info('-> Expanding Spot Range ...')
+                    run_info['spot_range'] = [run_info['data_range']]
+                else:
+                    _logger.info('-> Adjusting detector origin ...')
+                    run_info['beam_center'] = diagnosis['options'].get('beam_center', run_info['beam_center'])
+                xdsio.write_xds_input('COLSPOT IDXREF', run_info)
                 programs.xds_par()
                 info = xds.parse_idxref()
                 diagnosis = diagnose_index(info)
@@ -181,7 +185,8 @@ def auto_index(data_info, options={}):
                 programs.xds_par()
                 info = xds.parse_idxref()
                 diagnosis = diagnose_index(info)
-            elif (diagnosis['problems'] & {PROBLEMS.poor_solution, PROBLEMS.spot_accuracy, PROBLEMS.non_integral}) and not _spot_adjusted:
+            elif (diagnosis['problems'] & {PROBLEMS.poor_solution, PROBLEMS.spot_accuracy,
+                                           PROBLEMS.non_integral}) and not _spot_adjusted:
                 spot_size *= 1.5
                 sigma = 6
                 new_params = {'sigma': sigma, 'min_spot_size': spot_size, 'refine_index': "CELL BEAM ORIENTATION AXIS"}
@@ -204,7 +209,8 @@ def auto_index(data_info, options={}):
                 info = xds.parse_idxref()
                 diagnosis = diagnose_index(info)
                 _weak_removed = sigma >= 12
-            elif (diagnosis['problems'] & {PROBLEMS.unindexed_spots, PROBLEMS.multiple_subtrees}) and not _aliens_removed:
+            elif (diagnosis['problems'] & {PROBLEMS.unindexed_spots,
+                                           PROBLEMS.multiple_subtrees}) and not _aliens_removed:
                 _logger.info('-> Removing all alien spots ...')
                 _filter_spots(unindexed=True)
                 xdsio.write_xds_input(jobs, run_info)
@@ -215,12 +221,11 @@ def auto_index(data_info, options={}):
             else:
                 _logger.critical('.. Unable to proceed.')
                 _retries = 999
-                
+
     except autoprocess.errors.ProcessError as e:
-        return {'step': 'indexing', 'success':False, 'reason': str(e)}
-        
+        return {'step': 'indexing', 'success': False, 'reason': str(e)}
+
     if info.get('failure_code') == 0:
-        return {'step': 'indexing', 'success':True, 'data': info}
+        return {'step': 'indexing', 'success': True, 'data': info}
     else:
-        return {'step': 'indexing','success':False, 'reason': info['failure']}
-    
+        return {'step': 'indexing', 'success': False, 'reason': info['failure']}

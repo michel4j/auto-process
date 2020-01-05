@@ -37,31 +37,39 @@ def save_report(datasets, options):
 
     if options.get('mode') == 'screen':
         results = datasets[0]['results']
-        report['kind'] = 'MX-Screen'
-        report['title'] = '{}Screening Summary'.format(options.get('anomalous') and 'Anomalous ' or '')
+        report['kind'] = 'MX Screening'
+        report['title'] = '{}Screening Report for "{}"'.format(
+            options.get('anomalous') and 'Anomalous ' or '', datasets[0]['paremeters']['name']
+        )
         report['details'] = screening_report(datasets[0], options)
         report['score'] = results['crystal_score']
         report['strategy'] = get_strategy(results)
     elif options.get('mode') == 'mad':
-        report['kind'] = 'MX-MAD'
+        report['kind'] = 'MX MAD Analysis'
         results = datasets[0]['results']
+        names = []
+        for dataset in datasets:
+            names.append(dataset['parameters']['name'])
         report['details'] = mad_report(datasets, options)
-        report['title'] = 'MAD Data Analysis Report'
+        report['title'] = 'MAD Data Processing Report for "{}"'.format(", ".join(names))
         report['score'] = results['crystal_score']
     elif options.get('mode') == 'merge':
         results = datasets[0]['results']
+        names = []
         for dataset in datasets:
             if dataset['parameters']['name'] == 'combined':
                 results = dataset['results']
-                break
-        report['title'] = 'Merged Dataset Analysis'
-        report['kind'] = 'MX-Merge'
+            else:
+                names.append(dataset['parameters']['name'])
+        report['title'] = '{}Merging Report for "{}"'.format(options.get('anomalous') and 'Anomalous ' or '', ', '.join(names))
+        report['kind'] = 'MX Merging'
         report['details'] = merge_report(datasets, options)
         report['score'] = results['crystal_score']
     else:
         results = datasets[0]['results']
-        report['title'] = 'Data Analysis'
-        report['kind'] = 'MX-Normal' if not options.get('anomalous') else 'MX-Anomalous'
+        name = datasets[0]['parameters']['name']
+        report['title'] = 'Native Processing Report for "{}"'.format(name)
+        report['kind'] = 'MX Native Analysis' if not options.get('anomalous') else 'MX Anomalous Analysis'
         report['details'] = single_report(datasets[0], options)
         report['score'] = results['crystal_score']
 

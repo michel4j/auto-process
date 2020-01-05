@@ -458,6 +458,7 @@ class FrameAnalyser(object):
                 self.add_data(data)
                 os.remove(data_file)
 
+        params['type'] = 'Calibration'
         self.report(params, self.data)
         self.save_xdi('{}.xdi'.format(self.group_name))
 
@@ -492,7 +493,7 @@ class FrameAnalyser(object):
                 data = numpy.loadtxt(data_file, skiprows=4)
                 self.add_data(data)
                 os.remove(data_file)
-
+        params['type'] = 'Integration'
         self.save_xdi('{}.xdi'.format(self.group_name))
         self.report(params, self.data)
 
@@ -548,11 +549,12 @@ class FrameAnalyser(object):
             old_report = misc.load_json(report_file)
             report['id'] = old_report.get('id')
 
-        report['kind'] = 'XRD Profile'
-        report['title'] = '{} XRD Profile'.format(params['data_name'])
+        article = 'using' if params['type'] == 'Calibration' else 'of'
+        report['kind'] = 'XRD Analysis'
+        report['title'] = 'XRD Azimuthal {} {} "{}"'.format(params['type'], article, params['data_name'])
         report['details'] = [
             {
-                'title': report['title'],
+                'title': "Azimuthal Integration",
                 'content': [
                     calib_table(params, info),
                     profile_plot(params, data),

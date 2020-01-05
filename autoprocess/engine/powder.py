@@ -551,7 +551,7 @@ class FrameAnalyser(object):
 
         article = 'using' if params['type'] == 'Calibration' else 'of'
         report['kind'] = 'XRD Analysis'
-        report['title'] = 'XRD Azimuthal {} {} "{}"'.format(params['type'], article, params['data_name'])
+        report['title'] = 'Azimuthal {} {} "{}"'.format(params['type'], article, params['data_name'])
         report['details'] = [
             {
                 'title': "Azimuthal Integration",

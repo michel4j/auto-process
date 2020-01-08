@@ -39,7 +39,7 @@ def save_report(datasets, options):
         results = datasets[0]['results']
         report['kind'] = 'MX Screening'
         report['title'] = '{}Screening of "{}"'.format(
-            options.get('anomalous') and 'Anomalous ' or '', datasets[0]['paremeters']['name']
+            options.get('anomalous') and 'Anomalous ' or '', datasets[0]['parameters']['name']
         )
         report['details'] = screening_report(datasets[0], options)
         report['score'] = results['crystal_score']

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals, print_function
-
 import bisect
 import gzip
 import math
@@ -15,11 +13,11 @@ XTAL_TABLE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'xtal_tables.d
 with gzip.open(XTAL_TABLE_FILE, 'rb') as handle:
     XTAL_TABLES = msgpack.load(handle)
 
-SG_SYMBOLS = {k: v['name'] for k, v in XTAL_TABLES.items()}
-SG_NAMES = {k: v['symbol'] for k, v in XTAL_TABLES.items()}
-SG_NUMBERS = {v['name']: k for k, v in XTAL_TABLES.items()}
-CHIRAL_SPACE_GROUPS = [k for k, v in XTAL_TABLES.items() if v['chiral']]
-CENTRO_SYMETRIC = {k: '-X,-Y,-Z' in v['symmetry'] for k, v in XTAL_TABLES.items()}
+SG_SYMBOLS = {k: v['name'] for k, v in list(XTAL_TABLES.items())}
+SG_NAMES = {k: v['symbol'] for k, v in list(XTAL_TABLES.items())}
+SG_NUMBERS = {v['name']: k for k, v in list(XTAL_TABLES.items())}
+CHIRAL_SPACE_GROUPS = [k for k, v in list(XTAL_TABLES.items()) if v['chiral']]
+CENTRO_SYMETRIC = {k: '-X,-Y,-Z' in v['symmetry'] for k, v in list(XTAL_TABLES.items())}
 
 # each rule is a list of 9 boolean values representing
 # a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120
@@ -35,15 +33,15 @@ _lattice_rules = {
 
 def resolution_shells(resolution, num=12):
     def _angle(resol):
-        return 2*numpy.arcsin(0.5 * 1.0 / resol)
+        return 2 * numpy.arcsin(0.5 * 1.0 / resol)
 
     def _resol(angl):
-        return round(0.5 * 1.0 / numpy.sin(0.5*angl), 2)
+        return round(0.5 * 1.0 / numpy.sin(0.5 * angl), 2)
 
     max_angle = _angle(resolution)
     min_angle = _angle(5.0)
     angles = numpy.linspace(min_angle, max_angle, num)
-    return map(_resol, angles)
+    return list(map(_resol, angles))
 
 
 def get_character(sg_number=1):
@@ -57,7 +55,8 @@ def get_number(sg_name):
 def get_pg_list(lattices, chiral=True):
     """Takes a list of lattice characters and returns a unique list of the
     names of the lowest symmetry pointgroup."""
-    pgset = set([SG_NUMBERS[v['point_group']] for v in XTAL_TABLES.values() if v['lattice_character'] in lattices])
+    pgset = set(
+        [SG_NUMBERS[v['point_group']] for v in list(XTAL_TABLES.values()) if v['lattice_character'] in lattices])
     if chiral:
         pgset = pgset.intersection(set(CHIRAL_SPACE_GROUPS))
     pgnums = sorted(pgset)
@@ -67,9 +66,9 @@ def get_pg_list(lattices, chiral=True):
 def get_sg_table(chiral=True):
     """Generate a table of all spacegroups for each given crystal system."""
     tab = {}
-    for k, v in XTAL_TABLES.items():
+    for k, v in list(XTAL_TABLES.items()):
         if (chiral and not v['chiral']): continue
-        if v['lattice_character'] in tab.keys():
+        if v['lattice_character'] in list(tab.keys()):
             tab[v['lattice_character']].append("%d:%s" % (k, v['symbol']))
         else:
             tab[v['lattice_character']] = ["%d:%s" % (k, v['symbol'])]
@@ -165,7 +164,7 @@ def select_resolution(table, method=2, optimistic=False):
     """
 
     data = Table(table[:-1])
-    if 'shell' in data.keys():
+    if 'shell' in list(data.keys()):
         resol = [float(v) for v in data['shell']]
     else:
         resol = [float(v[1]) for v in data['resol_range']]
@@ -214,7 +213,7 @@ def logistic_score(x, best=1, fair=0.5):
 
 def logistic(x, x0=0.0, weight=1.0, width=1.0, invert=False):
     mult = 1 if invert else -1
-    return weight / (1 + numpy.exp(mult*width*(x - x0)))
+    return weight / (1 + numpy.exp(mult * width * (x - x0)))
 
 
 def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, rejected_fraction):
@@ -226,12 +225,12 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
         logistic(mosaicity, x0=0.3, weight=0.1, width=30, invert=True),
         logistic(std_spindle, x0=1.0, weight=0.05, width=2, invert=True),
         logistic(std_spot, x0=2.0, weight=0.05, width=2, invert=True),
-        logistic(rejected_fraction, x0=0.1, weight=0.1,  width=6, invert=True),
+        logistic(rejected_fraction, x0=0.1, weight=0.1, width=6, invert=True),
     ])
     weights = numpy.array([0.2, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05, 0.1])
     names = ['Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Rejected']
     values = [resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, rejected_fraction]
-    return scores.sum(), zip(names, scores/weights, values)
+    return scores.sum(), list(zip(names, scores / weights, values))
 
 
 def average_cell(cell_and_weights):

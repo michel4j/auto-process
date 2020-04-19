@@ -7,12 +7,12 @@ Support for serialization of numpy data types with msgpack.
 # Distributed under the terms of the BSD license:
 # http://www.opensource.org/licenses/bsd-license
 
+import functools
 import os
 import sys
-import functools
 
-import numpy as np
 import msgpack
+import numpy as np
 
 # Fall back to pure Python
 if os.environ.get('MSGPACK_PUREPYTHON'):
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     except NameError:
         pass  # Python 3
 
-    from unittest import main, TestCase, TestSuite
+    from unittest import main, TestCase
     from numpy.testing import assert_equal, assert_array_equal
 
 
@@ -274,10 +274,10 @@ if __name__ == '__main__':
         def test_str(self):
             assert_equal(type(self.encode_decode('foo')), bytes)
             if sys.version_info.major == 2:
-                assert_equal(type(self.encode_decode(u'foo')), str)
+                assert_equal(type(self.encode_decode('foo')), str)
 
                 # Test non-default string encoding/decoding:
-                assert_equal(type(self.encode_decode(u'foo', True, 'utf=8')), unicode)
+                assert_equal(type(self.encode_decode('foo', True, 'utf=8')), str)
 
         def test_numpy_scalar_bool(self):
             x = np.bool_(True)
@@ -361,10 +361,10 @@ if __name__ == '__main__':
         def test_dict_complex(self):
             x = {b'foo': 1.0 + 1.0j, b'bar': 2.0 + 2.0j}
             x_rec = self.encode_decode(x)
-            assert_array_equal(sorted(x.values(), key=np.linalg.norm),
-                               sorted(x_rec.values(), key=np.linalg.norm))
-            assert_array_equal([type(e) for e in sorted(x.values(), key=np.linalg.norm)],
-                               [type(e) for e in sorted(x_rec.values(), key=np.linalg.norm)])
+            assert_array_equal(sorted(list(x.values()), key=np.linalg.norm),
+                               sorted(list(x_rec.values()), key=np.linalg.norm))
+            assert_array_equal([type(e) for e in sorted(list(x.values()), key=np.linalg.norm)],
+                               [type(e) for e in sorted(list(x_rec.values()), key=np.linalg.norm)])
             assert_array_equal(sorted(x.keys()), sorted(x_rec.keys()))
             assert_array_equal([type(e) for e in sorted(x.keys())],
                                [type(e) for e in sorted(x_rec.keys())])
@@ -392,10 +392,10 @@ if __name__ == '__main__':
         def test_dict_numpy_complex(self):
             x = {b'foo': np.complex128(1.0 + 1.0j), b'bar': np.complex128(2.0 + 2.0j)}
             x_rec = self.encode_decode(x)
-            assert_array_equal(sorted(x.values(), key=np.linalg.norm),
-                               sorted(x_rec.values(), key=np.linalg.norm))
-            assert_array_equal([type(e) for e in sorted(x.values(), key=np.linalg.norm)],
-                               [type(e) for e in sorted(x_rec.values(), key=np.linalg.norm)])
+            assert_array_equal(sorted(list(x.values()), key=np.linalg.norm),
+                               sorted(list(x_rec.values()), key=np.linalg.norm))
+            assert_array_equal([type(e) for e in sorted(list(x.values()), key=np.linalg.norm)],
+                               [type(e) for e in sorted(list(x_rec.values()), key=np.linalg.norm)])
             assert_array_equal(sorted(x.keys()), sorted(x_rec.keys()))
             assert_array_equal([type(e) for e in sorted(x.keys())],
                                [type(e) for e in sorted(x_rec.keys())])

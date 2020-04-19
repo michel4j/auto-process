@@ -1,7 +1,7 @@
 """This module implements utility classes and functions for logging."""
 
 import logging
-import repr as reprlib
+import reprlib as reprlib
 from logging.handlers import RotatingFileHandler
 
 LOG_LEVEL = logging.INFO
@@ -114,7 +114,7 @@ def log_call(f):
 
     def new_f(*args, **kwargs):
         params = ['{}'.format(reprlib.repr(a)) for a in args[1:]]
-        params.extend(['{}={}'.format(p[0], repr(p[1])) for p in kwargs.items()])
+        params.extend(['{}={}'.format(p[0], repr(p[1])) for p in list(kwargs.items())])
         params = ', '.join(params)
         logger.debug('<{}({})>'.format(f.__name__, params))
         return f(*args, **kwargs)

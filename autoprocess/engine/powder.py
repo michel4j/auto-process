@@ -1,19 +1,15 @@
-from __future__ import unicode_literals
-
-import sys
 import inspect
 import json
 import os
 import re
 import shutil
+import subprocess
 import warnings
-import re
-import numpy
-import subprocess32 as subprocess
-from scipy import interpolate
-from operator import itemgetter
 
-from autoprocess.libs.imageio import read_image
+import numpy
+from mxio import read_image
+from scipy import interpolate
+
 from autoprocess.utils import xdi, fitio, log, misc
 from autoprocess.utils.ellipse import fit_ellipse
 
@@ -151,9 +147,9 @@ class PeakSorter(object):
         for x, y, w in peaks:
             diffs = numpy.abs(self.reference[:, 0] - x)
             idx = numpy.argmin(diffs)
-            if diffs[idx] <= self.width_factor*(self.reference[idx, 2] + w) and y >= self.reference[idx, 1] * 0.2:
+            if diffs[idx] <= self.width_factor * (self.reference[idx, 2] + w) and y >= self.reference[idx, 1] * 0.2:
                 self.tree[idx].append([x, float(angle)])
-                self.reference[idx, 0] = x # update x position to next peak
+                self.reference[idx, 0] = x  # update x position to next peak
                 self.reference[idx, 2] = w
 
 
@@ -299,8 +295,8 @@ class FrameAnalyser(object):
             self.data['counts'] = numpy.copy(d[:, 1])
             self.data[name] = d[:, 1]
         else:
-            self.data['counts'] += d[: ,1]
-            self.data[name] = d[:,1]
+            self.data['counts'] += d[:, 1]
+            self.data[name] = d[:, 1]
 
     def set_file(self, filename):
         self.filename = filename
@@ -310,7 +306,7 @@ class FrameAnalyser(object):
         self.cx, self.cy = self.frame.header['beam_center']
         self.rot_x, self.rot_y = 0.0, 0.0
         self.size = min(self.profiler.nx - self.cx, self.cx, self.profiler.ny - self.cy, self.profiler.ny)
-        file_pattern = re.compile('^(?P<base>.+)_(?P<num>\d{3,6})(?P<ext>\.?[\w.]+)?$')
+        file_pattern = re.compile(r'^(?P<base>.+)_(?P<num>\d{3,6})(?P<ext>\.?[\w.]+)?$')
         m = file_pattern.match(os.path.basename(filename)).groupdict()
         self.frame_name = m['num']
         self.group_name = m['base']
@@ -335,7 +331,7 @@ class FrameAnalyser(object):
             sizes.append(peaks[:, 2].max())
             peaks_list.append((peaks, angle))
 
-        reference =  peaks_list[0][0]
+        reference = peaks_list[0][0]
         # Group the peaks into bins corresponding to rings
         peak_sorter = PeakSorter(reference, max_size=20, width_factor=2)
         for peaks, angle in peaks_list:
@@ -343,16 +339,16 @@ class FrameAnalyser(object):
 
         width = numpy.median(sizes) / self.frame.header['pixel_size']
         coords = numpy.array(peak_sorter.tree[0])
-        
+
         group_sizes = numpy.array([len(group) for group in peak_sorter.tree])
-        #best_group = numpy.array(peak_sorter.tree[numpy.argmax(group_sizes)])
+        # best_group = numpy.array(peak_sorter.tree[numpy.argmax(group_sizes)])
         logger.warning('Group Sizes: {}'.format(group_sizes))
 
         x, y = self.get_xy(coords[:, 0], coords[:, 1])
-        ellipse = zip(x, y)
+        ellipse = list(zip(x, y))
         rings = [self.get_xy(group[0][0], group[0][1]) for group in peak_sorter.tree[1:]]
         angles = [group[0][0] for group in peak_sorter.tree[1:]]
-        
+
         return {
             'ellipse': ellipse,
             'rings': rings[:10],
@@ -383,9 +379,9 @@ class FrameAnalyser(object):
         plt.show()
         coords = numpy.array(peak_sorter.tree[0])
         x, y = self.get_xy(coords[:, 0], coords[:, 1])
-        ellipse = zip(x, y)
+        ellipse = list(zip(x, y))
         rings = [self.get_xy(group[0][0], group[0][1]) for group in peak_sorter.tree[1:]]
-        
+
         return {
             'ellipse': ellipse,
             'rings': rings,
@@ -427,7 +423,7 @@ class FrameAnalyser(object):
             logger.warning(
                 'Insufficient number ({}, {}) of rings found at: {} deg'.format(
                     len(params['rings']),
-                    len(params['ellipse']),                    
+                    len(params['ellipse']),
                     ', '.join(['{:0.1f}'.format(a) for a in params['angles']])
                 )
             )
@@ -528,7 +524,7 @@ class FrameAnalyser(object):
             with open(self.db_file, 'r') as handle:
                 data = handle.read()
             lines = data.split('\n')
-            return dict(zip(lines[0::2], lines[1::2]))
+            return dict(list(zip(lines[0::2], lines[1::2])))
 
     def report(self, params, data):
         directory = params['directory']

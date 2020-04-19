@@ -1,5 +1,6 @@
-import numpy
 import os
+
+import numpy
 
 import autoprocess.errors
 from autoprocess.parser import xds
@@ -134,7 +135,8 @@ def harvest_index():
         return {'step': 'indexing', 'success': False, 'reason': info['failure']}
 
 
-def auto_index(data_info, options={}):
+def auto_index(data_info, options=None):
+    options = options or {}
     os.chdir(data_info['working_directory'])
     _logger.info('Determining lattice orientation and parameters ...')
     jobs = 'IDXREF'

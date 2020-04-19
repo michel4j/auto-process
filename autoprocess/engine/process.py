@@ -13,7 +13,6 @@ from autoprocess.engine import indexing, spots, integration, scaling, solver, re
 from autoprocess.engine import symmetry, strategy, conversion
 from autoprocess.utils import dataset, misc, log, xtal, msgpack_numpy
 
-
 logger = log.get_module_logger(__name__)
 
 VERSION = '4.0 RC'
@@ -102,7 +101,7 @@ class DataSet(object):
 
         reflections = self.results['correction']['total_reflections']
         rejected = self.results['correction'].get('rejected', 0)
-        rejected_fraction = float(rejected)/reflections
+        rejected_fraction = float(rejected) / reflections
 
         if 'scaling' in self.results:
             i_sigma = self.results['scaling']['summary']['inner_shell']['i_sigma']
@@ -128,7 +127,8 @@ class DataSet(object):
 
 
 class Manager(object):
-    def __init__(self, options=None, checkpoint=None, overwrites={}):
+    def __init__(self, options=None, checkpoint=None, overwrites=None):
+        overwrites = overwrites or {}
 
         self.datasets = OrderedDict()
 
@@ -150,7 +150,7 @@ class Manager(object):
                 dset = DataSet(filename=img, overwrites=overwrites)
                 self.datasets[dset.name] = dset
 
-            prefix = os.path.commonprefix(self.datasets.keys())
+            prefix = os.path.commonprefix(list(self.datasets.keys()))
             # prepare directories
             if not self.options.get('directory'):
                 if self.options.get('mode') in ['screen', 'mad', 'merge']:
@@ -192,7 +192,7 @@ class Manager(object):
             raise autoprocess.errors.FilesystemError('Could not prepare working directory')
 
         # for multiple data sets, process each in a separate sub-directory
-        multiple = (len(self.datasets.keys()) > 1)
+        multiple = (len(list(self.datasets.keys())) > 1)
         for i, dset in enumerate(self.datasets.values()):
             if multiple:
                 directory = os.path.join(self.options['directory'], '{}-{}'.format(i, dset.name))
@@ -210,7 +210,7 @@ class Manager(object):
 
         info = {'options': self.options,
                 'run_position': self.run_position,
-                'datasets': [d.get_info() for d in self.datasets.values()]}
+                'datasets': [d.get_info() for d in list(self.datasets.values())]}
 
         # Checkpoint file is saved in top-level processing directory
         fname = os.path.join(self.options['directory'], 'process.chkpt')
@@ -218,7 +218,7 @@ class Manager(object):
             msgpack.dump(info, handle, default=msgpack_numpy.encode)
         return info
 
-    def run_step(self, step, dset, overwrite={}, optional=False, colonize=False):
+    def run_step(self, step, dset, overwrite=None, optional=False, colonize=False):
         """
         Runs the specified step with optional overwritten parameters
         and record the results in the dataset object.
@@ -226,6 +226,8 @@ class Manager(object):
         Will exit the program if a non optional step fails.
         
         """
+        overwrite = overwrite or {}
+
         step_parameters = {}
         step_parameters.update(dset.parameters)
         step_parameters.update(overwrite)
@@ -251,24 +253,25 @@ class Manager(object):
                 logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
                 sys.exit(1)
 
+    def screen(self, resume_from=None, single=False, overwrite=None):
+        overwrite = overwrite or {}
 
-    def screen(self, resume_from=None, single=False, overwrite={}):
-        pass
+    def process(self, resume_from=None, single=False, overwrite=None):
+        overwrite = overwrite or {}
 
-    def process(self, resume_from=None, single=False, overwrite={}):
-        pass
-
-    def run(self, resume_from=None, single=False, colonize=False, overwrite={}):
+    def run(self, resume_from=None, single=False, colonize=False, overwrite=None):
         """
         resume_from is a tuple of the form
             (dataset_index, 'step')
         """
+        overwrite = overwrite or {}
 
         # Create a log file also
         log.log_to_file(os.path.join(self.options['directory'], 'auto.log'))
         self._start_time = time.time()
         _header = '------ AutoProcess({}) - {} [{:d} dataset(s)] ------'.format(
-            VERSION, self.options['mode'].upper(), len([name for name in self.datasets.keys() if name != 'combined'])
+            VERSION, self.options['mode'].upper(),
+            len([name for name in list(self.datasets.keys()) if name != 'combined'])
         )
         _separator = len(_header) * '-'
         logger.info(_header)
@@ -282,7 +285,6 @@ class Manager(object):
                      'indexing', 'integration', 'correction', 'symmetry',
                      'strategy',
                      ]
-
 
         if resume_from is not None:
             cur_pos, next_step = resume_from
@@ -348,17 +350,19 @@ class Manager(object):
                     step_ovw.update(overwrite)
 
                     # special pre-step handling  for correction
-                    if step == 'correction' and  i > 0 and self.options.get('mode') in ['merge', 'mad']:
+                    if step == 'correction' and i > 0 and self.options.get('mode') in ['merge', 'mad']:
                         # update parameters with reference after correction
                         _ref_file = os.path.join('..',
-                                                 self.datasets.values()[i - 1].results['correction']['output_file'])
-                        _ref_sg = self.datasets.values()[0].results['correction']['summary']['spacegroup']
+                                                 list(self.datasets.values())[i - 1].results['correction'][
+                                                     'output_file'])
+                        _ref_sg = list(self.datasets.values())[0].results['correction']['summary']['spacegroup']
                         step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg})
 
                     self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
                     if step == 'correction':
                         ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
-                        logger.info('({}) I/Sigma(I) Asymptote [ISa]: {}'.format(dset.name, log.TermColor.bold('{:0.1f}'.format(ISa))))
+                        logger.info('({}) I/Sigma(I) Asymptote [ISa]: {}'.format(dset.name, log.TermColor.bold(
+                            '{:0.1f}'.format(ISa))))
                         dset.results['integration']['statistics'] = copy.deepcopy(dset.results['correction'])
 
             next_step = 'symmetry'
@@ -378,7 +382,7 @@ class Manager(object):
                 ref_info = scaling.prepare_reference(self.datasets, ref_opts)
                 _sg_number = ref_info['sg_number']
 
-            for dset in self.datasets.values():
+            for dset in list(self.datasets.values()):
                 if dset.name == 'combined' and self.options.get('mode') == 'merge':
                     # 'combined' merged dataset is special
                     continue
@@ -435,21 +439,21 @@ class Manager(object):
         # Strategy
         if self.options.get('mode') == 'screen' and next_step == 'strategy':
             self.run_position = (0, 'strategy')
-            for dset in self.datasets.values():
+            for dset in list(self.datasets.values()):
                 if not 'resolution' in overwrite:
                     overwrite['resolution'] = dset.results['integration']['statistics']['summary']['stderr_resolution']
                 self.run_step('strategy', dset, overwrite=overwrite, colonize=colonize)
 
                 strategy = reporting.get_strategy(dset.results)
                 strategy_table = misc.sTable([
-                        ['Recommended Strategy', ''],
-                        ['Resolution', '{:0.2f}'.format(strategy['resolution'])],
-                        ['Attenuation', '{:0.1f}'.format(strategy['attenuation'])],
-                        ['Start Angle', '{:0.0f}'.format(strategy['start_angle'])],
-                        ['Maximum Delta Angle', '{:0.2f}'.format(strategy['max_delta'])],
-                        ['Minimum Angle Range', '{:0.1f}'.format(strategy['total_angle'])],
-                        ['Exposure Rate (deg/sec)', '{:0.2f}'.format(strategy['exposure_rate'])],
-                        ['Overlaps?', strategy['overlaps']],
+                    ['Recommended Strategy', ''],
+                    ['Resolution', '{:0.2f}'.format(strategy['resolution'])],
+                    ['Attenuation', '{:0.1f}'.format(strategy['attenuation'])],
+                    ['Start Angle', '{:0.0f}'.format(strategy['start_angle'])],
+                    ['Maximum Delta Angle', '{:0.2f}'.format(strategy['max_delta'])],
+                    ['Minimum Angle Range', '{:0.1f}'.format(strategy['total_angle'])],
+                    ['Exposure Rate (deg/sec)', '{:0.2f}'.format(strategy['exposure_rate'])],
+                    ['Overlaps?', strategy['overlaps']],
                 ])
                 for line in str(strategy_table).splitlines():
                     logger.info(line)

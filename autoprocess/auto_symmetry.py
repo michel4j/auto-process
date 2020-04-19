@@ -3,7 +3,8 @@
 
 import sys
 import warnings
-warnings.simplefilter("ignore") # ignore deprecation warnings
+
+warnings.simplefilter("ignore")  # ignore deprecation warnings
 
 import autoprocess.errors
 from autoprocess.engine.process import Manager
@@ -11,25 +12,26 @@ from autoprocess.utils import log
 from autoprocess.utils.options import symmetry_options
 from autoprocess.utils import misc
 
-
 _logger = log.get_module_logger('auto.symmetry')
+
 
 def main():
     # Parse options
     try:
         options = symmetry_options(sys.argv[1:])
-    except autoprocess.errors.InvalidOption, e:
+    except autoprocess.errors.InvalidOption as e:
         _logger.error(str(e))
         sys.exit(1)
-        
+
     try:
         chkpt = misc.load_chkpt()
     except IOError:
         _logger.error('This command must be run within a data processing directory.')
         sys.exit(1)
     app = Manager(checkpoint=chkpt)
-    app.run(resume_from=(chkpt['run_position'][0],'symmetry'), overwrite=options)      
-     
+    app.run(resume_from=(chkpt['run_position'][0], 'symmetry'), overwrite=options)
+
+
 def run():
     try:
         log.log_to_console()

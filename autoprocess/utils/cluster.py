@@ -17,8 +17,10 @@
 
 from types import TupleType
 
+
 class ClusteringError(Exception):
     pass
+
 
 def flatten(L):
     """
@@ -30,24 +32,27 @@ def flatten(L):
     if L == []: return L
     return flatten(L[0]) + flatten(L[1:])
 
+
 def median(numbers):
     """Return the median of the list of numbers.
     
     found at: http://mail.python.org/pipermail/python-list/2004-December/253517.html"""
     # Sort the list and take the middle element.
     n = len(numbers)
-    copy = numbers[:] # So that "numbers" keeps its original order
+    copy = numbers[:]  # So that "numbers" keeps its original order
     copy.sort()
-    if n & 1:            # There is an odd number of elements
+    if n & 1:  # There is an odd number of elements
         return copy[n // 2]
     else:
         return (copy[n // 2 - 1] + copy[n // 2]) / 2.0
+
 
 def mean(numbers):
     """Returns the arithmetic mean of a numeric list.
 
     found at: http://mail.python.org/pipermail/python-list/2004-December/253517.html"""
     return float(sum(numbers)) / float(len(numbers))
+
 
 def minkowski_distance(x, y, p=2):
     """
@@ -64,12 +69,13 @@ def minkowski_distance(x, y, p=2):
                               Chebyshev distance, which has p=infinity
     """
     from math import pow
-    assert(len(y) == len(x))
-    assert(x >= 1)
+    assert (len(y) == len(x))
+    assert (x >= 1)
     sum = 0
     for i in range(len(x)):
         sum += abs(x[i] - y[i]) ** p
     return pow(sum, 1.0 / float(p))
+
 
 def genmatrix(list, combinfunc, symmetric=False, diagonal=None):
     """
@@ -112,6 +118,7 @@ def genmatrix(list, combinfunc, symmetric=False, diagonal=None):
         row_index += 1
     return matrix
 
+
 def printmatrix(list):
     """
     Prints out a 2-dimensional list cleanly.
@@ -130,7 +137,8 @@ def printmatrix(list):
     format = " %%%is |" % maxlen
     format = "|" + format * colcount
     for row in list:
-        print format % tuple(row)
+        print(format % tuple(row))
+
 
 def magnitude(a):
     "calculates the magnitude of a vecor"
@@ -140,13 +148,15 @@ def magnitude(a):
         sum += coord ** 2
     return sqrt(sum)
 
+
 def dotproduct(a, b):
     "Calculates the dotproduct between two vecors"
-    assert(len(a) == len(b))
+    assert (len(a) == len(b))
     out = 0
     for i in range(len(a)):
         out += a[i] * b[i]
     return out
+
 
 def centroid(list, method=median):
     "returns the central vector of a list of vectors"
@@ -154,6 +164,7 @@ def centroid(list, method=median):
     for i in range(len(list[0])):
         out.append(method([x[i] for x in list]))
     return tuple(out)
+
 
 class Cluster:
     """
@@ -184,8 +195,10 @@ class Cluster:
                       list as content
         """
         self.__level = level
-        if len(args) == 0: self.__items = []
-        else:                  self.__items = list(args)
+        if len(args) == 0:
+            self.__items = []
+        else:
+            self.__items = list(args)
 
     def append(self, item):
         """
@@ -204,8 +217,10 @@ class Cluster:
             newItems (optional) - if set, the items of the cluster will be
                                          replaced with that argument.
         """
-        if newItems is None: return self.__items
-        else:                     self.__items = newItems
+        if newItems is None:
+            return self.__items
+        else:
+            self.__items = newItems
 
     def fullyflatten(self, *args):
         """
@@ -218,8 +233,10 @@ class Cluster:
             *args - only used for recursion.
         """
         flattened_items = []
-        if len(args) == 0: collection = self.__items
-        else:                  collection = args[0].items()
+        if len(args) == 0:
+            collection = self.__items
+        else:
+            collection = list(args[0].items())
 
         for item in collection:
             if isinstance(item, Cluster):
@@ -239,12 +256,12 @@ class Cluster:
         """
         Pretty-prints this cluster. Useful for debuging
         """
-        print depth * "    " + "[level %s]" % self.__level
+        print(depth * "    " + "[level %s]" % self.__level)
         for item in self.__items:
             if isinstance(item, Cluster):
                 item.display(depth + 1)
             else:
-                print depth * "    " + "%s" % item
+                print(depth * "    " + "%s" % item)
 
     def topology(self):
         """
@@ -328,6 +345,7 @@ class Cluster:
         else:
             return [[left], [right]]
 
+
 class BaseClusterMethod:
     """
     The base class of all clustering methods.
@@ -359,8 +377,8 @@ class BaseClusterMethod:
             long as they are comparable, it's ok.
         """
         self.distance = distance_function
-        self._input = input     # the original input
-        self._data = input[:] # clone the input so we can work with it
+        self._input = input  # the original input
+        self._data = input[:]  # clone the input so we can work with it
 
     def topo(self):
         """
@@ -375,6 +393,7 @@ class BaseClusterMethod:
         Returns the data that is currently in process.
         """
         return self._data
+
     data = property(__get_data)
 
     def __get_raw_data(self):
@@ -382,7 +401,9 @@ class BaseClusterMethod:
         Returns the raw data (data without being clustered).
         """
         return self._input
+
     raw_data = property(__get_raw_data)
+
 
 class HierarchicalClustering(BaseClusterMethod):
     """
@@ -429,7 +450,7 @@ class HierarchicalClustering(BaseClusterMethod):
         elif method == 'uclus':
             self.linkage = self.uclusDistance
         else:
-            raise ValueError, 'distance method must be one of single, complete, average or uclus'
+            raise ValueError('distance method must be one of single, complete, average or uclus')
 
     def uclusDistance(self, x, y):
         """
@@ -442,12 +463,16 @@ class HierarchicalClustering(BaseClusterMethod):
             y  -  second cluster/item
         """
         # create a flat list of all the items in <x>
-        if not isinstance(x, Cluster): x = [x]
-        else: x = x.fullyflatten()
+        if not isinstance(x, Cluster):
+            x = [x]
+        else:
+            x = x.fullyflatten()
 
         # create a flat list of all the items in <y>
-        if not isinstance(y, Cluster): y = [y]
-        else: y = y.fullyflatten()
+        if not isinstance(y, Cluster):
+            y = [y]
+        else:
+            y = y.fullyflatten()
 
         distances = []
         for k in x:
@@ -466,12 +491,16 @@ class HierarchicalClustering(BaseClusterMethod):
             y  -  second cluster/item
         """
         # create a flat list of all the items in <x>
-        if not isinstance(x, Cluster): x = [x]
-        else: x = x.fullyflatten()
+        if not isinstance(x, Cluster):
+            x = [x]
+        else:
+            x = x.fullyflatten()
 
         # create a flat list of all the items in <y>
-        if not isinstance(y, Cluster): y = [y]
-        else: y = y.fullyflatten()
+        if not isinstance(y, Cluster):
+            y = [y]
+        else:
+            y = y.fullyflatten()
 
         distances = []
         for k in x:
@@ -491,12 +520,16 @@ class HierarchicalClustering(BaseClusterMethod):
         """
 
         # create a flat list of all the items in <x>
-        if not isinstance(x, Cluster): x = [x]
-        else: x = x.fullyflatten()
+        if not isinstance(x, Cluster):
+            x = [x]
+        else:
+            x = x.fullyflatten()
 
         # create a flat list of all the items in <y>
-        if not isinstance(y, Cluster): y = [y]
-        else: y = y.fullyflatten()
+        if not isinstance(y, Cluster):
+            y = [y]
+        else:
+            y = y.fullyflatten()
 
         # retrieve the minimum distance (single-linkage)
         maxdist = self.distance(x[0], y[0])
@@ -518,12 +551,16 @@ class HierarchicalClustering(BaseClusterMethod):
         """
 
         # create a flat list of all the items in <x>
-        if not isinstance(x, Cluster): x = [x]
-        else: x = x.fullyflatten()
+        if not isinstance(x, Cluster):
+            x = [x]
+        else:
+            x = x.fullyflatten()
 
         # create a flat list of all the items in <y>
-        if not isinstance(y, Cluster): y = [y]
-        else: y = y.fullyflatten()
+        if not isinstance(y, Cluster):
+            y = [y]
+        else:
+            y = y.fullyflatten()
 
         # retrieve the minimum distance (single-linkage)
         mindist = self.distance(x[0], y[0])
@@ -558,10 +595,10 @@ class HierarchicalClustering(BaseClusterMethod):
 
             smallestpair = None
             mindistance = None
-            rowindex = 0    # keep track of where we are in the matrix
+            rowindex = 0  # keep track of where we are in the matrix
             # find the minimum distance
             for row in matrix:
-                cellindex = 0 # keep track of where we are in the matrix
+                cellindex = 0  # keep track of where we are in the matrix
                 for cell in row:
                     # if we are not on the diagonal (which is always 0)
                     # and if this cell represents a new minimum...
@@ -582,9 +619,9 @@ class HierarchicalClustering(BaseClusterMethod):
             # wrong. We could simply adjust the value of the second "remove" call,
             # but we don't know the order in which they come. The max and min
             # approach clarifies that
-            self._data.remove(self._data[max(smallestpair[0], smallestpair[1])]) # remove item 1
-            self._data.remove(self._data[min(smallestpair[0], smallestpair[1])]) # remove item 2
-            self._data.append(cluster)                    # append item 1 and 2 combined
+            self._data.remove(self._data[max(smallestpair[0], smallestpair[1])])  # remove item 1
+            self._data.remove(self._data[min(smallestpair[0], smallestpair[1])])  # remove item 2
+            self._data.append(cluster)  # append item 1 and 2 combined
 
         # all the data is in one single cluster. We return that and stop
         self.__clusterCreated = True
@@ -609,6 +646,7 @@ class HierarchicalClustering(BaseClusterMethod):
         if not self.__clusterCreated: self.cluster()
 
         return self._data[0].getlevel(threshold)
+
 
 class KMeansClustering:
     """
@@ -643,7 +681,8 @@ class KMeansClustering:
             control_length = len(data[0])
             for item in data[1:]:
                 if len(item) != control_length:
-                    raise ValueError("Each item in the data list must have the same amount of dimensions. Item", item, "was out of line!")
+                    raise ValueError("Each item in the data list must have the same amount of dimensions. Item", item,
+                                     "was out of line!")
         # now check if we need and have a distance function
         if len(data) > 1 and not isinstance(data[0], TupleType) and distance is None:
             raise ValueError("You supplied non-standard items but no distance function! We cannot continue!")
@@ -671,14 +710,14 @@ class KMeansClustering:
         # It makes no sense to ask for more clusters than data-items available
         if n > self.__initial_length:
             raise ClusteringError("""Unable to generate more clusters than items 
-available. You supplied %d items, and asked for %d clusters.""" % 
-                    (self.__initial_length, n))
+available. You supplied %d items, and asked for %d clusters.""" %
+                                  (self.__initial_length, n))
 
         self.initialiseClusters(self.__data, n)
 
-        items_moved = True      # tells us if any item moved between the clusters,
-                                # as we initialised the clusters, we assume that
-                                # is the case
+        items_moved = True  # tells us if any item moved between the clusters,
+        # as we initialised the clusters, we assume that
+        # is the case
         while items_moved is True:
             items_moved = False
             for cluster in self.__clusters:
@@ -729,11 +768,10 @@ available. You supplied %d items, and asked for %d clusters.""" %
         """
         # initialise the clusters with empty lists
         self.__clusters = []
-        for x in xrange(clustercount): self.__clusters.append([])
+        for x in range(clustercount): self.__clusters.append([])
 
         # distribute the items into the clusters
         count = 0
         for item in input:
-            self.__clusters[ count % clustercount ].append(item)
+            self.__clusters[count % clustercount].append(item)
             count += 1
-

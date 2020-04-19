@@ -1,5 +1,6 @@
-import repr as reprlib
-import log
+import reprlib as reprlib
+
+from . import log
 
 logger = log.get_module_logger(__name__)
 
@@ -15,9 +16,10 @@ def expose(f):
         def shout(message):
             # ....
     """
+
     def new_f(*args, **kwargs):
         params = ['{}'.format(reprlib.repr(a)) for a in args[1:]]
-        params.extend(['{}={}'.format(p[0], reprlib.repr(p[1])) for p in kwargs.items()])
+        params.extend(['{}={}'.format(p[0], reprlib.repr(p[1])) for p in list(kwargs.items())])
         params = ', '.join(params)
         logger.info('{}: <{}({})>'.format(args[0], f.__name__, params))
         return f(*args, **kwargs)
@@ -49,7 +51,7 @@ def expose_service(aliased_class):
         i.exposed_coolMethod() # equivalent to i.boring_method()
     """
     original_methods = aliased_class.__dict__.copy()
-    for name, method in original_methods.items():
+    for name, method in list(original_methods.items()):
         if hasattr(method, '_alias'):
             setattr(aliased_class, method._alias, method)
     return aliased_class

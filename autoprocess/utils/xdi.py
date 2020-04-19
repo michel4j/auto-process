@@ -1,13 +1,10 @@
-# coding=utf-8
-from __future__ import print_function
-
 import collections
 import gzip
 import re
 import sys
 import textwrap
 from datetime import datetime, tzinfo, timedelta
-from cStringIO import StringIO
+from io import StringIO
 
 import numpy
 
@@ -197,13 +194,14 @@ def find_spec(namespace, tag):
                 spec = item
     return spec
 
+
 def format_field(field):
     suffix = '' if not field.units else ' {}'.format(field.units)
     if isinstance(field.value, datetime):
         return '{}{}'.format(field.value.isoformat(), suffix)
     else:
         return '{}{}'.format(field.value, suffix)
-    
+
 
 XDI_PATTERN = re.compile(
     '#\s*XDI/1.0\s*(?P<version_text>[^\n]*)\n'
@@ -233,8 +231,8 @@ class XDIData(object):
     def __getitem__(self, key):
         if '.' in key:
             namespace, tag = key.lower().split('.')
-            if not namespace in TAGS.keys():
-                namespace, tag = key.split('.') # preserve case for non-standard namespaces
+            if not namespace in list(TAGS.keys()):
+                namespace, tag = key.split('.')  # preserve case for non-standard namespaces
             if namespace == 'column':
                 tag = int(tag)
             return self.header[namespace][tag]
@@ -243,7 +241,7 @@ class XDIData(object):
 
     def __setitem__(self, key, entry):
         if isinstance(entry, dict) and not '.' in key:
-            for k,v in entry.items():
+            for k, v in list(entry.items()):
                 self.__setitem__('{}.{}'.format(key, k), v)
         else:
             namespace, tag = key.lower().split('.')
@@ -263,7 +261,7 @@ class XDIData(object):
                 if fmt == isotime and isinstance(value, datetime):
                     value = value.isoformat()
                 field = Field(value=value, units=unit)
-            else :
+            else:
                 if namespace not in TAGS:
                     namespace = key.split('.')[0]  # preserve case for non-standard namespaces
                 field = Field(value=value, units=unit)
@@ -277,10 +275,10 @@ class XDIData(object):
                 namespace.islower() and namespace.capitalize() or namespace, tag,
                 format_field(field),
             )
-            for namespace, fields in self.header.items() for tag, field in fields.items()
+            for namespace, fields in list(self.header.items()) for tag, field in list(fields.items())
         ] + ['///'] + textwrap.wrap(self.comments) + ['---'] + [' '.join(self.data.dtype.names)]
         data_format = ''.join(['  {}'] * len(self.data.dtype.names))
-        data_lines = [ data_format.format(*row) for row in self.data ]
+        data_lines = [data_format.format(*row) for row in self.data]
         saver = gzip.open if filename.endswith('.gz') else open
         with saver(filename, 'wb') as handle:
             handle.write('\n# '.join(header_lines) + '\n' + '\n'.join(data_lines))
@@ -321,7 +319,7 @@ class XDIData(object):
                 self.header[namespace] = collections.OrderedDict()
             self.header[namespace][tag] = field
 
-        columns = collections.OrderedDict(sorted(self.header['column'].items())).values()
+        columns = list(collections.OrderedDict(sorted(self.header['column'].items())).values())
         header_columns = [col.value for col in columns]
 
         self.comments = ' '.join(raw['comments_text'].replace('#', '').split())
@@ -336,9 +334,10 @@ class XDIData(object):
             for field in REQUIRED_FIELDS
         }
         if any(missing.values()):
-            sys.stderr.write('Required fields missing: {}\n'.format([key for key, value in missing.items() if value]))
+            sys.stderr.write(
+                'Required fields missing: {}\n'.format([key for key, value in list(missing.items()) if value]))
 
-        self.data = numpy.genfromtxt(StringIO(u'{}'.format(raw['data_text'])), dtype=None, names=data_columns)
+        self.data = numpy.genfromtxt(StringIO('{}'.format(raw['data_text'])), dtype=None, names=data_columns)
 
 
 def read_xdi(filename):

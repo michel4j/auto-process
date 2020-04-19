@@ -2,16 +2,17 @@
 
 
 import sys
-import os
 import warnings
-warnings.simplefilter("ignore") # ignore deprecation warnings
-    
+
+warnings.simplefilter("ignore")  # ignore deprecation warnings
+
 from autoprocess.engine.process import Manager
 from autoprocess.utils import log
 from autoprocess.utils.options import integrate_options
 from autoprocess.utils import misc
 
 _logger = log.get_module_logger('auto.integrate')
+
 
 def main():
     # Parse options
@@ -22,7 +23,7 @@ def main():
         _logger.error('This command must be run within a data processing directory.')
         sys.exit(1)
     app = Manager(checkpoint=chkpt)
-    
+
     # update app and overwrite options
     ow = {}
     if options.get('anomalous') is not None:
@@ -32,8 +33,9 @@ def main():
     if options.get('exclude'):
         ow.update(skip_range=options.get('exclude'))
     app.options['backup'] = options.get('backup', False)
-    app.run(resume_from=(chkpt['run_position'][0],'integration'), overwrite=ow)
-     
+    app.run(resume_from=(chkpt['run_position'][0], 'integration'), overwrite=ow)
+
+
 def run():
     try:
         log.log_to_console()

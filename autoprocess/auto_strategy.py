@@ -3,14 +3,16 @@
 
 import sys
 import warnings
-warnings.simplefilter("ignore") # ignore deprecation warnings
-    
+
+warnings.simplefilter("ignore")  # ignore deprecation warnings
+
 from autoprocess.engine.process import Manager
 from autoprocess.utils import log
 from autoprocess.utils.options import strategy_options
 from autoprocess.utils import misc
 
 _logger = log.get_module_logger('auto.strategy')
+
 
 def main():
     # Parse options
@@ -21,12 +23,13 @@ def main():
         _logger.error('This command must be run within a data processing directory.')
         sys.exit(1)
     app = Manager(checkpoint=chkpt)
-    
+
     # update app options
     if options.get('anomalous') is not None:
         app.options['anomalous'] = options.get('anomalous')
     app.options['backup'] = options.get('backup', False)
-    app.run( resume_from=(chkpt['run_position'][0],'strategy'), overwrite=options)
+    app.run(resume_from=(chkpt['run_position'][0], 'strategy'), overwrite=options)
+
 
 def run():
     try:
@@ -34,6 +37,7 @@ def run():
         main()
     except KeyboardInterrupt:
         sys.exit(1)
-         
+
+
 if __name__ == "__main__":
     run()

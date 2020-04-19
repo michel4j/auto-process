@@ -4,8 +4,8 @@ import json
 import logging
 import os
 import pwd
-import sys
 import subprocess
+import sys
 
 from twisted.application import internet, service
 from twisted.internet import protocol, reactor, defer
@@ -19,7 +19,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from autoprocess.utils import mdns, log
 from autoprocess.utils.which import which
 from autoprocess.parser.distl import parse_distl_string
-
 
 logger = log.get_module_logger(__name__)
 
@@ -63,6 +62,7 @@ class CommandProtocol(protocol.ProcessProtocol):
     """
     Twisted Protocol for running commands asynchronously
     """
+
     def __init__(self, command, directory, json_file=None, json_out=False, parser=None):
         """
         :param command: name of command
@@ -79,7 +79,6 @@ class CommandProtocol(protocol.ProcessProtocol):
         self.json_out = json_out
         self.directory = directory
 
-
     def outReceived(self, output):
         self.output += output
 
@@ -94,7 +93,7 @@ class CommandProtocol(protocol.ProcessProtocol):
 
     def processEnded(self, reason):
         rc = reason.value.exitCode
-        #subprocess.check_call(['sync'])
+        # subprocess.check_call(['sync'])
         if rc == 0:
             try:
                 if self.json_file:

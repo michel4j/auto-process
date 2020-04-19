@@ -1,11 +1,10 @@
-import multiprocessing
 import os
 import shutil
 
 import autoprocess.errors
 from autoprocess.parser import xds
 from autoprocess.utils import log, misc, programs, xtal, xdsio
-from autoprocess.utils.progress import FileProgressDisplay, ProgDisplay, ProgChecker
+from autoprocess.utils.progress import FileProgressDisplay
 
 _logger = log.get_module_logger(__name__)
 
@@ -24,7 +23,8 @@ def harvest_integrate():
         return {'step': 'integration', 'success': False, 'reason': info['failure']}
 
 
-def integrate(data_info, options={}):
+def integrate(data_info, options=None):
+    options = {} if options is None else options
     os.chdir(data_info['working_directory'])
     run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
@@ -33,10 +33,10 @@ def integrate(data_info, options={}):
 
     # if optimizing the integration, copy GXPARM
     # Calculate actual number of frames
-    full_range = range(run_info['data_range'][0], run_info['data_range'][1] + 1)
+    full_range = list(range(run_info['data_range'][0], run_info['data_range'][1] + 1))
     skip_ranges = []
     for r_s, r_e in run_info['skip_range']:
-        skip_ranges.extend(range(r_s, r_e + 1))
+        skip_ranges.extend(list(range(r_s, r_e + 1)))
     num_frames = len(set(full_range) - set(skip_ranges))
 
     if options.get('optimize', False) and os.path.exists('GXPARM.XDS'):
@@ -104,7 +104,8 @@ def harvest_correct():
         return {'step': 'correction', 'success': False, 'reason': info['failure']}
 
 
-def correct(data_info, options={}):
+def correct(data_info, options=None):
+    options = options or {}
     os.chdir(data_info['working_directory'])
     message = options.get('message', "Applying corrections to")
     _logger.info(

@@ -1,6 +1,7 @@
 import atexit
 import ipaddress
-from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf, ServiceInfo
+
+from zeroconf import Zeroconf, ServiceInfo
 
 ZCONF = Zeroconf()
 

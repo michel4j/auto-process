@@ -5,12 +5,13 @@ Scanf: Small scanf-implementation.
   
 """
 
-import re
-import sys
-from scipy import interpolate
-from autoprocess.utils.configobj import ConfigObj
-import numpy
 import os
+import re
+
+import numpy
+from scipy import interpolate
+
+from autoprocess.utils.configobj import ConfigObj
 
 INI_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -20,24 +21,23 @@ DEBUG = False
 SCANF_CACHE_SIZE = 3000
 scanf_cache = {}
 
-
 scanf_translate = [
     (re.compile(_token, re.DOTALL), _pattern, _cast) for _token, _pattern, _cast in [
-    ("%c", "(.)", lambda x:x),
-    ("%(\d+)c", "(.{%s})", lambda x:x),
-    ("%(\d+)[di]", "([-+ \d]{%s})", int),
-    ("%[di]", "(\s*[-+]?\d+)", int),
-    ("%u", "(\s*\d+)", int),
-    ("%[geE]", "(\s*-?\d+\.\d+[eE][-+]?\d+])", float),
-    ("%(\d+)f", "([-+ \d.]{%s})", float),
-    ("%f", "(\s*[-+]?\d+\.\d+)", float),
-    ("%(\d+)e", "([-+ \d\.eE]{%s})", float),
-    ("%s", "(\S+)", lambda x:x),
-    ("%([xX])", "(0%s[\dA-Za-f]+)", lambda x:int(x, 16)),
-    ("%o", "(0[0-7]*)", lambda x:int(x, 7)),
-    ("%\{\{(.+)\}f\}", "%s", float),
-    ("%\{\{(.+)\}d\}", "%s", int),
-    ("%\{\{(.+)\}\}", "%s", lambda x:x),
+        ("%c", "(.)", lambda x: x),
+        ("%(\d+)c", "(.{%s})", lambda x: x),
+        ("%(\d+)[di]", "([-+ \d]{%s})", int),
+        ("%[di]", "(\s*[-+]?\d+)", int),
+        ("%u", "(\s*\d+)", int),
+        ("%[geE]", "(\s*-?\d+\.\d+[eE][-+]?\d+])", float),
+        ("%(\d+)f", "([-+ \d.]{%s})", float),
+        ("%f", "(\s*[-+]?\d+\.\d+)", float),
+        ("%(\d+)e", "([-+ \d\.eE]{%s})", float),
+        ("%s", "(\S+)", lambda x: x),
+        ("%([xX])", "(0%s[\dA-Za-f]+)", lambda x: int(x, 16)),
+        ("%o", "(0[0-7]*)", lambda x: int(x, 7)),
+        ("%\{\{(.+)\}f\}", "%s", float),
+        ("%\{\{(.+)\}d\}", "%s", int),
+        ("%\{\{(.+)\}\}", "%s", lambda x: x),
     ]]
 
 
@@ -81,13 +81,12 @@ def _scanf_compile(format):
             format_pat += char
             i += 1
     if DEBUG:
-        print "DEBUG: %r -> '%s'" % (format, format_pat)
+        print("DEBUG: %r -> '%s'" % (format, format_pat))
     format_re = re.compile(format_pat, re.DOTALL)
     if len(scanf_cache) > SCANF_CACHE_SIZE:
         scanf_cache.clear()
     scanf_cache[format] = (format_re, cast_list)
     return format_re, cast_list
-
 
 
 def scanf(format, s, position=0):
@@ -116,7 +115,7 @@ def scanf(format, s, position=0):
     or the tuple (None, position) if the format does not match.
     
     """
-            
+
     if hasattr(s, "readlines"): s = ''.join(s.readlines())
 
     format_re, casts = _scanf_compile(format)
@@ -127,7 +126,7 @@ def scanf(format, s, position=0):
         try:
             result = tuple([casts[i % len(casts)](value) for i, value in enumerate(groups)])
         except:
-            return  None, position
+            return None, position
         return result, found.end()
     else:
         return None, position
@@ -139,13 +138,14 @@ def load_file(filename):
     
     """
     try:
-        f = open(filename,'r')
+        f = open(filename, 'r')
         data = ''.join(f.readlines())
         f.close()
     except:
-        print 'ERROR: Could not open', filename
+        print('ERROR: Could not open', filename)
         data = ''
     return data
+
 
 def cut_section(start, end, s, position=0):
     """
@@ -156,7 +156,7 @@ def cut_section(start, end, s, position=0):
     """
     if start is None and end is None:
         return (s, 0)
-    
+
     if start is not None:
         start_re = re.compile(start, re.DOTALL)
         start_m = start_re.search(s, position)
@@ -177,7 +177,8 @@ def cut_section(start, end, s, position=0):
         _e = len(s)
     result = (s[_s:_e], _e)
     return result
-   
+
+
 def cast_params(param_list, values):
     """
     takes a list of tuples containing a variable name and tuple length
@@ -198,26 +199,28 @@ def cast_params(param_list, values):
             params[key] = values[pos]
             pos += 1
         else:
-            params[key] = tuple(values[pos:pos+length])
+            params[key] = tuple(values[pos:pos + length])
             pos += length
     return params
 
+
 def interp_array(a, size=25):
-    x, y = numpy.mgrid[-1:1:9j,-1:1:9j]
+    x, y = numpy.mgrid[-1:1:9j, -1:1:9j]
     z = a
-    xnew, ynew = numpy.mgrid[-1:1:size*j,-1:1:size*j]
-    tck = interpolate.bisplrep(x,y,z,s=0)
-    znew = interpolate.bisplev(xnew[:,0], ynew[0,:], tck)
+    xnew, ynew = numpy.mgrid[-1:1:size * j, -1:1:size * j]
+    tck = interpolate.bisplrep(x, y, z, s=0)
+    znew = interpolate.bisplev(xnew[:, 0], ynew[0, :], tck)
     return znew
+
 
 def _process_sections(data, conf):
     info = {}
-    for skey, sconf in conf.items():
+    for skey, sconf in list(conf.items()):
         # skip keywords
-        if skey in ['type', 'start', 'end', 'body','keys']:
+        if skey in ['type', 'start', 'end', 'body', 'keys']:
             continue
         if skey == '_top_':
-            for k, pat in sconf.items():
+            for k, pat in list(sconf.items()):
                 _v, _p = scanf(pat, data)
                 if _v is not None:
                     if len(_v) == 1:
@@ -232,10 +235,10 @@ def _process_sections(data, conf):
             start = sconf.get('start', None)
             end = sconf.get('end', None)
             if not isinstance(start, list):
-                start = [ start ]
+                start = [start]
             if not isinstance(end, list):
-                end = [ end ]
-                
+                end = [end]
+
             # extract chunks including nested chunks
             chunk = data
             for _s, _e in zip(start, end):
@@ -246,29 +249,30 @@ def _process_sections(data, conf):
                 info[skey] = entry
             elif spec_type == "table":
                 entry = []
-                params = sconf['keys'].items()
+                params = list(sconf['keys'].items())
                 _v, _p = scanf(sconf['body'], chunk)
                 while _v:
-                    entry.append( cast_params(params, _v) )
+                    entry.append(cast_params(params, _v))
                     _v, _p = scanf(sconf['body'], chunk, _p)
                 info[skey] = entry
             else:
-                params = sconf['keys'].items()
+                params = list(sconf['keys'].items())
                 _v, _p = scanf(sconf['body'], chunk)
                 if _v is not None:
                     entry = cast_params(params, _v)
                     info[skey] = entry
-    
+
     return info
-            
+
 
 def parse_file(filename, config, fallback=None):
     if not os.path.exists(os.path.join(INI_DIR, config)):
         config = fallback
-    conf = ConfigObj(os.path.join(INI_DIR, config))  
+    conf = ConfigObj(os.path.join(INI_DIR, config))
     data = load_file(filename)
     info = _process_sections(data, conf)
     return info
+
 
 def parse_data(data, config, fallback=None):
     if not os.path.exists(os.path.join(INI_DIR, config)):
@@ -276,4 +280,3 @@ def parse_data(data, config, fallback=None):
     conf = ConfigObj(os.path.join(INI_DIR, config))
     info = _process_sections(data, conf)
     return info
-    

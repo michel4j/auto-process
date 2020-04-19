@@ -4,7 +4,9 @@ Input/Output routines for XDS and file conversion utilities
 """
 
 import os
+
 import numpy
+
 from autoprocess.utils import misc
 
 DEFAULT_DELPHI = 8
@@ -123,7 +125,7 @@ def write_xds_input(jobs, parameters):
     params['num_jobs'] = num_jobs
     params['batch_size'] = batch_size
     params['delphi'] = delphi
-    params['cluster_nodes'] = ' '.join(HOSTS.keys())
+    params['cluster_nodes'] = ' '.join(list(HOSTS.keys()))
     params['sigma'] = params.get('sigma', 4)
     params['friedel'] = str(not params.get('anomalous', False)).upper()
     params['space_group'] = params.get('reference_spacegroup', params.get('space_group', 0))

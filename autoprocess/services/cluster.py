@@ -1,17 +1,17 @@
-import Queue
+import getpass
+import logging
 import multiprocessing
 import os
-import re
+import queue
 import random
+import re
 import shlex
 import socket
 import subprocess
 import time
 import uuid
-import getpass
 from collections import defaultdict
 from multiprocessing.managers import SyncManager
-import logging
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ENVIRON_SCRIPT = os.environ.get('DPM_ENVIRONMENT', '~/.login')
@@ -26,7 +26,7 @@ class Timer(object):
 
     def __exit__(self, type, value, traceback):
         if self.name:
-            print('Elapsed: %s' % (time.time() - self.tstart))
+            print(('Elapsed: %s' % (time.time() - self.tstart)))
 
 
 def num_chunks(N, n):
@@ -75,7 +75,7 @@ class IntegrateServer(object):
             self.cur_dir, ENVIRON_SCRIPT, self.server_address,
             self.server_port, self.auth_key)
         self.logger.info('Server Started at %s:%d with %s tasks to do' % (
-        self.server_address, self.server_port, len(self.task_list)))
+            self.server_address, self.server_port, len(self.task_list)))
         self.update_progress()
 
     def update_progress(self):
@@ -117,8 +117,8 @@ class IntegrateServer(object):
 
         self.auth_key = str(uuid.uuid4())
         self.server_address = socket.gethostbyname(socket.gethostname())
-        job_q = Queue.Queue()
-        result_q = Queue.Queue()
+        job_q = queue.Queue()
+        result_q = queue.Queue()
 
         class JobQueueManager(SyncManager):
             pass
@@ -140,7 +140,7 @@ class IntegrateServer(object):
         # launch remote clients  
         active_clients = {}
         client_tasks = defaultdict(int)
-        for client, ccores in self.clients.items():
+        for client, ccores in list(self.clients.items()):
             if client.lower() == 'localhost' or client.lower() == socket.gethostname().lower():
                 cmd = self.local_command % (self.min_batch_size)
             else:
@@ -173,16 +173,16 @@ class IntegrateServer(object):
                 self.logger.info("{}/{} Total Results obtained. {} Tasks left in queue.".format(
                     num_results, len(self.task_list), shared_job_q.qsize()
                 ))
-                self.progress = float(num_results)/len(self.task_list)
+                self.progress = float(num_results) / len(self.task_list)
                 self.update_progress()
                 time.sleep(.01)
-            except Queue.Empty:
+            except queue.Empty:
                 self.logger.info("Waiting for results ...")
                 time.sleep(5)
 
         # Wait for clients to complete
-        _out = [p.wait() for p in active_clients.values()]
-        for client_name, num_tasks in client_tasks.items():
+        _out = [p.wait() for p in list(active_clients.values())]
+        for client_name, num_tasks in list(client_tasks.items()):
             self.logger.info("Client '%s' completed %d task(s)" % (client_name, num_tasks))
         self.manager.shutdown()
         self.clear_progress()
@@ -237,7 +237,7 @@ class JobClient(object):
         self.logger = logging.getLogger(self.client_name)
         self.logger.setLevel(logging.DEBUG)
         self.log_handler = logging.FileHandler(
-            os.path.join(os.getcwdu(), 'client-{}.log'.format(self.client_name)))
+            os.path.join(os.getcwd(), 'client-{}.log'.format(self.client_name)))
         self.log_handler.setFormatter(formatter)
         self.logger.addHandler(self.log_handler)
         self.logger.info(
@@ -271,9 +271,8 @@ class JobClient(object):
                 else:
                     self.logger.error("Task {} failed! Returning task to Queue.".format(job))
                     result_q.put((job, self.client_name))
-            except Queue.Empty:
+            except queue.Empty:
                 self.logger.info("No tasks in queue.")
-
 
     def run(self):
         procs = []
@@ -283,7 +282,7 @@ class JobClient(object):
         can_do_more = True  # make sure at least one worker is created for each node
         self.logger.info(
             "Jobs in {}. Capacity {}, Load {}".format(
-                os.getcwdu(),
+                os.getcwd(),
                 self.task_effort,
                 available_cores
             )
@@ -296,7 +295,7 @@ class JobClient(object):
             p.start()
             time.sleep(2)  # don't be greedy, let others have a chance too!
             available_cores = get_available_cores()
-            can_do_more = available_cores >= 0.75*self.task_effort
+            can_do_more = available_cores >= 0.75 * self.task_effort
             self.logger.info(
                 "Starting Worker {}, load: {}".format(p, available_cores)
             )

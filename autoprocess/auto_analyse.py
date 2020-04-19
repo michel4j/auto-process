@@ -1,9 +1,9 @@
-import  sys
 import os
 import subprocess
+import sys
 import warnings
-import numpy
-warnings.simplefilter("ignore") # ignore deprecation warnings
+
+warnings.simplefilter("ignore")  # ignore deprecation warnings
 
 from autoprocess.parser.distl import parse_distl_string
 from autoprocess.utils.misc import json
@@ -25,12 +25,12 @@ def run_distl(img, rastering=False):
         sys.stderr.write(str(e.output) + '\n')
         info = {'error': str(e.output), 'score': 0.0}
 
-    sys.stdout.write(json.dumps(info, indent=2)+'\n')
+    sys.stdout.write(json.dumps(info, indent=2) + '\n')
+
 
 def run():
-    if len(sys.argv) <2:
+    if len(sys.argv) < 2:
         sys.stderr.write('Image file not procided' + '\n')
         sys.exit(1)
     else:
         run_distl(sys.argv[1])
-        

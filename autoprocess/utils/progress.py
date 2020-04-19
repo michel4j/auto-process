@@ -4,7 +4,6 @@ Created on Sep 13, 2009
 
 @author: michel
 '''
-import Queue
 import os
 import re
 import sys
@@ -115,7 +114,7 @@ class ProgChecker(object):
             self.file_data[fn] = ''
 
         if queue is None:
-            self.queue = Queue.Queue(100)
+            self.queue = queue.Queue(100)
         else:
             self.queue = queue
         self._stopped = False
@@ -127,12 +126,12 @@ class ProgChecker(object):
         self._stopped = True
 
     def _process_chunks(self):
-        for fn, chunk in self.file_data.items():
+        for fn, chunk in list(self.file_data.items()):
             batches = self._chunk_pattern.findall(chunk)
             if batches is not None:
                 self.file_data[fn] = self._chunk_pattern.sub(chunk, '')
                 for batch in batches:
-                    self.queue.put(map(int, batch))
+                    self.queue.put(list(map(int, batch)))
 
     def start(self):
         self._stopped = False
@@ -145,20 +144,20 @@ class ProgChecker(object):
             time.sleep(0.05)
             for fn in self.file_list:
                 if os.path.exists(fn):
-                    if fn not in self.file_objs.keys():
+                    if fn not in list(self.file_objs.keys()):
                         self.file_objs[fn] = open(fn)
                         self._initialized = True
                 else:
-                    if fn in self.file_objs.keys():
+                    if fn in list(self.file_objs.keys()):
                         self.file_objs[fn].close()
                         del self.file_objs[fn]
-            if self._initialized and len(self.file_objs.keys()) == 0:
+            if self._initialized and len(list(self.file_objs.keys())) == 0:
                 self._stopped = True
                 self._initialized = False
                 self.queue.put(None)
                 break
             if self._initialized:
-                for fn, fobj in self.file_objs.items():
+                for fn, fobj in list(self.file_objs.items()):
                     # adjust for shrinkage
                     try:
                         if os.path.getsize(fn) < fobj.tell():
@@ -196,7 +195,7 @@ class ProgDisplay(threading.Thread):
         self.length = 65
         self._cursor = False
         self._stopped = False
-        self.chars = [c.encode("utf-8") for c in unicode(self.spinner, "utf-8")]
+        self.chars = [c.encode("utf-8") for c in str(self.spinner, "utf-8")]
         self.descr = descr
         self.stream = stream
 
@@ -260,7 +259,7 @@ class FileProgressDisplay(threading.Thread):
         self.length = 65
         self._cursor = False
         self._stopped = False
-        self.chars = [c.encode("utf-8") for c in unicode(self.spinner, "utf-8")]
+        self.chars = [c.encode("utf-8") for c in str(self.spinner, "utf-8")]
         self.descr = descr
         self.stream = stream
         self.filename = fname
@@ -288,7 +287,7 @@ class FileProgressDisplay(threading.Thread):
         while not self._stopped:
             _t = time.strftime('%b\%d %H:%M:%S')
             txt1 = '%s %s ' % (_t, self.descr)
-            if pos >= 20 and os.path.exists(self.filename): # Update every 1 seconds cycles
+            if pos >= 20 and os.path.exists(self.filename):  # Update every 1 seconds cycles
                 pos = 0
                 with open(self.filename, 'r') as progress_file:
                     progress_text = progress_file.read().strip()

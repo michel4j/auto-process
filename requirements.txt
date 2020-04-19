@@ -10,3 +10,4 @@ Twisted
 xvfbwrapper
 PyYAML
 prettytable
+mxio

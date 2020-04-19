@@ -32,14 +32,13 @@ __version__ = "0.6"
 
 import cgi
 import copy
-import cPickle
+import pickle
 import random
-import sys
 
 # hrule styles
 FRAME = 0
-ALL   = 1
-NONE  = 2
+ALL = 1
+NONE = 2
 
 # Table styles
 DEFAULT = 10
@@ -47,12 +46,15 @@ MSWORD_FRIENDLY = 11
 PLAIN_COLUMNS = 12
 RANDOM = 20
 
+
 def cache_clearing(method):
     def wrapper(self, *args, **kwargs):
         method(self, *args, **kwargs)
         self._cache = {}
         self.html_cache = {}
+
     return wrapper
+
 
 class PrettyTable(object):
 
@@ -121,10 +123,10 @@ class PrettyTable(object):
         self._vertical_char = kwargs["vertical_char"] or "|"
         self._horizontal_char = kwargs["horizontal_char"] or "-"
         self._junction_char = kwargs["junction_char"] or "+"
-        
+
         self._format = kwargs["format"] or False
         self._attributes = kwargs["attributes"] or {}
-   
+
     def __getattr__(self, name):
 
         if name == "rowcount":
@@ -132,8 +134,8 @@ class PrettyTable(object):
         elif name == "colcount":
             return len(self._field_names)
         else:
-            raise AttributeError, name
- 
+            raise AttributeError(name)
+
     def __getslice__(self, i, j):
 
         """Return a new PrettyTable whose data rows are a slice of this one's
@@ -182,7 +184,7 @@ class PrettyTable(object):
 
     def _validate_align(self, val):
         try:
-            assert val in ["l","c","r"]
+            assert val in ["l", "c", "r"]
         except AssertionError:
             raise Exception("Alignment %s is invalid, use l, c or r!" % val)
 
@@ -190,7 +192,7 @@ class PrettyTable(object):
         try:
             assert int(val) >= 0
         except AssertionError:
-            raise Exception("Invalid value for %s: %s!" % (name, unicode(val)))
+            raise Exception("Invalid value for %s: %s!" % (name, str(val)))
 
     def _validate_true_or_false(self, name, val):
         try:
@@ -219,7 +221,7 @@ class PrettyTable(object):
 
     def _validate_single_char(self, name, val):
         try:
-            assert len(unicode(val)) == 1
+            assert len(str(val)) == 1
         except AssertionError:
             raise Exception("Invalid value for %s!  Must be a string of length 1." % name)
 
@@ -240,7 +242,8 @@ class PrettyTable(object):
         Arguments:
 
         fields - list or tuple of field names"""
-    #@cache_clearing
+
+    # @cache_clearing
     def _set_field_names(self, val):
         # We *may* need to change the widths if this isn't the first time
         # setting the field names.  This could certainly be done more
@@ -251,15 +254,18 @@ class PrettyTable(object):
             self._widths = [len(field) for field in val]
         self._field_names = val
         self.align = "c"
+
     field_names = property(_get_field_names, _set_field_names)
 
     def _get_align(self):
         return self._align
-    #@cache_clearing
+
+    # @cache_clearing
     def _set_align(self, val):
         self._validate_align(val)
         for field in self._field_names:
             self._align[field] = val
+
     align = property(_get_align, _set_align)
 
     def _get_start(self):
@@ -269,9 +275,11 @@ class PrettyTable(object):
 
         start - index of first data row to include in output"""
         return self._start
+
     def _set_start(self, val):
         self._validate_option("start", val)
         self._start = val
+
     start = property(_get_start, _set_start)
 
     def _get_end(self):
@@ -281,9 +289,11 @@ class PrettyTable(object):
 
         end - index of last data row to include in output PLUS ONE (list slice style)"""
         return self._end
+
     def _set_end(self, val):
         self._validate_option("end", val)
         self._end = val
+
     end = property(_get_end, _set_end)
 
     def _get_sortby(self):
@@ -293,9 +303,11 @@ class PrettyTable(object):
 
         sortby - field name to sort by"""
         return self._sortby
+
     def _set_sortby(self, val):
         self._validate_option("sortby", val)
         self._sortby = val
+
     sortby = property(_get_sortby, _set_sortby)
 
     def _get_reversesort(self):
@@ -305,9 +317,11 @@ class PrettyTable(object):
 
         reveresort - set to True to sort by descending order, or False to sort by ascending order"""
         return self._reversesort
+
     def _set_reversesort(self, val):
         self._validate_option("reversesort", val)
         self._reversesort = val
+
     reversesort = property(_get_reversesort, _set_reversesort)
 
     def _get_header(self):
@@ -317,9 +331,11 @@ class PrettyTable(object):
 
         header - print a header showing field names (True or False)"""
         return self._header
+
     def _set_header(self, val):
         self._validate_option("header", val)
         self._header = val
+
     header = property(_get_header, _set_header)
 
     def _get_border(self):
@@ -329,9 +345,11 @@ class PrettyTable(object):
 
         border - print a border around the table (True or False)"""
         return self._border
+
     def _set_border(self, val):
         self._validate_option("border", val)
         self._border = val
+
     border = property(_get_border, _set_border)
 
     def _get_hrules(self):
@@ -341,9 +359,11 @@ class PrettyTable(object):
 
         hrules - horizontal rules style.  Allowed values: FRAME, ALL, NONE"""
         return self._hrules
+
     def _set_hrules(self, val):
         self._validate_option("hrules", val)
         self._hrules = val
+
     hrules = property(_get_hrules, _set_hrules)
 
     def _get_padding_width(self):
@@ -353,9 +373,11 @@ class PrettyTable(object):
 
         padding_width - number of spaces, must be a positive integer"""
         return self._padding_width
+
     def _set_padding_width(self, val):
         self._validate_option("padding_width", val)
         self._padding_width = val
+
     padding_width = property(_get_padding_width, _set_padding_width)
 
     def _get_left_padding_width(self):
@@ -365,9 +387,11 @@ class PrettyTable(object):
 
         left_padding - number of spaces, must be a positive integer"""
         return self._left_padding_width
+
     def _set_left_padding_width(self, val):
         self._validate_option("left_padding_width", val)
         self._left_padding_width = val
+
     left_padding_width = property(_get_left_padding_width, _set_left_padding_width)
 
     def _get_right_padding_width(self):
@@ -377,9 +401,11 @@ class PrettyTable(object):
 
         right_padding - number of spaces, must be a positive integer"""
         return self._right_padding_width
+
     def _set_right_padding_width(self, val):
         self._validate_option("right_padding_width", val)
         self._right_padding_width = val
+
     right_padding_width = property(_get_right_padding_width, _set_right_padding_width)
 
     def _get_vertical_char(self):
@@ -389,9 +415,11 @@ class PrettyTable(object):
 
         vertical_char - single character string used to draw vertical lines"""
         return self._vertical_char
+
     def _set_vertical_char(self, val):
         self._validate_option("vertical_char", val)
         self._vertical_char = val
+
     vertical_char = property(_get_vertical_char, _set_vertical_char)
 
     def _get_horizontal_char(self):
@@ -401,9 +429,11 @@ class PrettyTable(object):
 
         horizontal_char - single character string used to draw horizontal lines"""
         return self._horizontal_char
+
     def _set_horizontal_char(self, val):
         self._validate_option("horizontal_char", val)
         self._horizontal_char = val
+
     horizontal_char = property(_get_horizontal_char, _set_horizontal_char)
 
     def _get_junction_char(self):
@@ -413,9 +443,11 @@ class PrettyTable(object):
 
         junction_char - single character string used to draw line junctions"""
         return self._junction_char
+
     def _set_junction_char(self, val):
         self._validate_option("vertical_char", val)
         self._junction_char = val
+
     junction_char = property(_get_junction_char, _set_junction_char)
 
     def _get_format(self):
@@ -425,9 +457,11 @@ class PrettyTable(object):
 
         format - True or False"""
         return self._format
+
     def _set_format(self, val):
         self._validate_option("format", val)
         self._format = val
+
     format = property(_get_format, _set_format)
 
     def _get_attributes(self):
@@ -437,9 +471,11 @@ class PrettyTable(object):
 
         attributes - dictionary of attributes"""
         return self._attributes
+
     def _set_attributes(self, val):
         self.validate_option("attributes", val)
         self._attributes = val
+
     attributes = property(_get_attributes, _set_attributes)
 
     ##############################
@@ -454,7 +490,7 @@ class PrettyTable(object):
                 self._validate_option(option, kwargs[option])
                 options[option] = kwargs[option]
             else:
-                options[option] = getattr(self, "_"+option)
+                options[option] = getattr(self, "_" + option)
         return options
 
     ##############################
@@ -510,8 +546,8 @@ class PrettyTable(object):
         self.header = random.choice((True, False))
         self.border = random.choice((True, False))
         self.hrules = random.choice((ALL, FRAME, NONE))
-        self.left_padding_width = random.randint(0,5)
-        self.right_padding_width = random.randint(0,5)
+        self.left_padding_width = random.randint(0, 5)
+        self.right_padding_width = random.randint(0, 5)
         self.vertical_char = random.choice("~!@#$%^&*()_+|-=\{}[];':\",./;<>?")
         self.horizontal_char = random.choice("~!@#$%^&*()_+|-=\{}[];':\",./;<>?")
         self.junction_char = random.choice("~!@#$%^&*()_+|-=\{}[];':\",./;<>?")
@@ -520,7 +556,7 @@ class PrettyTable(object):
     # DATA INPUT METHODS         #
     ##############################
 
-    #@cache_clearing
+    # @cache_clearing
     def add_row(self, row):
 
         """Add a row to the table
@@ -531,13 +567,14 @@ class PrettyTable(object):
         has fields"""
 
         if len(row) != len(self._field_names):
-            raise Exception("Row has incorrect number of values, (actual) %d!=%d (expected)" %(len(row),len(self._field_names)))
+            raise Exception(
+                "Row has incorrect number of values, (actual) %d!=%d (expected)" % (len(row), len(self._field_names)))
         self._rows.append(row)
-        for i in range(0,len(row)):
-            if len(unicode(row[i])) > self._widths[i]:
-                self._widths[i] = len(unicode(row[i]))
+        for i in range(0, len(row)):
+            if len(str(row[i])) > self._widths[i]:
+                self._widths[i] = len(str(row[i]))
 
-    #@cache_clearing
+    # @cache_clearing
     def del_row(self, row_index):
 
         """Delete a row to the table
@@ -546,12 +583,12 @@ class PrettyTable(object):
 
         row_index - The index of the row you want to delete.  Indexing starts at 0."""
 
-        if row_index > len(self._rows)-1:
+        if row_index > len(self._rows) - 1:
             raise Exception("Cant delete row at index %d, table only has %d rows!" % (row_index, len(self._rows)))
         del self._rows[row_index]
         self._recompute_widths()
 
-    #@cache_clearing
+    # @cache_clearing
     def add_column(self, fieldname, column, align="c"):
 
         """Add a column to the table.
@@ -569,23 +606,23 @@ class PrettyTable(object):
             self._widths.append(len(fieldname))
             self._align[fieldname] = align
             for i in range(0, len(column)):
-                if len(self._rows) < i+1:
+                if len(self._rows) < i + 1:
                     self._rows.append([])
                 self._rows[i].append(column[i])
-                if len(unicode(column[i])) > self._widths[-1]:
-                    self._widths[-1] = len(unicode(column[i]))
+                if len(str(column[i])) > self._widths[-1]:
+                    self._widths[-1] = len(str(column[i]))
         else:
             raise Exception("Column length %d does not match number of rows %d!" % (len(column), len(self._rows)))
 
-    #@cache_clearing
+    # @cache_clearing
     def clear_rows(self):
 
         """Delete all rows from the table but keep the current field names"""
 
         self._rows = []
-        self._widths = [len(unicode(field_name)) for field_name in self._field_names]
+        self._widths = [len(str(field_name)) for field_name in self._field_names]
 
-    #@cache_clearing
+    # @cache_clearing
     def clear(self):
 
         """Delete all rows and field names from the table, maintaining nothing but styling options"""
@@ -608,9 +645,9 @@ class PrettyTable(object):
     def _recompute_widths(self):
         self._widths = [len(field) for field in self._field_names]
         for row in self._rows:
-            for i in range(0,len(row)):
-                if len(unicode(row[i])) > self._widths[i]:
-                    self._widths[i] = len(unicode(row[i]))
+            for i in range(0, len(row)):
+                if len(str(row[i])) > self._widths[i]:
+                    self._widths[i] = len(str(row[i]))
 
     def _get_padding_widths(self, options):
 
@@ -629,7 +666,7 @@ class PrettyTable(object):
         rows = copy.deepcopy(self._rows[options["start"]:options["end"]])
         sortindex = self._field_names.index(options["sortby"])
         # Decorate
-        rows = [[row[sortindex]]+row for row in rows]
+        rows = [[row[sortindex]] + row for row in rows]
         # Sort
         rows.sort(reverse=options["reversesort"])
         # Undecorate
@@ -661,7 +698,7 @@ class PrettyTable(object):
         sortby - name of field to sort rows by
         reversesort - True or False to sort in descending or ascending order"""
 
-        print self.get_string(**kwargs)
+        print(self.get_string(**kwargs))
 
     def get_string(self, **kwargs):
 
@@ -687,7 +724,7 @@ class PrettyTable(object):
         options = self._get_options(kwargs)
 
         if self._caching:
-            key = cPickle.dumps(options)
+            key = pickle.dumps(options)
             if key in self._cache:
                 return self._cache[key]
 
@@ -697,11 +734,11 @@ class PrettyTable(object):
         if not options["header"]:
             # Recalculate widths - avoids tables with long field names but narrow data looking odd
             old_widths = self._widths[:]
-            self._widths = [0]*len(self._field_names)
+            self._widths = [0] * len(self._field_names)
             for row in self._rows:
-                for i in range(0,len(row)):
-                    if len(unicode(row[i])) > self._widths[i]:
-                        self._widths[i] = len(unicode(row[i]))
+                for i in range(0, len(row)):
+                    if len(str(row[i])) > self._widths[i]:
+                        self._widths[i] = len(str(row[i]))
         if options["header"]:
             bits.append(self._stringify_header(options))
         elif options["border"] and options["hrules"] != NONE:
@@ -723,9 +760,9 @@ class PrettyTable(object):
             # Restore previous widths
             self._widths = old_widths
             for row in self._rows:
-                for i in range(0,len(row)):
-                    if len(unicode(row[i])) > self._widths[i]:
-                        self._widths[i] = len(unicode(row[i]))
+                for i in range(0, len(row)):
+                    if len(str(row[i])) > self._widths[i]:
+                        self._widths[i] = len(str(row[i]))
 
         return string
 
@@ -738,7 +775,7 @@ class PrettyTable(object):
         for field, width in zip(self._field_names, self._widths):
             if options["fields"] and field not in options["fields"]:
                 continue
-            bits.append((width+lpad+rpad)*options["horizontal_char"])
+            bits.append((width + lpad + rpad) * options["horizontal_char"])
             bits.append(options["junction_char"])
         return "".join(bits)
 
@@ -755,11 +792,11 @@ class PrettyTable(object):
             if options["fields"] and field not in options["fields"]:
                 continue
             if self._align[field] == "l":
-                bits.append(" " * lpad + unicode(field).ljust(width) + " " * rpad)
+                bits.append(" " * lpad + str(field).ljust(width) + " " * rpad)
             elif self._align[field] == "r":
-                bits.append(" " * lpad + unicode(field).rjust(width) + " " * rpad)
+                bits.append(" " * lpad + str(field).rjust(width) + " " * rpad)
             else:
-                bits.append(" " * lpad + unicode(field).center(width) + " " * rpad)
+                bits.append(" " * lpad + str(field).center(width) + " " * rpad)
             if options["border"]:
                 bits.append(options["vertical_char"])
         if options["border"] and options["hrules"] != NONE:
@@ -777,14 +814,14 @@ class PrettyTable(object):
             if options["fields"] and field not in options["fields"]:
                 continue
             if self._align[field] == "l":
-                bits.append(" " * lpad + unicode(value).ljust(width) + " " * rpad)
+                bits.append(" " * lpad + str(value).ljust(width) + " " * rpad)
             elif self._align[field] == "r":
-                bits.append(" " * lpad + unicode(value).rjust(width) + " " * rpad)
+                bits.append(" " * lpad + str(value).rjust(width) + " " * rpad)
             else:
-                bits.append(" " * lpad + unicode(value).center(width) + " " * rpad)
+                bits.append(" " * lpad + str(value).center(width) + " " * rpad)
             if options["border"]:
                 bits.append(self.vertical_char)
-        if options["border"] and options["hrules"]== ALL:
+        if options["border"] and options["hrules"] == ALL:
             bits.append("\n")
             bits.append(self._stringify_hrule(options))
         return "".join(bits)
@@ -809,7 +846,7 @@ class PrettyTable(object):
         hrules - include horizontal rule after each row
         attributes - dictionary of name/value pairs to include as HTML attributes in the <table> tag"""
 
-        print self.get_html_string(**kwargs)
+        print(self.get_html_string(**kwargs))
 
     def get_html_string(self, **kwargs):
 
@@ -831,7 +868,7 @@ class PrettyTable(object):
         options = self._get_options(kwargs)
 
         if self._caching:
-            key = cPickle.dumps(options)
+            key = pickle.dumps(options)
             if key in self.html_cache:
                 return self.html_cache[key]
 
@@ -862,7 +899,7 @@ class PrettyTable(object):
         for field in self._field_names:
             if options["fields"] and field not in options["fields"]:
                 continue
-            bits.append("        <th>%s</th>" % cgi.escape(unicode(field)))
+            bits.append("        <th>%s</th>" % cgi.escape(str(field)))
         bits.append("    </tr>")
         # Data
         if options["sortby"]:
@@ -874,7 +911,7 @@ class PrettyTable(object):
             for field, datum in zip(self._field_names, row):
                 if options["fields"] and field not in options["fields"]:
                     continue
-                bits.append("        <td>%s</td>" % cgi.escape(unicode(datum)))
+                bits.append("        <td>%s</td>" % cgi.escape(str(datum)))
         bits.append("    </tr>")
         bits.append("</table>")
         string = "\n".join(bits)
@@ -902,7 +939,9 @@ class PrettyTable(object):
             for field in self._field_names:
                 if options["fields"] and field not in options["fields"]:
                     continue
-                bits.append("        <th style=\"padding-left: %dem; padding-right: %dem; text-align: center\">%s</th>" % (lpad, rpad, cgi.escape(unicode(field))))
+                bits.append(
+                    "        <th style=\"padding-left: %dem; padding-right: %dem; text-align: center\">%s</th>" % (
+                    lpad, rpad, cgi.escape(str(field))))
             bits.append("    </tr>")
         # Data
         if options["sortby"]:
@@ -915,29 +954,36 @@ class PrettyTable(object):
                 if options["fields"] and field not in options["fields"]:
                     continue
                 if self._align[field] == "l":
-                    bits.append("        <td style=\"padding-left: %dem; padding-right: %dem; text-align: left\">%s</td>" % (lpad, rpad, cgi.escape(unicode(datum))))
+                    bits.append(
+                        "        <td style=\"padding-left: %dem; padding-right: %dem; text-align: left\">%s</td>" % (
+                        lpad, rpad, cgi.escape(str(datum))))
                 elif self._align[field] == "r":
-                    bits.append("        <td style=\"padding-left: %dem; padding-right: %dem; text-align: right\">%s</td>" % (lpad, rpad, cgi.escape(unicode(datum))))
+                    bits.append(
+                        "        <td style=\"padding-left: %dem; padding-right: %dem; text-align: right\">%s</td>" % (
+                        lpad, rpad, cgi.escape(str(datum))))
                 else:
-                    bits.append("        <td style=\"padding-left: %dem; padding-right: %dem; text-align: center\">%s</td>" % (lpad, rpad, cgi.escape(unicode(datum))))
+                    bits.append(
+                        "        <td style=\"padding-left: %dem; padding-right: %dem; text-align: center\">%s</td>" % (
+                        lpad, rpad, cgi.escape(str(datum))))
         bits.append("    </tr>")
         bits.append("</table>")
         string = "\n".join(bits)
 
         return string
 
-def main():
 
+def main():
     x = PrettyTable(["City name", "Area", "Population", "Annual Rainfall"])
-    x.align["City name"] = "l" # Left align city names
-    x.add_row(["Adelaide",1295, 1158259, 600.5])
-    x.add_row(["Brisbane",5905, 1857594, 1146.4])
+    x.align["City name"] = "l"  # Left align city names
+    x.add_row(["Adelaide", 1295, 1158259, 600.5])
+    x.add_row(["Brisbane", 5905, 1857594, 1146.4])
     x.add_row(["Darwin", 112, 120900, 1714.7])
     x.add_row(["Hobart", 1357, 205556, 619.5])
     x.add_row(["Sydney", 2058, 4336374, 1214.8])
     x.add_row(["Melbourne", 1566, 3806092, 646.9])
     x.add_row(["Perth", 5386, 1554769, 869.4])
-    print x
+    print(x)
+
 
 if __name__ == "__main__":
     main()

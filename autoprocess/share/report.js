@@ -51,21 +51,21 @@
 
 function rounded(v) {
     var exp = Math.pow(10, -Math.ceil(Math.log(Math.abs(v), 10)));
-    return Math.round(v*exp)/exp;
+    return Math.round(v * exp) / exp;
 }
 
-Array.cleanspace = function(a, b, steps){
-    var A= [];
+Array.cleanspace = function (a, b, steps) {
+    var A = [];
 
     steps = steps || 7;
-    var min =  rounded((b - a)/8);
-    a = Math.ceil(a/min)*min;
-    b = Math.floor(b/min)*min;
-    var step = Math.ceil(((b - a)/steps)/min)*min;
+    var min = rounded((b - a) / 8);
+    a = Math.ceil(a / min) * min;
+    b = Math.floor(b / min) * min;
+    var step = Math.ceil(((b - a) / steps) / min) * min;
 
-    A[0]= a;
-    while(a+step<= b){
-        A[A.length]= a+= step;
+    A[0] = a;
+    while (a + step <= b) {
+        A[A.length] = a += step;
     }
     //console.log(A);
     return A;
@@ -74,12 +74,11 @@ Array.cleanspace = function(a, b, steps){
 
 function inv_sqrt(a) {
     var A = [];
-    for (var i=0; i < a.length; i++) {
+    for (var i = 0; i < a.length; i++) {
         A[i] = Math.pow(a[i], -0.5);
     }
     return A;
-};
-
+}
 
 
 // Live Reports from MxLIVE
@@ -91,8 +90,12 @@ function draw_xy_chart() {
             var margin = {top: 20, right: width * 0.1, bottom: 50, left: width * 0.1},
                 innerwidth = width - margin.left - margin.right,
                 innerheight = height - margin.top - margin.bottom;
-            var xmin = d3.min(datasets, function (d) { return d3.min(d.x);});
-            var xmax = d3.max(datasets, function (d) { return d3.max(d.x);});
+            var xmin = d3.min(datasets, function (d) {
+                return d3.min(d.x);
+            });
+            var xmax = d3.max(datasets, function (d) {
+                return d3.max(d.x);
+            });
             switch (xscale) {
                 case 'inv-square':
 
@@ -554,7 +557,7 @@ function build_report(selector, report) {
                     entry_row.append(table);
                 }
             } else if (entry['kind'] === 'lineplot' || entry['kind'] === 'scatterplot') {
-                $("#entry-" + i + "-" + j).append("<figure id='figure-"+i+"-"+j+"'></figure>");
+                $("#entry-" + i + "-" + j).append("<figure id='figure-" + i + "-" + j + "'></figure>");
                 var data = [];
                 var xlabel = entry['data']['x'].shift();
                 var xscale = entry['data']['x-scale'] || 'linear';

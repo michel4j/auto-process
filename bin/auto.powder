@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from autoprocess.engine import powder
 from autoprocess.utils import log
 log.log_to_console()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Perform azimuthal integration of powder pattern')
     parser.add_argument('files', nargs='+', help='Files to integrate or calibrate')

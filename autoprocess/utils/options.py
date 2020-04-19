@@ -1,12 +1,12 @@
-
-import sys
-import os
-import autoprocess.errors
 import getopt
+import os
+import sys
+
+import autoprocess.errors
 from autoprocess.utils import xtal
 
 
-def _uniquify(seq): 
+def _uniquify(seq):
     # order preserving
     seen = {}
     result = []
@@ -55,42 +55,43 @@ Examples:
     auto.process --screen /foo/bar/test_001.img --dir=/foo/screen_output
 """
 
+
 def process_options(params, usage=PROCESS_USAGE):
     try:
-        opts, args = getopt.gnu_getopt(params, 
-                        "msahbt:xzi",
-                        ["help", "dir=", "mad","screen","anom", "nonchiral",
-                         "backup", "zap","import", "task=", "prefix=", "solve-small="])
+        opts, args = getopt.gnu_getopt(params,
+                                       "msahbt:xzi",
+                                       ["help", "dir=", "mad", "screen", "anom", "nonchiral",
+                                        "backup", "zap", "import", "task=", "prefix=", "solve-small="])
     except:
         print(usage)
-            
+
     # Parse options
     options = {
-        'anomalous' : False,
+        'anomalous': False,
         'mode': 'simple',
         'backup': False,
         'chiral': True,
-        }
+    }
     # expand filenames and remove duplicates maintaning ordering
     options['images'] = []
-    args = map(os.path.abspath, args)
+    args = list(map(os.path.abspath, args))
     options['images'] = _uniquify(args)
-    
+
     for o, a in opts:
-        if o in ("-h","--help"):
-            print usage
+        if o in ("-h", "--help"):
+            print(usage)
             sys.exit(0)
-            
-        if o in ("-a","--anom"):
+
+        if o in ("-a", "--anom"):
             options['anomalous'] = True
-            
-        if o in ("-x","--nonchiral"):
+
+        if o in ("-x", "--nonchiral"):
             options['chiral'] = False
-        
+
         if o in ("--solve-small",):
             options['solve-small'] = a
-            
-        if o in ('-s','--screen'):
+
+        if o in ('-s', '--screen'):
             options['mode'] = 'screen'
         elif o in ("-m", "--mad"):
             if len(options['images']) > 1:
@@ -112,15 +113,16 @@ def process_options(params, usage=PROCESS_USAGE):
                 options['resume_from'] = (0, st[0].strip())
             elif len(st) == 2:
                 options['resume_from'] = (int(st[0]), st[1].strip())
-                
+
         if o in ('--prefix'):
             options['prefix'] = a.split(',')
             if len(options['prefix']) != len(options['images']):
-                del options['prefix']       
+                del options['prefix']
     if options['mode'] == 'simple' and len(options['images']) > 1:
         options['mode'] = 'merge'
 
     return options
+
 
 SCALE_USAGE = """
 auto.scale [options]
@@ -141,20 +143,22 @@ Examples:
     auto.scale --anom
     
 """
+
+
 def scale_options(params):
     try:
-        opts, _ = getopt.gnu_getopt(params, "r:abih", ["res=", "anom", "backup", "inputs","help"])
+        opts, _ = getopt.gnu_getopt(params, "r:abih", ["res=", "anom", "backup", "inputs", "help"])
     except:
-        print SCALE_USAGE
-            
+        print(SCALE_USAGE)
+
     # Parse options
-    options = {}    
+    options = {}
     for o, a in opts:
-        if o in ("-h","--help"):
-            print SCALE_USAGE
+        if o in ("-h", "--help"):
+            print(SCALE_USAGE)
             sys.exit(0)
-            
-        if o in ("-a","--anom"):
+
+        if o in ("-a", "--anom"):
             options['anomalous'] = True
         if o in ('-b', '--backup'):
             options['backup'] = True
@@ -162,9 +166,10 @@ def scale_options(params):
             try:
                 options['resolution'] = float(a)
             except:
-                print SCALE_USAGE
+                print(SCALE_USAGE)
                 sys.exit(0)
     return options
+
 
 INTEGRATE_USAGE = """
 auto.integrate [options]
@@ -193,45 +198,49 @@ Examples:
         Repeat the integration considering only frames 20 to 120 with Friedel's 
         law False for all remainig steps
 """
+
+
 def integrate_options(params):
     try:
-        opts, _ = getopt.gnu_getopt(params, "r:abf:ohx:", ["res=", "anom", "backup", "frames=", "opt", "inputs","help", "exclude="])
+        opts, _ = getopt.gnu_getopt(params, "r:abf:ohx:",
+                                    ["res=", "anom", "backup", "frames=", "opt", "inputs", "help", "exclude="])
     except:
-        print INTEGRATE_USAGE
+        print(INTEGRATE_USAGE)
         sys.exit(0)
-          
+
     # Parse options
-    options = {}    
+    options = {}
     for o, a in opts:
-        if o in ("-h","--help"):
-            print INTEGRATE_USAGE
+        if o in ("-h", "--help"):
+            print(INTEGRATE_USAGE)
             sys.exit(0)
-        if o in ("-a","--anom"):
+        if o in ("-a", "--anom"):
             options['anomalous'] = True
         if o in ('-b', '--backup'):
             options['backup'] = True
         if o in ('-x', '--exclude'):
             try:
-                options['exclude'] = [map(int, x.split('-')) for x in a.split(',')]
+                options['exclude'] = [list(map(int, x.split('-'))) for x in a.split(',')]
             except:
-                print INTEGRATE_USAGE
+                print(INTEGRATE_USAGE)
                 sys.exit(0)
         if o in ('-f', '--frames'):
             try:
-                options['frames'] = map(int, a.split('-'))
+                options['frames'] = list(map(int, a.split('-')))
             except:
-                print INTEGRATE_USAGE
-                sys.exit(0)        
-            
+                print(INTEGRATE_USAGE)
+                sys.exit(0)
+
         if o in ('-o', '--opt'):
-            options['optimize'] = True   
+            options['optimize'] = True
         if o in ('-r', '--res'):
             try:
                 options['resolution'] = float(a)
             except:
-                print INTEGRATE_USAGE
+                print(INTEGRATE_USAGE)
                 sys.exit(0)
     return options
+
 
 STRATEGY_USAGE = """
 auto.strategy [options]
@@ -268,21 +277,24 @@ Examples:
     auto.strategy -a -r 2.3
     
 """
-def strategy_options(params):    
+
+
+def strategy_options(params):
     try:
-        opts, args = getopt.gnu_getopt(params, "r:x:m:abih", ["res=", "xalign=", "method=", "anom", "backup", "inputs","help"])
+        opts, args = getopt.gnu_getopt(params, "r:x:m:abih",
+                                       ["res=", "xalign=", "method=", "anom", "backup", "inputs", "help"])
     except:
-        print STRATEGY_USAGE
-            
+        print(STRATEGY_USAGE)
+
     # Parse options
     options = {}
-    xalign_options = {'vectors': ("",""), 'method': 0}
+    xalign_options = {'vectors': ("", ""), 'method': 0}
     for o, a in opts:
-        if o in ("-h","--help"):
-            print STRATEGY_USAGE
+        if o in ("-h", "--help"):
+            print(STRATEGY_USAGE)
             sys.exit(0)
-            
-        if o in ("-a","--anom"):
+
+        if o in ("-a", "--anom"):
             options['anomalous'] = True
         if o in ('-b', '--backup'):
             options['backup'] = True
@@ -293,17 +305,19 @@ def strategy_options(params):
                 xalign_options['method'] = int(a)
                 assert xalign_options['method'] in (0, 1)
             except:
-                raise autoprocess.errors.InvalidOption('Invalid method specified. Values must be "0" or "1": `%s%s`' % (o, a))
-                sys.exit(0)                
-            
+                raise autoprocess.errors.InvalidOption(
+                    'Invalid method specified. Values must be "0" or "1": `%s%s`' % (o, a))
+                sys.exit(0)
+
         if o in ('-r', '--res'):
             try:
                 options['resolution'] = float(a)
             except:
-                print STRATEGY_USAGE
+                print(STRATEGY_USAGE)
                 sys.exit(0)
     options['xalign'] = xalign_options
     return options
+
 
 SYMMETRY_USAGE = """
 auto.symmetry [options]
@@ -328,29 +342,32 @@ Examples:
     auto.symmetry --spacegroup=19
 
 """
+
+
 def symmetry_options(params):
     try:
-        opts, _ = getopt.gnu_getopt(params, "r:g:bihx", ["res=", "spacegroup=", "backup", "inputs","help","nonchiral"])
+        opts, _ = getopt.gnu_getopt(params, "r:g:bihx",
+                                    ["res=", "spacegroup=", "backup", "inputs", "help", "nonchiral"])
     except:
-        print SYMMETRY_USAGE
+        print(SYMMETRY_USAGE)
         raise autoprocess.errors.InvalidOption(' '.join(params))
-            
+
     # Parse options
-    options = {} 
+    options = {}
     for o, a in opts:
-        if o in ("-x","--nonchiral"):
+        if o in ("-x", "--nonchiral"):
             options['chiral'] = False
-       
+
     for o, a in opts:
-        if o in ("-h","--help"):
-            print SYMMETRY_USAGE
-            print xtal.get_sg_table(options.get('chiral', True))
+        if o in ("-h", "--help"):
+            print(SYMMETRY_USAGE)
+            print(xtal.get_sg_table(options.get('chiral', True)))
             sys.exit(0)
-                       
-        if o in ("-g","--spacegroup"):
+
+        if o in ("-g", "--spacegroup"):
             try:
                 sg_num = int(a)
-                assert sg_num in xtal.SG_SYMBOLS.keys()
+                assert sg_num in list(xtal.SG_SYMBOLS.keys())
                 if sg_num not in xtal.CHIRAL_SPACE_GROUPS:
                     options['chiral'] = False
                 options['sg_overwrite'] = sg_num
@@ -359,25 +376,25 @@ def symmetry_options(params):
                     op = '%s=' % o
                 else:
                     op = '%s ' % o
-                print SYMMETRY_USAGE
-                print xtal.get_sg_table(options.get('chiral', True))
+                print(SYMMETRY_USAGE)
+                print(xtal.get_sg_table(options.get('chiral', True)))
                 raise autoprocess.errors.InvalidOption('Invalid SpaceGroup Option: `%s%s`' % (op, a))
 
             except AssertionError:
-                print SYMMETRY_USAGE
-                print xtal.get_sg_table(options.get('chiral', True))
+                print(SYMMETRY_USAGE)
+                print(xtal.get_sg_table(options.get('chiral', True)))
                 raise autoprocess.errors.InvalidOption('Invalid SpaceGroup Number: %s' % (a))
 
-                
         if o in ('-b', '--backup'):
             options['backup'] = True
         if o in ('-r', '--res'):
             try:
                 options['resolution'] = float(a)
             except:
-                print SYMMETRY_USAGE
+                print(SYMMETRY_USAGE)
                 sys.exit(0)
     return options
+
 
 INPUTS_USAGE = """
 auto.inputs /path/to/set.img

@@ -30,8 +30,6 @@
 on a set of points ....
 """
 
-from __future__ import division, print_function
-
 __author__ = "Jerome Kieffer"
 __contact__ = "Jerome.Kieffer@ESRF.eu"
 __license__ = "MIT"
@@ -40,8 +38,10 @@ __date__ = "14/02/2017"
 __status__ = "production"
 __docformat__ = 'restructuredtext'
 
-import numpy
 from collections import namedtuple
+
+import numpy
+
 Ellipse = namedtuple("Ellipse", ["cy", "cx", "angle", "half_long_axis", "half_short_axis"])
 
 

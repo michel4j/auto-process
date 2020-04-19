@@ -1,15 +1,15 @@
-from __future__ import print_function
-
 """
 Parsers for XDS Files
 
 """
-import re
-import numpy
 import os
-import utils
+import re
 import shutil
+
+import numpy
+
 from autoprocess.utils import misc, xtal
+from . import utils
 
 (NO_FAILURE,
  SPOT_LIST_NOT_3D,
@@ -18,7 +18,7 @@ from autoprocess.utils import misc, xtal
  POOR_SOLUTION,
  REFINE_ERROR,
  INDEX_ERROR,
- PROGRAM_ERROR) = range(8)
+ PROGRAM_ERROR) = list(range(8))
 
 _IDXREF_FAILURES = {
     0: None,
@@ -215,7 +215,7 @@ def parse_xscale(filename='XSCALE.LP'):
     for d, k in _wl_p.findall(data):
         data_sections[k] += d
     info = {}
-    for k, d in data_sections.items():
+    for k, d in list(data_sections.items()):
         info[k] = utils.parse_data(d, config='xscale.ini')
         if info[k].get('statistics') is not None:
             if len(info[k]['statistics']) > 1:
@@ -290,4 +290,4 @@ def get_profile(raw_data):
         for j in range(3):
             slice_str[sl + j] += section[j]
 
-    return numpy.array(map(_str2arr, slice_str))
+    return numpy.array(list(map(_str2arr, slice_str)))

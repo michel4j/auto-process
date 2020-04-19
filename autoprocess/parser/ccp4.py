@@ -1,7 +1,8 @@
-
-import utils
-from autoprocess.utils import xtal
 import xml.dom.minidom
+
+from autoprocess.utils import xtal
+from . import utils
+
 
 def parse_ctruncate(filename='ctruncate.log'):
     info = utils.parse_file(filename, config='ctruncate.ini')
@@ -21,13 +22,12 @@ def parse_sfcheck(filename='sfcheck.log'):
         for subnode in node.childNodes:
             if subnode is not None:
                 key = str(node.nodeName).strip()
-                if key in ['sg','job','err_message']:
+                if key in ['sg', 'job', 'err_message']:
                     info[key] = subnode.nodeValue
                 elif key == "cell":
-                    info[key] = map(float, subnode.nodeValue.split())
+                    info[key] = list(map(float, subnode.nodeValue.split()))
                 elif key == "err_level":
                     info[key] = int(subnode.nodeValue)
                 else:
                     info[key] = float(subnode.nodeValue)
     return {'sf_check': info}
-    

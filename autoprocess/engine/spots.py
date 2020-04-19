@@ -14,7 +14,8 @@ def harvest_initialize():
         return {'step': 'initialize', 'success': False, 'reason': 'Initialization unsuccessful!'}
 
 
-def initialize(data_info, options={}):
+def initialize(data_info, options=None):
+    options = options or {}
     os.chdir(data_info['working_directory'])
 
     run_info = {'mode': options.get('mode')}
@@ -29,7 +30,8 @@ def initialize(data_info, options={}):
     return harvest_initialize()
 
 
-def analyse_image(data_info, options={}):
+def analyse_image(data_info, options=None):
+    options = options or {}
     os.chdir(data_info['working_directory'])
     _logger.info('Analyzing reference image ...')
 
@@ -51,7 +53,8 @@ def harvest_spots():
         return {'step': 'spot_search', 'success': False, 'reason': 'Could not find spots.'}
 
 
-def find_spots(data_info, options={}):
+def find_spots(data_info, options=None):
+    options = options or {}
     os.chdir(data_info['working_directory'])
     _logger.info('Searching for strong spots ...')
 

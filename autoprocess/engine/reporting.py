@@ -13,7 +13,7 @@ from autoprocess.utils.misc import json
 
 _logger = log.get_module_logger(__name__)
 
-SHARE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'share')
+SHARE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'share')
 
 
 def save_report(datasets, options):

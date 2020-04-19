@@ -17,7 +17,7 @@ from autoprocess.libs.imageio import read_image
 from autoprocess.utils import xdi, fitio, log, misc
 from autoprocess.utils.ellipse import fit_ellipse
 
-SHARE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'share')
+SHARE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'share')
 
 try:
     from scipy.signal import savgol_filter

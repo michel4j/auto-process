@@ -1,188 +1,54 @@
-# -----------------------------------------------------------------------------
-# mdns.py - Simple Multicast DNS Interface
-# heavily modified from Dirk Meyer's mdns.py in Freevo but removing references to kaa
-# by Michel Fodje
+import atexit
+import ipaddress
+from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf, ServiceInfo
 
-import logging
-import sys
-import re
+ZCONF = Zeroconf()
 
-import gobject
-import dbus
-import dbus.glib
-import avahi
-from autoprocess.utils.misc import json
-from autoprocess.utils.log import get_module_logger
-    
-# get logging object
-log = get_module_logger(__name__)
-_bus = dbus.SystemBus()
 
-class mDNSError(Exception):
-    pass
-
-class Provider(gobject.GObject):
+class Provider(object):
     """
-    Provide a multicast DNS services with the given name and type listening on the given
+    Multi-cast DNS Service Provider
+
+    Provide a multicast DNS service with the given name and type listening on the given
     port with additional information in the data record.
+
+    :param name: Name of service
+    :param service_type: Service Type string
+    :param port: Service port
+
+    Kwargs:
+        - data: Additional data to make available to clients
+        - unique: bool, only one permitted, collisoin if more than one
     """
-    __gsignals__ = {
-        'running' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, []),
-        'collision' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, []),
-    }
 
+    def __init__(self, name, service_type, port, data=None, unique=False):
+        super().__init__()
+        self.info = ServiceInfo(
+            service_type,
+            "{}.{}".format(name, service_type),
+            addresses=[ipaddress.ip_address("127.0.0.1").packed],
+            port=port,
+            properties={} if not data else data
+        )
+        self.add_service(unique)
 
-    def __init__(self, name, service_type, port, data=None, unique=False, hostname=""):
-        gobject.GObject.__init__(self)
-        self._bus = _bus
-        self._avahi = dbus.Interface(
-            self._bus.get_object( avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER ),
-            avahi.DBUS_INTERFACE_SERVER )
-        self._entrygroup = dbus.Interface(
-            self._bus.get_object( avahi.DBUS_NAME, self._avahi.EntryGroupNew()),
-            avahi.DBUS_INTERFACE_ENTRY_GROUP)
-        self._entrygroup.connect_to_signal('StateChanged', self._state_changed)
-        self._services = {}
-        self._params = [
-            avahi.IF_UNSPEC,            # interface
-            avahi.PROTO_INET,         # protocol
-            dbus.UInt32(0),                          # flags
-            name,                       # name
-            service_type,               # services type
-            "local",                         # domain
-            hostname,                         # host
-            dbus.UInt16(port),          # port
-            json.dumps(data), # data
-        ]
-        self._add_service(unique)
-
-    def _state_changed(self, cur, prev):
-        
-        if cur == avahi.SERVER_COLLISION:
-            gobject.idle_add(self.emit, 'collision')
-            log.error("Service name collision")
-        elif cur == avahi.SERVER_RUNNING:
-            gobject.idle_add(self.emit, 'running')
-            log.info("MXDC Service published")
-            
-    def _add_service(self, unique=False):
+    def add_service(self, unique=False):
         """
-        Add a services with the given parameters.
+        Add a the service
         """
-        retries = 0
-        if unique:
-            max_retries = 1
-        else:
-            max_retries = 12
-        retry = True
-        base_name = self._params[3]
-
-        while retries < max_retries and retry:
-            retries += 1
-            try:
-                self._entrygroup.AddService(*self._params)
-                self._entrygroup.Commit()
-                print 
-            except dbus.exceptions.DBusException:
-                if unique:
-                    log.error('Service Name Collision')
-                    retry = False
-                    raise mDNSError('Service Name Collision')
-                else:
-                    self._params[3] = '%s #%d' % (base_name, retries)
-                    log.warning('Service Name Collision. Renaming to %s' % (self._params[3]))
-                    retry = True
+        try:
+            ZCONF.register_service(self.info, allow_name_change=not unique)
+        except:
+            print('Collision')
 
     def __del__(self):
-        self._entrygroup.Reset(reply_handler=self._on_complete, error_handler=self._on_complete)
-        self._entrygroup.Commit()
+        ZCONF.unregister_service(self.info)
 
-    def _on_complete(self, error=None):
-        """
-        Handle event when dbus command is finished.
-        """
-        if error:
-            log.error(error)
-            
 
-class Browser(gobject.GObject):
-    __gsignals__ = {
-        'added' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
-        'removed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
-    }
+def cleanup_zeroconf():
+    ZCONF.close()
 
-    def __init__(self, service_type):
-        gobject.GObject.__init__(self)
-        self._bus = _bus
-        self._avahi = dbus.Interface(
-            self._bus.get_object( avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER ),
-            avahi.DBUS_INTERFACE_SERVER )
-        self._entrygroup = dbus.Interface(
-            self._bus.get_object( avahi.DBUS_NAME, self._avahi.EntryGroupNew()),
-            avahi.DBUS_INTERFACE_ENTRY_GROUP)
 
-        # get object path for service_type.
-        obj = self._avahi.ServiceBrowserNew(
-            avahi.IF_UNSPEC, avahi.PROTO_INET, service_type, 'local', dbus.UInt32(0))
+atexit.register(cleanup_zeroconf)
 
-        # Create browser interface for the new object
-        self._browser = dbus.Interface(self._bus.get_object(avahi.DBUS_NAME, obj),
-                                 avahi.DBUS_INTERFACE_SERVICE_BROWSER)
-        self._browser.connect_to_signal('ItemNew', self._on_service_added)
-        self._browser.connect_to_signal('ItemRemove', self._on_service_removed)
-        self._services = {}
-
-    def get_services(self):
-        return self._services.values()
-
-    def _on_service_removed(self, interface, protocol, name, service_type, domain, flags):
-        """
-        Callback from dbus when a services is removed.
-        """
-        gobject.idle_add(self.emit, 'removed', self._services.pop((str(name), str(service_type))))
-
-    def _on_service_added(self, interface, protocol, name, service_type, domain, flags):
-        """
-        Callback from dbus when a new services is available.
-        """
-        self._avahi.ResolveService(
-            interface, protocol, name, service_type, domain, avahi.PROTO_INET, dbus.UInt32(0),
-            reply_handler=self._on_service_resolved, error_handler=self._on_error)
-
-    def _on_service_resolved(self, interface, protocol, name, service_type, domain, host,
-                          aprotocol, address, port, txt, flags):
-        """
-        Callback from dbus when a new services is available and resolved.
-        """
-        txtdict = {}
-        for record in avahi.txt_array_to_string_array(txt):
-            if record.find('=') > 0:
-                k, v = record.split('=', 2)
-                txtdict[k] = v
-        local = False
-        try:
-            if flags & avahi.LOOKUP_RESULT_LOCAL:
-                local = True
-        except dbus.DBusException:
-            pass
-        self._services[(str(name), str(service_type))] = {
-            'interface': int(interface), 
-            'protocol': int(protocol), 
-            'name': str(name),
-            'domain':  str(domain),
-            'host':  str(host), 
-            'address': str(address), 
-            'port': int(port),
-            'local': local,
-            'data': txtdict}
-        gobject.idle_add(self.emit, 'added', self._services[(str(name), str(service_type))])
-
-    def _on_error(self, error=None):
-        """
-        Handle event when dbus command is finished.
-        """
-        if error:
-            #log.error(error)
-            pass
-
-__all__ = ['Browser', 'Provider']
+__all__ = ['Provider']

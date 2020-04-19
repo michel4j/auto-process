@@ -7,16 +7,16 @@ import pwd
 import subprocess
 import sys
 
-from twisted.application import internet, service
+from twisted.application import service
 from twisted.internet import protocol, reactor, defer
-from twisted.python import components, log as twistedlog
+from twisted.python import log as twistedlog
 from twisted.python.failure import Failure
 from twisted.spread import pb
 from zope.interface import implements, Interface
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from autoprocess.utils import mdns, log
+from autoprocess.utils import log
 from autoprocess.utils.which import which
 from autoprocess.parser.distl import parse_distl_string
 
@@ -262,15 +262,3 @@ class DPService(service.Service):
         args += info['file_names']
         return async_command('auto.powder', args, directory, user_name=user_name, json_file='report.json')
 
-
-components.registerAdapter(DPSPerspective2Service, IDPService, IDPSPerspective)
-
-# twistd stuff goes here
-log_to_twisted()
-application = service.Application('Data Processing Server')
-serviceCollection = service.IServiceCollection(application)
-srv = DPService()
-
-# publish DPS service on network
-provider = mdns.Provider('Data Processing Server', '_dpm_rpc._tcp', 9991, {})
-internet.TCPServer(9991, pb.PBServerFactory(IDPSPerspective(srv))).setServiceParent(serviceCollection)

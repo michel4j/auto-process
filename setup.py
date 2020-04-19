@@ -35,7 +35,8 @@ setup(
         'bin/auto.report',
         'bin/auto.powder',
         'bin/auto.scale',
-        'bin/auto.strategy'
+        'bin/auto.strategy',
+        'bin/auto.server'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

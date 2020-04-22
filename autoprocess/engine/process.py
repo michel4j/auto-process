@@ -5,9 +5,9 @@ import subprocess
 import sys
 import time
 from collections import OrderedDict
-
+from datetime import datetime
 import msgpack
-import msgpack_numpy
+
 
 import autoprocess.errors
 from autoprocess.engine import indexing, spots, integration, scaling, solver, reporting
@@ -18,9 +18,9 @@ logger = log.get_module_logger(__name__)
 
 VERSION = '4.0 RC'
 
-_MAX_RMEAS_FACTOR = 2
+MAX_RMEAS_FACTOR = 2
 
-_STEP_FUNCTIONS = {
+STEP_FUNCTIONS = {
     'initialize': spots.initialize,
     'spot_search': spots.find_spots,
     'indexing': indexing.auto_index,
@@ -33,7 +33,7 @@ _STEP_FUNCTIONS = {
     'solve-small': solver.solve_small_molecule
 }
 
-_HARVEST_FUNCTIONS = {
+HARVEST_FUNCTIONS = {
     'initialize': spots.harvest_initialize,
     'spot_search': spots.harvest_spots,
     'indexing': indexing.harvest_index,
@@ -41,6 +41,8 @@ _HARVEST_FUNCTIONS = {
     'correction': integration.harvest_correct,
 }
 
+THICK_LINE = '*' * 79
+THIN_LINE = '-' * 79
 
 class DataSet(object):
     def __init__(self, filename=None, info=None, overwrites=None):
@@ -234,14 +236,14 @@ class Manager(object):
         step_parameters.update(dset.parameters)
         step_parameters.update(overwrite)
 
-        if colonize and step in _HARVEST_FUNCTIONS:
-            _out = _HARVEST_FUNCTIONS[step]
+        if colonize and step in HARVEST_FUNCTIONS:
+            _out = HARVEST_FUNCTIONS[step]
         else:
             # symmetry needs an extra parameter
             if step == 'symmetry':
-                _out = _STEP_FUNCTIONS[step](step_parameters, dset, self.options)
+                _out = STEP_FUNCTIONS[step](step_parameters, dset, self.options)
             else:
-                _out = _STEP_FUNCTIONS[step](step_parameters, self.options)
+                _out = STEP_FUNCTIONS[step](step_parameters, self.options)
 
         dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
         if _out.get('data') is not None:
@@ -270,22 +272,24 @@ class Manager(object):
 
         # Create a log file also
         log.log_to_file(os.path.join(self.options['directory'], 'auto.log'))
-        self._start_time = time.time()
-        _header = '------ AutoProcess({}) - {} [{:d} dataset(s)] ------'.format(
-            VERSION, self.options['mode'].upper(),
+        self.start_time = time.time()
+        date_time = datetime.now().isoformat()
+        header = f'AutoProcess (VERSION {VERSION})'
+        sub_header = "{} on {} - {} [{:d} dataset(s)]".format(
+            misc.get_project_name(),
+            date_time, self.options['mode'].upper(),
             len([name for name in list(self.datasets.keys()) if name != 'combined'])
         )
-        _separator = len(_header) * '-'
-        logger.info(_header)
-        _env_hosts = os.environ.get('DPS_NODES', 'localhost')
-        _num_nodes = len(_env_hosts.split(' '))
+        logger.info(f'{THICK_LINE}')
+        logger.info(f'{header:^79}')
+        logger.info(f'{THICK_LINE}')
+        logger.info(f'{sub_header:^79}')
 
-        logger.debug('Computer system: %d nodes' % (_num_nodes))
-        logger.debug('Computer nodes: "%s"' % _env_hosts)
+        env_hosts = os.environ.get('DPS_NODES', 'localhost')
+        num_nodes = len(env_hosts.split(' '))
 
-        run_steps = [
-            'initialize', 'spot_search', 'indexing', 'integration', 'correction', 'symmetry', 'strategy',
-        ]
+        logger.debug(f'Computer system: {num_nodes:d} nodes')
+        logger.debug(f'Computer nodes: "{env_hosts}"')
 
         if resume_from is not None:
             cur_pos, next_step = resume_from
@@ -293,19 +297,23 @@ class Manager(object):
             cur_pos, next_step = (0, 'initialize')
 
         # Fist initialize and index all datasets
-        _sub_steps = ['initialize', 'spot_search', 'indexing']
-        step_ovw = {}
-        if next_step in _sub_steps:
+        sub_steps = ['initialize', 'spot_search', 'indexing']
+
+        if next_step in sub_steps:
             for i, dset in enumerate(self.datasets.values()):
                 if dset.name == 'combined' and self.options.get('mode') == 'merge':
                     # 'combined' merged dataset is special
                     continue
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
-                logger.info(_separator)
-                logger.info('Working directory for `{}`: "{}"'.format(
-                    dset.name, dset.parameters['working_directory'])
+                logger.info(THIN_LINE)
+                logger.info(
+                    'Auto-Indexing dataset "{}". Directory: "{}"'.format(
+                        log.TermColor.italics(dset.name),
+                        log.TermColor.bold(dset.parameters['working_directory'])
+                    )
                 )
-                for j, step in enumerate(_sub_steps):
+
+                for j, step in enumerate(sub_steps):
                     self.run_position = (i, step)
 
                     # prepare separate copy of overwrite parameters for this step
@@ -313,7 +321,7 @@ class Manager(object):
                     step_ovw.update(overwrite)
 
                     # skip this step based on the properties
-                    if j < _sub_steps.index(next_step): continue
+                    if j < sub_steps.index(next_step): continue
                     self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
 
                     # Special post processing after indexing
@@ -332,19 +340,19 @@ class Manager(object):
             next_step = 'integration'
 
         # then integrate and correct separately
-        _sub_steps = ['integration', 'correction']
-        if next_step in _sub_steps:
+        sub_steps = ['integration', 'correction']
+        if next_step in sub_steps:
             for i, dset in enumerate(self.datasets.values()):
                 if dset.name == 'combined' and self.options.get('mode') == 'merge':
                     # 'combined' merged dataset is special
                     continue
                 if i < cur_pos: continue  # skip all datasets earlier than specified one                    
-                logger.info(_separator)
-                for j, step in enumerate(_sub_steps):
+                logger.info(THIN_LINE)
+                for j, step in enumerate(sub_steps):
                     self.run_position = (i, step)
 
                     # skip this step based on the properties
-                    if j < _sub_steps.index(next_step): continue
+                    if j < sub_steps.index(next_step): continue
 
                     # prepare separate copy of overwrite parameters for this step
                     step_ovw = {}
@@ -362,14 +370,17 @@ class Manager(object):
                     self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
                     if step == 'correction':
                         ISa = dset.results['correction']['correction_factors']['parameters'].get('ISa', -1)
-                        logger.info('({}) I/Sigma(I) Asymptote [ISa]: {}'.format(dset.name, log.TermColor.bold(
-                            '{:0.1f}'.format(ISa))))
+                        logger.info('Dataset {}: I/Sigma(I) Asymptote [ISa]: {}'.format(
+                            log.TermColor.italics(dset.name),
+                            log.TermColor.bold(f'{ISa:0.1f}')
+                        ))
                         dset.results['integration']['statistics'] = copy.deepcopy(dset.results['correction'])
 
             next_step = 'symmetry'
 
         # Check Spacegroup and scale the datasets
         if next_step == 'symmetry':
+            logger.info(THIN_LINE)
             self.run_position = (0, 'symmetry')
             ref_info = None
             _sg_number = 0
@@ -418,7 +429,10 @@ class Manager(object):
                 if self.options.get('mode') in ['merge']:
                     _score = dset.score()
 
-                    logger.info('({}) Initial Score: {:0.2f}'.format(dset.name, _score))
+                    logger.info('Dataset {}: Initial Score: {}'.format(
+                        log.TermColor.italics(dset.name),
+                        log.TermColor.bold(f"{_score:0.2f}"),
+                    ))
 
             self.save_checkpoint()
             next_step = 'strategy' if self.options.get('mode') == 'screen' else 'scaling'
@@ -464,7 +478,8 @@ class Manager(object):
 
             self.save_checkpoint()
 
-        # check quality and covert formats     
+        # check quality and covert formats
+        logger.info(THIN_LINE)
         for i, dset in enumerate(self.datasets.values()):
             # Only calculate for 'combined' dataset when merging.
             if self.options['mode'] == 'merge' and dset.name != 'combined': continue
@@ -472,7 +487,7 @@ class Manager(object):
             # Run Data Quality Step:
             if self.options.get('mode') != 'screen':
                 self.run_position = (i, 'data_quality')
-                logger.info('Checking quality of dataset `%s` ...' % dset.name)
+                logger.info('Checking quality of dataset {} ...'.format(log.TermColor.italics(dset.name)))
                 _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
                 dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
                 if not _out['success']:
@@ -483,7 +498,10 @@ class Manager(object):
                 self.save_checkpoint()
 
             # Scoring
-            logger.info('({}) Final Score: {}'.format(dset.name, log.TermColor.bold('{:0.2f}'.format(dset.score()))))
+            logger.info('Dataset {}: Final Score: {}'.format(
+                log.TermColor.italics(dset.name),
+                log.TermColor.bold('{:0.2f}'.format(dset.score()))
+            ))
 
             # file format conversions
             self.run_position = (i, 'conversion')
@@ -500,7 +518,6 @@ class Manager(object):
                     logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
                 else:
                     dset.results['output_files'] = _out.get('data')
-                    logger.info('%s' % (', '.join(_out['data'])))
                 self.save_checkpoint()
 
             if self.options.get('solve-small'):
@@ -522,12 +539,14 @@ class Manager(object):
         checkpoint = self.save_checkpoint()
 
         # Save summaries
-        logger.info('Generating Reports ...')
+        logger.info('Generating reports ... report.html, report.txt')
         reporting.save_report(checkpoint['datasets'], self.options)
-        logger.info('    HTML: report.html ')
-        logger.info('    TEXT: report.txt ')
 
-        used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self._start_time))
+
+        used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self.start_time))
         out = subprocess.check_output(['sync'])
-        logger.info("Done in: %s" % (used_time))
+        footer = "AutoProcess done. Total time: {}".format(used_time)
+        logger.info(THICK_LINE)
+        logger.info(f"{footer:^79}")
+        logger.info(THICK_LINE)
         time.sleep(2.0)

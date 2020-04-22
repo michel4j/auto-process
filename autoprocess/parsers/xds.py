@@ -215,7 +215,7 @@ def parse_xscale(filename='XSCALE.LP'):
     header = re.compile(r'(CONTROL CARDS.+?CORRECTION FACTORS AS FUNCTION)', re.DOTALL)
     section = re.compile(
         r'(STATISTICS OF SCALED OUTPUT DATA SET : (?:\d+-)?([\w_]+)/?[\w]*?.HKL'
-        r'.+?HIGHER ORDER MOMENTS OF WILSON DISTRIBUTION)',
+        r'.+?R-FACTORS FOR INTENSITIES OF DATA SET [^\n]+?\n)',
         re.DOTALL
     )
 

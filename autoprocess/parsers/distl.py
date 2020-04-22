@@ -2,12 +2,12 @@
 DISTL Parser functions
 
 """
-from . import utils
+from . import parser
 
 
 def parse_distl(filename):
-    return utils.parse_file(filename, 'distl.ini')
+    return parser.parse(filename, 'distl')
 
 
 def parse_distl_string(text):
-    return utils.parse_data(text, 'distl.ini')
+    return parser.parse_text(text, 'distl')

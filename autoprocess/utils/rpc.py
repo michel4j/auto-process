@@ -1,4 +1,4 @@
-import reprlib as reprlib
+import reprlib
 
 from . import log
 

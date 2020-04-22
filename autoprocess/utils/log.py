@@ -19,6 +19,7 @@ class TermColor(object):
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+    ITALICS = '\033[3m'
 
     @classmethod
     def bold(cls, text):
@@ -52,6 +53,9 @@ class TermColor(object):
     def underline(cls, text):
         return '{}{}{}'.format(cls.UNDERLINE, text, cls.ENDC)
 
+    @classmethod
+    def italics(cls, text):
+        return '{}{}{}'.format(cls.ITALICS, text, cls.ENDC)
 
 class NullHandler(logging.Handler):
     """A do-nothing log handler."""
@@ -87,9 +91,9 @@ def log_to_console(level=LOG_LEVEL):
     console = ColoredConsoleHandler()
     console.setLevel(level)
     if DEBUGGING:
-        formatter = logging.Formatter('%(message)s', '%b/%d %H:%M:%S')
+        formatter = logging.Formatter(' %(message)s', '%b/%d %H:%M:%S')
     else:
-        formatter = logging.Formatter('%(message)s', '%b/%d %H:%M:%S')
+        formatter = logging.Formatter(' %(message)s', '%b/%d %H:%M:%S')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 

@@ -1,8 +1,9 @@
 import copy
 import os
 import time
-import cluster
 from itertools import chain
+
+import cluster
 
 import autoprocess.errors
 from autoprocess.engine import symmetry
@@ -41,7 +42,7 @@ def scale_datasets(dsets, options=None, message="Scaling"):
 
     mode = options.get('mode', 'simple')
     if mode == 'mad':
-        step_descr = ("Scaling {:d} MAD datasets in `{}` {} ... ".format(len(dsets), sg_name, suffix_txt))
+        step_descr = ("Scaling {:d} MAD datasets in space-group {} {}".format(len(dsets), sg_name, suffix_txt))
         sections = []
         for dset in list(dsets.values()):
             dres = dset.results
@@ -94,9 +95,8 @@ def scale_datasets(dsets, options=None, message="Scaling"):
             dset.log.append((time.time(), 'scaling', False, str(e)))
         return {'step': 'scaling', 'success': False, 'reason': str(e)}
 
-    if len(list(raw_info.keys())) == 1:
+    if len(raw_info) == 1:
         info = list(raw_info.values())[0]
-        info['output_file'] = 'XSCALE.HKL'
         # Set resolution
         if options.get('resolution'):
             resol = (options.get('resolution'), 4)
@@ -116,7 +116,6 @@ def scale_datasets(dsets, options=None, message="Scaling"):
         dset.log.append((time.time(), 'scaling', True, None))
     else:
         for name, info in list(raw_info.items()):
-            dset = dsets[name]
             # Set resolution
             if options.get('resolution'):
                 resol = (options.get('resolution'), 4)
@@ -125,10 +124,8 @@ def scale_datasets(dsets, options=None, message="Scaling"):
             info['summary']['resolution'] = resol
 
             dsets[name].results['scaling'].update(info)
-            print((list(info['summary'].keys())))
             dsets[name].log.append((time.time(), 'scaling', True, None))
 
-    misc.backup_files('XSCALE.LP', 'XSCALE.HKL')
     return {'step': 'scaling', 'success': True}
 
 
@@ -141,7 +138,7 @@ def prepare_reference(dsets, options=None):
     reference_name = best[1]  # the most complete dataset of the lot
     minimum_correlation = 0.0
     if len(dsets) < 4 or best[0] >= 30.0:
-        _logger.info('Using the most complete dataset `%s`(%0.1f%%) as reference.' % (best[1], best[0]))
+        _logger.info('Using the most complete dataset {} ({:0.1f}%) as reference.'.format(best[1], best[0]))
         reference_file = dsets[reference_name].results['correction']['output_file']
     else:
         dset_names = [dset.name for dset in list(dsets.values())]

@@ -1,7 +1,8 @@
 root:
   fields:
     - "!!! ERROR<str:error_code> !!! <str:failure>"
-
+    - "R-FACTORS FOR INTENSITIES OF DATA SET <slug:input_file>"
+    - "STATISTICS OF SCALED OUTPUT DATA SET : <slug:output_file> "
   sections:
     statistics:
       domain: "STATISTICS OF SCALED OUTPUT DATA SET .*? WITH SIGNAL/NOISE >= -3.0(.+?)STATISTICS OF INPUT DATA SET"

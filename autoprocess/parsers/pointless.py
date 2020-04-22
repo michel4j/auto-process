@@ -87,15 +87,6 @@ def parse_pointless(filename="pointless.xml"):
     )
     summary['unit_cell'] = unit_cell
 
-    # extract the lattice character
-    group_list = doc.getElementsByTagName('LaueGroupScoreList')[0]
-    lattice_character = 'aP'
-    # for group_el in group_list.getElementsByTagName('LaueGroupScore'):
-    #    if group_el.getAttribute('Accept') == 'Accepted':
-    #        lattice_character = group_el.getElementsByTagName('LatticeType')[0].firstChild.nodeValue
-    #        lattice_probability = float(group_el.getElementsByTagName('Likelihood')[0].firstChild.nodeValue)
-    #    break
-
     summary['character'] = xtal.get_character(summary['sg_number'])
     summary['candidates'] = sg_candidates
 

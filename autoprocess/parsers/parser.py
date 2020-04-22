@@ -5,7 +5,7 @@ from collections import defaultdict
 import yaml
 
 SPEC_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-ESCAPE_CHARS = ")(.*"
+ESCAPE_CHARS = ")(.*|"
 
 
 class ConverterType(type):
@@ -86,7 +86,7 @@ class Char(Converter):
 
 class Slug(Converter):
     name = 'slug'
-    chars = r'[-a-zA-Z0-9_]'
+    chars = r'[-a-zA-Z0-9_/.]'
 
     @staticmethod
     def to_python(value):

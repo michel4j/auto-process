@@ -1,43 +1,48 @@
+import asyncio
 import os
 import subprocess
 import time
-import asyncio
-from contextlib import closing
+
 from progress.spinner import Spinner
-import autoprocess.errors
 
 
-def _execute_command(args, out_file=None):
-    if out_file is None:
-        std_out = open('commands.log', 'a')
-    else:
-        std_out = open(out_file, 'a')
-    try:
-        output = subprocess.check_output(args, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        raise autoprocess.errors.ProcessError(e.output.strip())
+class BlankSpinner(object):
+    """A spinner which does nothing"""
 
-    std_out.write(output.decode('utf-8'))
-    std_out.close()
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def next(self):
+        pass
+
+    def finish(self):
+        pass
+
+    def write(self, *args):
+        pass
 
 
 class Command(object):
-    def __init__(self, *args, outfile="commands.log", label="Processing", spinner=True):
-        self.spinner = Spinner(f'{label} ... ')
+    def __init__(self, *args, outfile="commands.log", label="Processing", spinner=True, final='done'):
         self.show_spinner = spinner
         self.outfile = outfile
         self.args = " ".join(args)
+        self.final = final
+        self.label = label
         self.proc = None
+        if spinner:
+            self.spinner = Spinner(f' - {self.label} ... ')
+        else:
+            self.spinner = BlankSpinner()
 
     async def run(self):
         with open(self.outfile, 'a') as stdout:
             proc = await asyncio.create_subprocess_shell(self.args, stdout=stdout, stderr=stdout)
             while proc.returncode is None:
-                if self.show_spinner:
-                    self.spinner.next()
+                self.spinner.next()
                 await asyncio.sleep(.1)
-            self.spinner.write('done')
-            print()
+            self.spinner.write(self.final)
+            self.spinner.finish()
 
     def start(self):
         asyncio.run(self.run())
@@ -57,13 +62,14 @@ def xscale(label='Scaling'):
     command = Command('xscale', label=label)
     command.start()
 
+
 def xscale_par(label='Scaling'):
     command = Command('xscale_par', label=label)
     command.start()
 
 
-def xdsconv(label='Converting'):
-    command = Command('xdsconv', label=label)
+def xdsconv(label='Converting', final='done'):
+    command = Command('xdsconv', label=label, final=final)
     command.start()
 
 
@@ -75,14 +81,9 @@ def f2mtz(filename):
     file_text += "END\n"
     file_text += "EOF\n"
     file_text += "/bin/rm temp.mtz\n"
-    try:
-        outfile = open('f2mtz.com', 'w')
+    with open('f2mtz.com', 'w') as outfile:
         outfile.write(file_text)
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-    outfile.close()
-    command = Command('sh', 'f2mtz.com', spinner=False)
-    command.start()
+    subprocess.check_output(['sh', 'f2mtz.com'])
 
 
 def xdsstat(filename):
@@ -90,19 +91,14 @@ def xdsstat(filename):
     file_text += "xdsstat <<EOF > XDSSTAT.LP\n"
     file_text += "%s\n" % filename
     file_text += "EOF\n"
-    try:
-        outfile = open('xdsstat.com', 'w')
+    with open('xdsstat.com', 'w') as outfile:
         outfile.write(file_text)
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-    outfile.close()
     command = Command('sh', 'xdsstat.com', spinner=False, label='Calculating extra statistics')
     command.start()
 
 
 def pointless(retry=False, chiral=True, filename="INTEGRATE.HKL"):
     chiral_setting = {True: "", False: "chirality nonchiral"}
-    f = open('pointless.com', 'w')
     txt = (
         "pointless << eof\n"
         "{}\n"
@@ -111,11 +107,8 @@ def pointless(retry=False, chiral=True, filename="INTEGRATE.HKL"):
         "choose solution 1\n"
         "eof\n"
     ).format(chiral_setting[chiral], filename)
-    try:
-        f.write(txt)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
+    with open('pointless.com', 'w') as fobj:
+        fobj.write(txt)
     command = Command('sh', 'pointless.com', spinner=False)
     command.start()
 
@@ -136,12 +129,8 @@ def best(data_info, options=None):
     command += " -e none -M 0.2 -w 0.2 %s -o best.plot -dna best.xml" % (anom_flag)
     command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL"
 
-    try:
-        f = open('best.com', 'w')
-        f.write(command)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
+    with open('best.com', 'w') as fobj:
+        fobj.write(command)
 
     command = Command('sh', 'best.com', outfile="best.log", spinner=False)
     command.start()
@@ -152,36 +141,14 @@ def xtriage(filename, options=None):
     command = "#!/bin/csh \n"
     command += "pointless -c xdsin %s hklout UNMERGED.mtz > unmerged.log \n" % (filename)
     command += "phenix.xtriage UNMERGED.mtz log=xtriage.log loggraphs=True\n"
-    try:
-        f = open('xtriage.com', 'w')
-        f.write(command)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-
-    command = Command('sh', 'xtriage.com', spinner=False)
+    with open('xtriage.com', 'w') as fobj:
+        fobj.write(command)
+    command = Command('sh', 'xtriage.com', outfile='xtriage.log', spinner=False)
     command.start()
 
 
 def distl(filename):
     command = Command('labelit.distl', outfile="distl.log", spinner=False)
-    command.start()
-
-
-def ccp4check(filename):
-    command = "#!/bin/csh \n"
-    command += "pointless -c xdsin %s hklout UNMERGED.mtz > unmerged.log \n" % (filename)
-    command += "ctruncate -hklin UNMERGED.mtz -colin '/*/*/[I,SIGI]' > ctruncate.log \n"
-    command += "sfcheck -f UNMERGED.mtz > sfcheck.log \n"
-
-    try:
-        f = open('ccp4check.com', 'w')
-        f.write(command)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-
-    command = Command('sh', 'ccp4check.com', spinner=False)
     command.start()
 
 
@@ -195,12 +162,8 @@ def shelx_sm(name, unit_cell, formula):
     command += "/bin/cp -f %s.res %s.ins\n" % (name, name)
     command += "shelxl %s \n" % (name,)
 
-    try:
-        f = open('shelx-sm.com', 'w')
-        f.write(command)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
+    with open('shelx-sm.com', 'w') as fobj:
+        fobj.write(command)
 
     command = Command('sh', 'shelx-sm.com', spinner=False)
     command.start()

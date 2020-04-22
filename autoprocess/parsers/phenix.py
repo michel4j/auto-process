@@ -1,17 +1,11 @@
 import os
 import re
 
-from . import utils
+from . import parser
 
-_vers_m = re.search(r'.+/phenix-([\d.-]+)', os.environ.get('PHENIX', ''))
-if _vers_m:
-    PHENIX_VERSION = "-%s" % _vers_m.group(1)
-else:
-    PHENIX_VERSION = ""
+PHENIX_VERSION = os.environ.get('PHENIX_VERSION', '')
 
 
 def parse_xtriage(filename='xtriage.log'):
-    config = 'xtriage.ini%s' % PHENIX_VERSION
-    info = utils.parse_file(filename, config, fallback='xtriage.ini')
-    # info['completeness'] = info['completeness']*100.0
+    info = parser.parse(filename, 'xtriage')
     return info

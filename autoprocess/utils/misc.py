@@ -10,7 +10,7 @@ import msgpack
 import numpy
 import msgpack_numpy
 
-from .prettytable import PrettyTable
+from prettytable import PrettyTable
 
 # Physical Constants
 _h = 4.13566733e-15  # eV.s

@@ -18,7 +18,7 @@ def run_distl(img, rastering=False):
             img,
         ]
         output = subprocess.check_output(args, env=os.environ.copy())
-        results = parse_distl_string(output)
+        results = parse_distl_string(output.decode('utf8'))
         info = results['summary']
 
     except subprocess.CalledProcessError as e:

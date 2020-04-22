@@ -5,7 +5,7 @@ import autoprocess.errors
 from autoprocess.parsers import xds
 from autoprocess.utils import log, misc, programs, xtal, xdsio
 
-_logger = log.get_module_logger(__name__)
+logger = log.get_module_logger(__name__)
 
 
 def harvest_integrate():
@@ -41,9 +41,13 @@ def integrate(data_info, options=None):
     if options.get('optimize', False) and os.path.exists('GXPARM.XDS'):
         misc.backup_files('XPARM.XDS')
         shutil.copy('GXPARM.XDS', 'XPARM.XDS')
-        step_descr = 'Optimizing {:d} frames of `{}`'.format(num_frames, data_info['name'])
+        step_descr = 'Optimizing {:d} frames of dataset {}'.format(
+            num_frames, log.TermColor.italics(data_info['name'])
+        )
     else:
-        step_descr = 'Integrating {:d} frames of `{}`'.format(num_frames, data_info['name'])
+        step_descr = 'Integrating {:d} frames of dataset {}'.format(
+            num_frames, log.TermColor.italics(data_info['name'])
+        )
 
     # check if we are screening
     screening = options.get('mode') == 'screen'
@@ -59,7 +63,6 @@ def integrate(data_info, options=None):
     except autoprocess.errors.ProcessError as e:
         return {'step': 'integration', 'success': False, 'reason': str(e)}
     except:
-        raise
         return {'step': 'integration', 'success': False, 'reason': "Could not parse integrate output file"}
     else:
         pass
@@ -83,7 +86,7 @@ def harvest_correct():
         stat_info = xds.parse_xdsstat()
         info.update(stat_info)
         ISa = info['correction_factors']['parameters'].get('ISa', -1)
-        _logger.info('I/Sigma(I) Asymptote [ISa]: %0.1f' % (ISa))
+        logger.info('I/Sigma(I) Asymptote [ISa]: %0.1f' % (ISa))
 
     if info.get('failure') is None:
         info['output_file'] = 'XDS_ASCII.HKL'
@@ -99,7 +102,11 @@ def correct(data_info, options=None):
     options = options or {}
     os.chdir(data_info['working_directory'])
     message = options.get('message', "Applying corrections to")
-    step_descr = '{} `{}` in `{}` ... '.format(message, data_info['name'], xtal.SG_SYMBOLS[data_info['space_group']])
+    step_descr = '{} dataset {} for space-group {}'.format(
+        message,
+        log.TermColor.italics(data_info['name']),
+        xtal.SG_SYMBOLS[data_info['space_group']]
+    )
     run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
 

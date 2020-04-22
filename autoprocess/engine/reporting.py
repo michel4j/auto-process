@@ -458,7 +458,7 @@ def frame_statistics_report(dataset, options):
                 'data': {
                     'x': ['Frame Number'] + [row['frame'] for row in results['integration']['scale_factors']],
                     'y1': [
-                        ['Reflections'] + [row['reflections'] for row in results['integration']['scale_factors']]
+                        ['Reflections'] + [row['ewald'] for row in results['integration']['scale_factors']]
                     ],
                     'y2': [
                         ['Unique'] + [row['unique'] for row in results['correction']['frame_statistics']]
@@ -491,7 +491,7 @@ def frame_statistics_report(dataset, options):
 
 def wilson_report(dataset, options):
     results = dataset['results']
-    analysis = results['correction'] if not 'scaling' in results else results['scaling']
+    analysis = results['correction']
     if results.get('data_quality') and results['data_quality'].get('intensity_plots'):
         plot = {
             'kind': 'lineplot',
@@ -922,8 +922,8 @@ def text_report(report):
                     output.append(table.get_string())
                 elif content.get('kind') in ['lineplot', 'scatterplot']:
                     plot_type = {'lineplot': 'linespoints', 'scatterplot': 'points'}[content['kind']]
-                    output.append(
-                        gnuplot.plot(content['data'], plot_type=plot_type, style=content.get('style', 'full-height')))
+                    plot_text = gnuplot.plot(content['data'], plot_type=plot_type, style=content.get('style', 'full-height'))
+                    output.append(plot_text.decode('utf8'))
                 if 'notes' in content:
                     output.append(heading('NOTES', 4))
                     output.append(content['notes'] + '\n')
@@ -931,4 +931,4 @@ def text_report(report):
             output.append(heading('NOTES', 3))
             output.append(section['notes'] + '\n')
 
-    return '\n'.join(output).encode('utf-8')
+    return '\n'.join(output)

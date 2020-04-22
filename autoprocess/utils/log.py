@@ -87,9 +87,9 @@ def log_to_console(level=LOG_LEVEL):
     console = ColoredConsoleHandler()
     console.setLevel(level)
     if DEBUGGING:
-        formatter = logging.Formatter('%(asctime)s [%(name)s] %(message)s', '%b/%d %H:%M:%S')
+        formatter = logging.Formatter('%(message)s', '%b/%d %H:%M:%S')
     else:
-        formatter = logging.Formatter('%(asctime)s - %(message)s', '%b/%d %H:%M:%S')
+        formatter = logging.Formatter('%(message)s', '%b/%d %H:%M:%S')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 

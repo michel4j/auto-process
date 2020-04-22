@@ -3,21 +3,21 @@ import gzip
 import math
 import os
 
-import msgpack
+import json
 import numpy
 
 from autoprocess.utils.misc import Table
 
 DEBUG = False
-XTAL_TABLE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'xtal_tables.dat')
+XTAL_TABLE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'xtal_tables.jsonz')
 with gzip.open(XTAL_TABLE_FILE, 'rb') as handle:
-    XTAL_TABLES = msgpack.load(handle)
+    XTAL_TABLES = json.load(handle)
 
-SG_SYMBOLS = {k: v['name'] for k, v in list(XTAL_TABLES.items())}
-SG_NAMES = {k: v['symbol'] for k, v in list(XTAL_TABLES.items())}
-SG_NUMBERS = {v['name']: k for k, v in list(XTAL_TABLES.items())}
-CHIRAL_SPACE_GROUPS = [k for k, v in list(XTAL_TABLES.items()) if v['chiral']]
-CENTRO_SYMETRIC = {k: '-X,-Y,-Z' in v['symmetry'] for k, v in list(XTAL_TABLES.items())}
+SG_SYMBOLS = {int(k): v['name'] for k, v in list(XTAL_TABLES.items())}
+SG_NAMES = {int(k): v['symbol'] for k, v in list(XTAL_TABLES.items())}
+SG_NUMBERS = {v['name']: int(k) for k, v in list(XTAL_TABLES.items())}
+CHIRAL_SPACE_GROUPS = [int(k) for k, v in list(XTAL_TABLES.items()) if v['chiral']]
+CENTRO_SYMETRIC = {int(k): '-X,-Y,-Z' in v['symmetry'] for k, v in list(XTAL_TABLES.items())}
 
 # each rule is a list of 9 boolean values representing
 # a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120
@@ -45,7 +45,7 @@ def resolution_shells(resolution, num=12):
 
 
 def get_character(sg_number=1):
-    return XTAL_TABLES[sg_number]['lattice_character']
+    return XTAL_TABLES[str(sg_number)]['lattice_character']
 
 
 def get_number(sg_name):

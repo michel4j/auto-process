@@ -43,16 +43,7 @@ def parse_pointless(filename="pointless.xml"):
         sg_candidates.append(el)
         sg_dict[sg_name] = sg_number
 
-    # sort the candidates based first on probability and then on symmetry
-    def _cmp(x, y):
-        if x['probability'] != y['probability']:
-            return cmp(y['probability'], x['probability'])
-        elif x['sys_abs_prob'] != y['sys_abs_prob']:
-            return cmp(y['sys_abs_prob'], x['sys_abs_prob'])
-        else:
-            return cmp(x['number'], y['number'])
-
-    sg_candidates.sort(_cmp)
+    sg_candidates.sort(key=lambda el: (el['probability'], el['sys_abs_prob'], el['number']))
     best_candidate = sg_candidates[0]
 
     # summary for the best solution
@@ -68,10 +59,10 @@ def parse_pointless(filename="pointless.xml"):
         }
     else:
         name = summary_el.getElementsByTagName('GroupName')[0].firstChild.nodeValue
-        rdx_list = (sg_el.getElementsByTagName('ReindexMatrix')[0].firstChild.nodeValue).split()
+        rdx_list = (summary_el.getElementsByTagName('ReindexMatrix')[0].firstChild.nodeValue).split()
         rt = [int(rdx_list[i]) for i in range(len(rdx_list))]
         rdx_matrix = (rt[0], rt[3], rt[6], 0, rt[1], rt[4], rt[7], 0, rt[2], rt[5], rt[8], 0)
-        # rdx_matrix = ( rt[1], rt[4], rt[7], 0, rt[0], rt[3], rt[6], 0, -rt[2], -rt[5], -rt[8], 0)
+
         summary = {
             'type': 'space group',
             'sg_name': name,

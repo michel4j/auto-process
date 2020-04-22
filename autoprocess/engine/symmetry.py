@@ -1,7 +1,7 @@
 import os
 
 import autoprocess.errors
-from autoprocess.parser import pointless
+from autoprocess.parsers import pointless
 from autoprocess.utils import log, misc, programs, xtal
 
 _logger = log.get_module_logger(__name__)
@@ -13,16 +13,14 @@ def get_symmetry_params(spacegroup, dset):
     sg_info['character'] = xtal.get_character(spacegroup)
     sg_info['sg_number'] = spacegroup
 
-    lat_compatible = False
     for lat in dset.results['correction']['symmetry']['lattices']:
         _, lat_type = lat['id']
         if sg_info['character'] == lat_type:
-            lat_compatible = (lat['star'] == '*')
             sg_info['reindex_matrix'] = lat['reindex_matrix']
             sg_info['unit_cell'] = xtal.tidy_cell(lat['unit_cell'], sg_info['character'])
             break
 
-    if not lat_compatible:
+    if not dset.results['correction']['symmetry']['lattices']:
         _logger.warning('Space group `%s` has a poor fit to the lattice' % xtal.SG_SYMBOLS[spacegroup])
     return sg_info
 

@@ -216,7 +216,7 @@ def screening_summary_table(dataset, options):
                 "{:0.2f} {:0.2f} {:0.2f} {:0.4g} {:0.4g} {:0.4g}".format(*results['correction']['summary']['unit_cell'])
             ],
             ['Mosaicity', '{:0.2f}'.format(results['correction']['summary']['mosaicity'])],
-            ['ISa', results['correction']['correction_factors']['parameters'][0].get('ISa', -1)],
+            ['ISa', results['correction']['correction_factors']['parameters'].get('ISa', -1)],
             ['Expected Quality³', ''],
             ['Resolution (Å)⁴', '{:0.1f} '.format(results['strategy']['resolution'])],
             ['Multiplicity', '{:0.1f}'.format(results['strategy']['redundancy'])],
@@ -267,7 +267,6 @@ def lattice_table(dataset, options):
                         '{:0.1f}'.format(xtal.cell_volume(lattice['unit_cell']))
                     ] for lattice in
                     sorted(results['correction']['symmetry']['lattices'], key=lambda d: d['id'][0])
-                    if lattice['star'] == '*'
                 ],
         'header': 'row',
         'notes': (

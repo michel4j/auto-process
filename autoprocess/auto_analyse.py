@@ -5,7 +5,7 @@ import warnings
 
 warnings.simplefilter("ignore")  # ignore deprecation warnings
 
-from autoprocess.parser.distl import parse_distl_string
+from autoprocess.parsers.distl import parse_distl_string
 from autoprocess.utils.misc import json
 
 

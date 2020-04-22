@@ -36,7 +36,7 @@ setup(
         'bin/auto.powder',
         'bin/auto.scale',
         'bin/auto.strategy',
-        'bin/auto.server'
+        'bin/auto.tac'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

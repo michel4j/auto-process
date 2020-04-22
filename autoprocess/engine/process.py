@@ -7,11 +7,12 @@ import time
 from collections import OrderedDict
 
 import msgpack
+import msgpack_numpy
 
 import autoprocess.errors
 from autoprocess.engine import indexing, spots, integration, scaling, solver, reporting
 from autoprocess.engine import symmetry, strategy, conversion
-from autoprocess.utils import dataset, misc, log, xtal, msgpack_numpy
+from autoprocess.utils import dataset, misc, log, xtal
 
 logger = log.get_module_logger(__name__)
 
@@ -135,7 +136,7 @@ class Manager(object):
         if checkpoint is not None:
             self.run_position = checkpoint['run_position']
             self.options = checkpoint['options']
-            self.options['command_dir'] = os.getcwd()
+            self.options['command_dir'] = os.path.abspath(os.getcwd())
 
             for dset_info in checkpoint['datasets']:
                 dset = DataSet(info=dset_info, overwrites=overwrites)
@@ -144,7 +145,7 @@ class Manager(object):
         elif options is not None:
             self.run_position = (0, 'initialize')
             self.options = options
-            self.options['command_dir'] = os.getcwd()
+            self.options['command_dir'] = os.path.abspath(os.getcwd())
 
             for img in options.get('images', []):
                 dset = DataSet(filename=img, overwrites=overwrites)
@@ -215,7 +216,8 @@ class Manager(object):
         # Checkpoint file is saved in top-level processing directory
         fname = os.path.join(self.options['directory'], 'process.chkpt')
         with gzip.open(fname, 'wb') as handle:
-            msgpack.dump(info, handle, default=msgpack_numpy.encode)
+            msgpack.dump(info, handle, default=str) #msgpack_numpy.encode
+
         return info
 
     def run_step(self, step, dset, overwrite=None, optional=False, colonize=False):
@@ -281,10 +283,9 @@ class Manager(object):
         logger.debug('Computer system: %d nodes' % (_num_nodes))
         logger.debug('Computer nodes: "%s"' % _env_hosts)
 
-        run_steps = ['initialize', 'spot_search',
-                     'indexing', 'integration', 'correction', 'symmetry',
-                     'strategy',
-                     ]
+        run_steps = [
+            'initialize', 'spot_search', 'indexing', 'integration', 'correction', 'symmetry', 'strategy',
+        ]
 
         if resume_from is not None:
             cur_pos, next_step = resume_from
@@ -301,8 +302,8 @@ class Manager(object):
                     continue
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
                 logger.info(_separator)
-                logger.info('Initializing `{}` in directory "{}"'.format(
-                    dset.name, os.path.relpath(dset.parameters['working_directory'], self.options['command_dir']))
+                logger.info('Working directory for `{}`: "{}"'.format(
+                    dset.name, dset.parameters['working_directory'])
                 )
                 for j, step in enumerate(_sub_steps):
                     self.run_position = (i, step)
@@ -360,7 +361,7 @@ class Manager(object):
 
                     self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
                     if step == 'correction':
-                        ISa = dset.results['correction']['correction_factors']['parameters'][0].get('ISa', -1)
+                        ISa = dset.results['correction']['correction_factors']['parameters'].get('ISa', -1)
                         logger.info('({}) I/Sigma(I) Asymptote [ISa]: {}'.format(dset.name, log.TermColor.bold(
                             '{:0.1f}'.format(ISa))))
                         dset.results['integration']['statistics'] = copy.deepcopy(dset.results['correction'])
@@ -407,14 +408,17 @@ class Manager(object):
                     'message': 'Reindexing & refining',
                 })
                 self.run_step('correction', dset, overwrite=step_ovw, colonize=colonize)
-                cell_str = "%0.6g %0.6g %0.6g %0.6g %0.6g %0.6g" % tuple(
-                    dset.results['correction']['summary']['unit_cell'])
-                logger.info('Refined cell: %s' % cell_str)
+                cell_str = log.TermColor.bold(
+                    "{:0.6g} {:0.6g} {:0.6g} {:0.6g} {:0.6g} {:0.6g}".format(
+                        *dset.results['correction']['summary']['unit_cell']
+                    )
+                )
+                logger.info('Refined cell: {}'.format(cell_str))
 
                 if self.options.get('mode') in ['merge']:
                     _score = dset.score()
 
-                    logger.info('(%s) Initial Score: %0.2f' % (dset.name, _score))
+                    logger.info('({}) Initial Score: {:0.2f}'.format(dset.name, _score))
 
             self.save_checkpoint()
             next_step = 'strategy' if self.options.get('mode') == 'screen' else 'scaling'

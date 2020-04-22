@@ -1,7 +1,7 @@
 import os
 
 import autoprocess.errors
-from autoprocess.parser import distl
+from autoprocess.parsers import distl
 from autoprocess.utils import log, misc, programs, xdsio
 
 _logger = log.get_module_logger(__name__)
@@ -23,7 +23,7 @@ def initialize(data_info, options=None):
 
     xdsio.write_xds_input('XYCORR INIT', run_info)
     try:
-        programs.xds_par()
+        programs.xds_par('Initializing')
     except autoprocess.errors.ProcessError as e:
         return {'step': 'initialize', 'success': False, 'reason': str(e)}
 
@@ -56,14 +56,13 @@ def harvest_spots():
 def find_spots(data_info, options=None):
     options = options or {}
     os.chdir(data_info['working_directory'])
-    _logger.info('Searching for strong spots ...')
 
     run_info = {'mode': options.get('mode')}
     run_info.update(data_info)
 
     xdsio.write_xds_input('COLSPOT', run_info)
     try:
-        programs.xds_par()
+        programs.xds_par('Searching for strong spots')
     except autoprocess.errors.ProcessError as e:
         return {'step': 'spot_search', 'success': False, 'reason': str(e)}
 

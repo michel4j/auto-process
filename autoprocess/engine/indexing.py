@@ -3,7 +3,7 @@ import os
 import numpy
 
 import autoprocess.errors
-from autoprocess.parser import xds
+from autoprocess.parsers import xds
 from autoprocess.utils import log, misc, programs, xdsio
 from autoprocess.utils.choices import Choices
 from autoprocess.utils.misc import Table
@@ -138,17 +138,16 @@ def harvest_index():
 def auto_index(data_info, options=None):
     options = options or {}
     os.chdir(data_info['working_directory'])
-    _logger.info('Determining lattice orientation and parameters ...')
+    step_descr = 'Determining lattice orientation and parameters'
     jobs = 'IDXREF'
     run_info = {'mode': options.get('mode')}
-    info = {}
     run_info.update(data_info)
     if not misc.file_requirements('XDS.INP', 'SPOT.XDS'):
         return {'step': 'indexing', 'success': False, 'reason': "Required files not found"}
     try:
 
         xdsio.write_xds_input(jobs, run_info)
-        programs.xds_par()
+        programs.xds_par(step_descr)
         info = xds.parse_idxref()
         diagnosis = diagnose_index(info)
 
@@ -171,20 +170,19 @@ def auto_index(data_info, options=None):
 
             if diagnosis['problems'] & {PROBLEMS.index_origin}:
                 if not _all_images:
-                    _logger.info('-> Expanding Spot Range ...')
+                    step_descr = '-> Expanding Spot Range'
                     run_info['spot_range'] = [run_info['data_range']]
                 else:
-                    _logger.info('-> Adjusting detector origin ...')
+                    step_descr = '-> Adjusting detector origin'
                     run_info['beam_center'] = diagnosis['options'].get('beam_center', run_info['beam_center'])
                 xdsio.write_xds_input('COLSPOT IDXREF', run_info)
-                programs.xds_par()
+                programs.xds_par(step_descr)
                 info = xds.parse_idxref()
                 diagnosis = diagnose_index(info)
             elif (diagnosis['problems'] & {PROBLEMS.few_spots, PROBLEMS.dimension_2d}) and not _all_images:
-                _logger.info('-> Expanding spot range ...')
                 run_info.update(spot_range=[run_info['data_range']])
                 xdsio.write_xds_input('IDXREF', run_info)
-                programs.xds_par()
+                programs.xds_par('-> Expanding Spot Range')
                 info = xds.parse_idxref()
                 diagnosis = diagnose_index(info)
             elif (diagnosis['problems'] & {PROBLEMS.poor_solution, PROBLEMS.spot_accuracy,
@@ -195,28 +193,25 @@ def auto_index(data_info, options=None):
                 if not _all_images:
                     new_params['spot_range'] = [run_info['data_range']]
                 run_info.update(new_params)
-                _logger.info('-> Adjusting spot size and refinement parameters ...')
                 xdsio.write_xds_input('COLSPOT IDXREF', run_info)
-                programs.xds_par()
+                programs.xds_par('-> Adjusting spot size and refinement parameters')
                 info = xds.parse_idxref()
                 diagnosis = diagnose_index(info)
                 _spot_adjusted = spot_size > 12
             elif (diagnosis['problems'] & {PROBLEMS.unindexed_spots}) and not _weak_removed:
                 sigma += 3
-                _logger.info('.. Removing weak spots (Sigma < %2.0f)...' % sigma)
                 _filter_spots(sigma=sigma)
                 run_info.update(sigma=sigma)
                 xdsio.write_xds_input('IDXREF', run_info)
-                programs.xds_par()
+                programs.xds_par('-> Removing weak spots (Sigma < {:2.0f})'.format(sigma))
                 info = xds.parse_idxref()
                 diagnosis = diagnose_index(info)
                 _weak_removed = sigma >= 12
             elif (diagnosis['problems'] & {PROBLEMS.unindexed_spots,
                                            PROBLEMS.multiple_subtrees}) and not _aliens_removed:
-                _logger.info('-> Removing all alien spots ...')
                 _filter_spots(unindexed=True)
                 xdsio.write_xds_input(jobs, run_info)
-                programs.xds_par()
+                programs.xds_par('-> Removing all alien spots')
                 info = xds.parse_idxref()
                 diagnosis = diagnose_index(info)
                 _aliens_removed = True

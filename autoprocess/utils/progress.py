@@ -259,7 +259,7 @@ class FileProgressDisplay(threading.Thread):
         self.length = 65
         self._cursor = False
         self._stopped = False
-        self.chars = [c.encode("utf-8") for c in str(self.spinner, "utf-8")]
+        self.chars = self.spinner
         self.descr = descr
         self.stream = stream
         self.filename = fname

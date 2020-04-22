@@ -5,7 +5,7 @@ from XO import XOconv, XOalign
 from XO.ThreeAxisRotation2 import ThreeAxisRotation2
 from XO.pycgtypes import vec3
 
-from autoprocess.parser import xds
+from autoprocess.parsers import xds
 
 r2d = 180 / math.pi
 radian2degree = lambda a: a * r2d

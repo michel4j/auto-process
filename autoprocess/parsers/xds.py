@@ -9,7 +9,7 @@ import shutil
 import numpy
 
 from autoprocess.utils import misc, xtal
-from . import utils
+from . import parser
 
 (NO_FAILURE,
  SPOT_LIST_NOT_3D,
@@ -20,7 +20,7 @@ from . import utils
  INDEX_ERROR,
  PROGRAM_ERROR) = list(range(8))
 
-_IDXREF_FAILURES = {
+IDXREF_FAILURES = {
     0: None,
     1: 'Dimension of clusters not 3D',
     2: 'Percentage of indexed spots too low',
@@ -33,17 +33,20 @@ _IDXREF_FAILURES = {
 
 
 def parse_idxref(filename='IDXREF.LP'):
-    info = utils.parse_file(filename, config='idxref.ini')
-    if info['failure_message'] is None:
+    info = parser.parse(filename, 'idxref')
+
+    dimension_failures = [
+        'CANNOT CONTINUE WITH A TWO-DIMENSIONAL',
+        'DIMENSION OF DIFFERENCE VECTOR SET LESS THAN 3.',
+        'DIMENSION OF DIFFERENCE VECTOR SET LESS THAN 2.',
+    ]
+    if info.get('failure_message') is None:
         if os.path.getsize(filename) < 15000:
             info['failure_code'] = 7
         else:
             info['failure_code'] = 0
 
-    elif info['failure_message'] in ['CANNOT CONTINUE WITH A TWO-DIMENSIONAL',
-                                     'DIMENSION OF DIFFERENCE VECTOR SET LESS THAN 3.',
-                                     'DIMENSION OF DIFFERENCE VECTOR SET LESS THAN 2.',
-                                     ]:
+    elif info['failure_message'] in dimension_failures:
         info['failure_code'] = 1
     elif re.match("^INSUFFICIENT PERCENTAGE .+ OF INDEXED REFLECTIONS", info['failure_message']):
         info['failure_code'] = 2
@@ -60,22 +63,20 @@ def parse_idxref(filename='IDXREF.LP'):
 
     if misc.file_requirements(filename, 'XPARM.XDS'):
         info['parameters'] = parse_xparm('XPARM.XDS')
-    info['failure'] = _IDXREF_FAILURES[info['failure_code']]
+    info['failure'] = IDXREF_FAILURES[info['failure_code']]
     return info
 
 
 def parse_correct(filename='CORRECT.LP'):
+
     if not os.path.exists(filename):
         return {'failure': 'Correction step failed'}
 
-    info = utils.parse_file(filename, config='correct.ini')
-
-    if info.get('statistics') is not None:
-        if len(info['statistics']) > 1:
-            info['summary'].update(info['statistics'][-1])
-            info['summary']['inner_shell'] = info['statistics'][0]
-            info['summary']['outer_shell'] = info['statistics'][-2]
-            del info['summary']['shell']
+    info = parser.parse(filename, 'correct')
+    info['summary'].update(info.pop('statistics_summary',{}))
+    if len(info['statistics']) > 1:
+        info['summary']['inner_shell'] = info['statistics'][0]
+        info['summary']['outer_shell'] = info['statistics'][-1]
 
     if info['summary']['spacegroup'] == 1 and filename != 'CORRECT.LP.first':
         shutil.copy(filename, 'CORRECT.LP.first')
@@ -83,22 +84,22 @@ def parse_correct(filename='CORRECT.LP'):
     for stats in info['standard_errors'][:-1]:
         if stats['i_sigma'] < 0.5:
             info['summary']['stderr_method'] = 'Resolution limit is based on I/Sigma(I) > 0.5'
-            info['summary']['stderr_resolution'] = float(stats['resol_range'][-1])
+            info['summary']['stderr_resolution'] = stats['resol_range'][-1]
             break
         else:
             info['summary']['stderr_method'] = 'Resolution limit is based on detector edge'
-            info['summary']['stderr_resolution'] = float(stats['resol_range'][-1])
+            info['summary']['stderr_resolution'] = stats['resol_range'][-1]
 
     # parse GXPARM.XDS and update with more accurate cell parameters
     xparm = parse_xparm('GXPARM.XDS')
     info['parameters'] = xparm
     info['summary']['unit_cell'] = xparm['unit_cell']
-    info['summary']['ISa'] = info['correction_factors']['parameters'][0].get('ISa', -1)
+    info['summary']['ISa'] = info['correction_factors']['parameters'].get('ISa', -1)
     return info
 
 
 def parse_xplan(filename='XPLAN.LP'):
-    raw_info = utils.parse_file(filename, config='xplan.ini')
+    raw_info = parser.parse(filename, 'xplan')
     index_info = parse_idxref()
     correct_info = parse_correct('CORRECT.LP.first')
 
@@ -186,108 +187,77 @@ def parse_xplan(filename='XPLAN.LP'):
 
 
 def parse_xdsstat(filename='XDSSTAT.LP'):
-    return utils.parse_file(filename, config='xdsstat.ini')
+    """
+    Harvest XDSSTAT
+    """
+    return parser.parse(filename, 'xdsstat')
 
 
 def parse_xparm(filename="XPARM.XDS"):
-    info = utils.parse_file(filename, config='xparm.ini')
+    """
+    Harvest XPARMs
+    """
+    info = parser.parse(filename, 'xparm')
     return info['parameters']
 
 
 def parse_xscale(filename='XSCALE.LP'):
+    """
+    Harvest data from XSCALE
+    """
     if not os.path.exists(filename):
         return {'failure': 'Scaling step failed'}
 
     with open(filename, 'r') as handle:
         data = handle.read()
+
     # extract separate sections corresponding to different datasets
+    header = re.compile(r'(CONTROL CARDS.+?CORRECTION FACTORS AS FUNCTION)', re.DOTALL)
+    section = re.compile(
+        r'(STATISTICS OF SCALED OUTPUT DATA SET : (?:\d+-)?([\w_]+)/?[\w]*?.HKL'
+        r'.+?HIGHER ORDER MOMENTS OF WILSON DISTRIBUTION)',
+        re.DOTALL
+    )
 
-    _header = utils.cut_section("CONTROL CARDS", "CORRECTION FACTORS AS FUNCTION", data)[0]
-    _st_p = re.compile(
-        '(STATISTICS OF SCALED OUTPUT DATA SET : ([\w-]*)/?[\w]+.HKL.+?STATISTICS OF INPUT DATA SET [=\s]*)', re.DOTALL)
-    _wl_p = re.compile(
-        '(WILSON STATISTICS OF SCALED DATA SET: ([\w-]*)/?[\w]+.HKL\s+[*]{78}.+?(?:List of|\s+[*]{78}|cpu time))',
-        re.DOTALL)
-
+    header_text = "\n".join(header.findall(data))
     data_sections = {}
-    for d, k in _st_p.findall(data):
-        data_sections[k] = _header + d
-    for d, k in _wl_p.findall(data):
-        data_sections[k] += d
+    for d, k in section.findall(data):
+        data_sections[k] = header_text + "\n" + d
     info = {}
     for k, d in list(data_sections.items()):
-        info[k] = utils.parse_data(d, config='xscale.ini')
-        if info[k].get('statistics') is not None:
-            if len(info[k]['statistics']) > 1:
-                info[k]['summary'] = {}
-                info[k]['summary'].update(info[k]['statistics'][-1])
-                info[k]['summary']['inner_shell'] = info[k]['statistics'][0]
-                info[k]['summary']['outer_shell'] = info[k]['statistics'][-2]
-                del info[k]['summary']['shell']
+        info[k] = parser.parse_text(d, 'xscale')
+        if len(info[k]['statistics']) > 1:
+            info[k]['summary']['inner_shell'] = info[k]['statistics'][0]
+            info[k]['summary']['outer_shell'] = info[k]['statistics'][-1]
     return info
 
 
 def parse_correlations(filename='XSCALE.LP'):
+    """
+    Harvest correlation data from XSCALE
+    """
     if not os.path.exists(filename):
-        return {'failure': 'File not found'}
+        return {'failure': 'Scaling step failed'}
 
     with open(filename, 'r') as handle:
         data = handle.read()
 
     # extract separate sections corresponding to different datasets
+    header = re.compile(r'(CONTROL CARDS.+?CORRECTION FACTORS AS FUNCTION)', re.DOTALL)
 
-    _header = utils.cut_section("CONTROL CARDS", "CORRECTION FACTORS AS FUNCTION", data)[0]
-    return utils.parse_data(_header, config='xscale.ini')
+    header_text = "\n".join(header.findall(data))
+    return parser.parse_text(header, 'xscale')
 
 
 def parse_integrate(filename='INTEGRATE.LP'):
+    """
+    Harvest data from INTEGRATE
+    """
     if not os.path.exists(filename):
         return {'failure': 'Integration step failed'}
-    info = utils.parse_file(filename, config='integrate.ini')
-    if info.get('profiles') is not None:
-        profiles = []
-        for i in range(9):
-            profile = {}
-            if i == 0:
-                x_max = info['profiles']['detector_regions'][0]['positions'][i] * 2
-                y_max = info['profiles']['detector_regions'][1]['positions'][i] * 2
-            profile['x'] = 9 * info['profiles']['detector_regions'][0]['positions'][i] / x_max
-            profile['y'] = 9 * info['profiles']['detector_regions'][1]['positions'][i] / y_max
-            profile['spots'] = []
-            for j in range(9):
-                spot = tuple()
-                idx = j + (i * 9)
-                x = idx % 3
-                y = idx // 3
-                sx, ex = x * 9, (x + 1) * 9
-                sy, ey = y * 9, (y + 1) * 9
-                for v in info['profiles']['averages'][sy:ey]:
-                    spot += v['pixels'][sx:ex]
-                profile['spots'].append(spot)
-            profiles.append(profile)
-        info['profiles'] = profiles
+    info = parser.parse(filename, 'integrate')
+
+    for batch, frames in zip(info.get('batches',[]), info.pop('batch_frames', [])):
+        batch.update(frames)
     return info
 
-
-def get_profile(raw_data):
-    def _str2arr(s):
-        l = [int(v) for v in re.findall('.{3}', s)]
-        a = numpy.array(l).reshape((9, 9))
-        return a
-
-    data = []
-
-    for line in raw_data:
-        if len(line) > 2:
-            l = line[3:-1]
-            data.append(l)
-
-    slice_str = [''] * 9
-
-    for i in range(27):
-        section = data[i].split('   ')
-        sl = i // 9 * 3
-        for j in range(3):
-            slice_str[sl + j] += section[j]
-
-    return numpy.array(list(map(_str2arr, slice_str)))

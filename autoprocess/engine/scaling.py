@@ -1,12 +1,13 @@
 import copy
 import os
 import time
+import cluster
 from itertools import chain
 
 import autoprocess.errors
 from autoprocess.engine import symmetry
-from autoprocess.parser import xds, pointless, phenix
-from autoprocess.utils import log, misc, programs, xdsio, xtal, cluster
+from autoprocess.parsers import xds, pointless, phenix
+from autoprocess.utils import log, misc, programs, xdsio, xtal
 
 _logger = log.get_module_logger(__name__)
 
@@ -40,14 +41,13 @@ def scale_datasets(dsets, options=None, message="Scaling"):
 
     mode = options.get('mode', 'simple')
     if mode == 'mad':
-        _logger.info("Scaling %d MAD datasets in `%s` %s ... " % (len(dsets), sg_name, suffix_txt))
-
+        step_descr = ("Scaling {:d} MAD datasets in `{}` {} ... ".format(len(dsets), sg_name, suffix_txt))
         sections = []
         for dset in list(dsets.values()):
             dres = dset.results
             resol = options.get('resolution', dres['correction']['summary']['resolution'][0])
             in_file = dres['correction']['output_file']
-            out_file = os.path.join(dset.name, "XSCALE.HKL")
+            out_file = os.path.join(os.path.dirname(in_file), "XSCALE.HKL")
             sections.append(
                 {'anomalous': options.get('anomalous', False),
                  'strict_absorption': _check_chisq(dres['correction']),
@@ -61,9 +61,9 @@ def scale_datasets(dsets, options=None, message="Scaling"):
             dset.results['scaling'] = {'output_file': out_file}
     else:
         if options.get('mode') == 'merge':
-            _logger.info("Merging %d datasets in `%s` %s ... " % (len(dsets), sg_name, suffix_txt))
+            step_descr = ("Merging {:d} datasets in `{}` {}".format(len(dsets), sg_name, suffix_txt))
         else:
-            _logger.info("Scaling `%s` in `%s` %s ... " % (dset.name, sg_name, suffix_txt))
+            step_descr = ("Scaling `{}` in `{}` {}".format(dset.name, sg_name, suffix_txt))
         inputs = []
         resols = []
         for dset in list(dsets.values()):
@@ -87,7 +87,7 @@ def scale_datasets(dsets, options=None, message="Scaling"):
 
     xdsio.write_xscale_input(xscale_options)
     try:
-        programs.xscale_par()
+        programs.xscale_par(step_descr)
         raw_info = xds.parse_xscale('XSCALE.LP')
     except autoprocess.errors.ProcessError as e:
         for dset in list(dsets.values()):

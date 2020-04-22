@@ -5,20 +5,19 @@ import logging
 import os
 import pwd
 import subprocess
-import sys
 
-from twisted.application import service
+from twisted.application import service, internet
 from twisted.internet import protocol, reactor, defer
 from twisted.python import log as twistedlog
 from twisted.python.failure import Failure
 from twisted.spread import pb
-from zope.interface import implements, Interface
+from twisted.python import components
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from zope.interface import implementer, Interface
 
 from autoprocess.utils import log
 from autoprocess.utils.which import which
-from autoprocess.parser.distl import parse_distl_string
+from autoprocess.parsers.distl import parse_distl_string
 
 logger = log.get_module_logger(__name__)
 
@@ -198,8 +197,8 @@ class IDPSPerspective(Interface):
         """analyse_xrd adaptor"""
 
 
+@implementer(IDPSPerspective)
 class DPSPerspective2Service(pb.Root):
-    implements(IDPSPerspective)
 
     def __init__(self, service):
         self.service = service
@@ -222,8 +221,8 @@ def _distl_output(text):
     return out['summary']
 
 
+@implementer(IDPService)
 class DPService(service.Service):
-    implements(IDPService)
 
     @log.log_call
     def analyse_frame(self, frame_path, user_name, rastering=False):
@@ -262,3 +261,14 @@ class DPService(service.Service):
         args += info['file_names']
         return async_command('auto.powder', args, directory, user_name=user_name, json_file='report.json')
 
+
+components.registerAdapter(DPSPerspective2Service, IDPService, IDPSPerspective)
+
+
+def get_service():
+    """
+    Return a service suitable for creating an application object.
+    """
+    log_to_twisted()
+    dps_server = DPService()
+    return internet.TCPServer(9991, pb.PBServerFactory(IDPSPerspective(dps_server)))

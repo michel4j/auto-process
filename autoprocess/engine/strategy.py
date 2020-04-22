@@ -2,7 +2,7 @@ import os
 import shutil
 
 import autoprocess.errors
-from autoprocess.parser import best, xds
+from autoprocess.parsers import best, xds
 from autoprocess.utils import log, misc, programs, xdsio
 
 _logger = log.get_module_logger(__name__)

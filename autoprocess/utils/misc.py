@@ -8,8 +8,8 @@ import shutil
 
 import msgpack
 import numpy
+import msgpack_numpy
 
-from autoprocess.utils import msgpack_numpy
 from .prettytable import PrettyTable
 
 # Physical Constants

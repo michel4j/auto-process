@@ -3,7 +3,7 @@ import re
 
 from . import utils
 
-_vers_m = re.search('.+/phenix-([\d.-]+)', os.environ.get('PHENIX', None))
+_vers_m = re.search(r'.+/phenix-([\d.-]+)', os.environ.get('PHENIX', ''))
 if _vers_m:
     PHENIX_VERSION = "-%s" % _vers_m.group(1)
 else:

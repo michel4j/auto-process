@@ -5,7 +5,7 @@ import logging
 import os
 import pwd
 import subprocess
-
+from distutils.spawn import find_executable
 from twisted.application import service, internet
 from twisted.internet import protocol, reactor, defer
 from twisted.python import log as twistedlog
@@ -16,7 +16,6 @@ from twisted.python import components
 from zope.interface import implementer, Interface
 
 from autoprocess.utils import log
-from autoprocess.utils.which import which
 from autoprocess.parsers.distl import parse_distl_string
 
 logger = log.get_module_logger(__name__)
@@ -140,7 +139,7 @@ def async_command(command, args, directory='/tmp', user_name='root', json_file=N
 
     prot = CommandProtocol(command, directory, json_file=json_file, json_out=json_output, parser=parser)
     prot.deferred = defer.Deferred()
-    args = [which(command)] + args
+    args = [find_executable(command)] + args
     reactor.spawnProcess(prot, args[0], args, env=os.environ, path=directory, uid=uid, gid=gid, usePTY=True)
     return prot.deferred
 

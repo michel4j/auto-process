@@ -1,3 +1,4 @@
+
 import collections
 import gzip
 import re
@@ -36,10 +37,10 @@ REQUIRED_FIELDS = [
 def defaulted_namedtuple(typename, fields, defaults=None):
     """
     Create a namedtuple class with default values
-    @param typename: Type name
-    @param field_names: field names
-    @param default_values: a dictionary of values to use as defaults otherwise None will be the default
-    @return:
+    :param typename: Type name
+    :param field_names: field names
+    :param default_values: a dictionary of values to use as defaults otherwise None will be the default
+    :return:
     """
     Type = collections.namedtuple(typename, fields)
     Type.__new__.__defaults__ = (None,) * len(Type._fields)
@@ -59,8 +60,8 @@ class OffsetTZ(tzinfo):
     def __init__(self, name, **kwargs):
         """
         Create a Fixed offset timezone object
-        @param name: Name of timezone
-        @param kwargs: accepts the same keyworded arguments as datetime.timedelta
+        :param name: Name of timezone
+        :param kwargs: accepts the same keyworded arguments as datetime.timedelta
         """
         self.__offset = timedelta(**kwargs)
         self.__name = name
@@ -179,9 +180,9 @@ def memoize(f):
 def find_spec(namespace, tag):
     """
     Find the specifications for a given field
-    @param namespace: The namespace to search
-    @param tag: The tag to search within the namespace
-    @return: [field name (str) or <int type>, field value format type, units (a list of strings) or None)]
+    :param namespace: The namespace to search
+    :param tag: The tag to search within the namespace
+    :return: [field name (str) or <int type>, field value format type, units (a list of strings) or None)]
     """
     specs = TAGS.get(namespace.lower(), [])
     spec = None
@@ -193,7 +194,6 @@ def find_spec(namespace, tag):
             if item[0] == tag.lower():
                 spec = item
     return spec
-
 
 def format_field(field):
     suffix = '' if not field.units else ' {}'.format(field.units)
@@ -232,7 +232,7 @@ class XDIData(object):
         if '.' in key:
             namespace, tag = key.lower().split('.')
             if not namespace in list(TAGS.keys()):
-                namespace, tag = key.split('.')  # preserve case for non-standard namespaces
+                namespace, tag = key.split('.') # preserve case for non-standard namespaces
             if namespace == 'column':
                 tag = int(tag)
             return self.header[namespace][tag]
@@ -241,7 +241,7 @@ class XDIData(object):
 
     def __setitem__(self, key, entry):
         if isinstance(entry, dict) and not '.' in key:
-            for k, v in list(entry.items()):
+            for k,v in list(entry.items()):
                 self.__setitem__('{}.{}'.format(key, k), v)
         else:
             namespace, tag = key.lower().split('.')
@@ -281,12 +281,13 @@ class XDIData(object):
         data_lines = [data_format.format(*row) for row in self.data]
         saver = gzip.open if filename.endswith('.gz') else open
         with saver(filename, 'wb') as handle:
-            handle.write('\n# '.join(header_lines) + '\n' + '\n'.join(data_lines))
+            output = '\n# '.join(header_lines) + '\n' + '\n'.join(data_lines)
+            handle.write(output.encode('utf8'))
 
-    def parse(self, filename):
+    def parse(self, filename, permissive=False):
         opener = gzip.open if filename.endswith('.gz') else open
         with opener(filename, 'rb') as handle:
-            raw = XDI_PATTERN.match(handle.read()).groupdict()
+            raw = XDI_PATTERN.match(handle.read().decode('utf8')).groupdict()
         self.version = raw['version_text']
 
         self.header = collections.OrderedDict()
@@ -333,11 +334,10 @@ class XDIData(object):
             field: field.split('.')[1] not in self.header.get(field.split('.')[0], {})
             for field in REQUIRED_FIELDS
         }
-        if any(missing.values()):
-            sys.stderr.write(
-                'Required fields missing: {}\n'.format([key for key, value in list(missing.items()) if value]))
+        if not permissive and any(missing.values()):
+            sys.stderr.write('Required fields missing: {}\n'.format([key for key, value in list(missing.items()) if value]))
 
-        self.data = numpy.genfromtxt(StringIO('{}'.format(raw['data_text'])), dtype=None, names=data_columns)
+        self.data = numpy.genfromtxt(StringIO('{}'.format(raw['data_text'])), dtype=None, names=data_columns, deletechars='')
 
 
 def read_xdi(filename):

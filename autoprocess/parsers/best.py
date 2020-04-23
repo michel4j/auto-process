@@ -1,7 +1,4 @@
-"""
-BEST xml output parsing functions
 
-"""
 import os
 import re
 import xml.dom.minidom
@@ -9,15 +6,15 @@ import xml.dom.minidom
 import numpy
 
 from autoprocess.utils.misc import Table
-from . import utils
 
 
 def parse_best_plot(filename):
-    data = file(filename).read()
+    with open(filename, 'r', encoding='utf8') as fobj:
+        data = fobj.read()
     info = {}
     max_osc = {}
-    max_osc_data, pos = utils.cut_section("Maximal oscillation width", "DATA=CURVE2D", data)
-    for m in re.finditer("(?P<shell>[\d-]+\.[\d-]+)\s+'\n(?P<curve>(\s*\d+\s+[\d-]+\.[\d-]+\n)+)", max_osc_data):
+    max_osc_data = '\n'.join(re.findall(r"(Maximal oscillation width.+?DATA=CURVE2D)", data))
+    for m in re.finditer(r"(?P<shell>[\d-]+\.[\d-]+)\s+'\n(?P<curve>(\s*\d+\s+[\d-]+\.[\d-]+\n)+)", max_osc_data):
         max_osc[m.group('shell')] = numpy.fromstring(m.group('curve'), sep=' ').reshape((-1, 2))
 
     info['delta_statistics'] = {}
@@ -28,11 +25,11 @@ def parse_best_plot(filename):
             info['delta_statistics']['angle'] = list(curve[:, 0])
         info['delta_statistics'][shell] = list(curve[:, 1])
 
-    compl_osc_data, pos = utils.cut_section('Minimal oscillation ranges for different completenesses', 'DATA=CURVE2D',
-                                            data)
+    compl_osc_data = '\n'.join(
+        re.findall(r'Minimal oscillation ranges for different completenesses.+?DATA=CURVE2D', data))
     compl_osc = {}
-    for m in re.finditer("linelabel\s+=\s+'compl\s+-(?P<percent>\d+\.)%'\n(%.+\n)*(?P<curve>(\s*\d+\s+\d+\n)+)",
-                         compl_osc_data):
+    compl_patt = r"linelabel\s+=\s+'compl\s+-(?P<percent>\d+\.)%'\n(%.+\n)*(?P<curve>(\s*\d+\s+\d+\n)+)"
+    for m in re.finditer(compl_patt, compl_osc_data):
         compl_osc[m.group('percent')] = numpy.fromstring(m.group('curve'), sep=' ').reshape((-1, 2))
 
     info['completeness_statistics'] = {}
@@ -42,20 +39,6 @@ def parse_best_plot(filename):
             first = False
             info['completeness_statistics']['start_angle'] = list(curve[:, 0])
         info['completeness_statistics'][percent] = list(curve[:, 1])
-
-    #    exp_data, pos = utils.cut_section('Total exposure time vs resolution', 'DATA=CURVE2D', data)
-    #    exp_info = {}
-    #    for m in re.finditer("# Curve (?P<index>\d+)\n(%.+\n)*(?P<curve>(\s*\d+\.\d+\s+\d+\.\d+\n)+)", exp_data):
-    #        exp_info[m.group('index')] = numpy.fromstring(m.group('curve'), sep=' ').reshape((-1,2))
-    #
-    #    info['exposure_statistics'] = {
-    #        'inv_res_sq': list(exp_info['1'][:,0]),
-    #        'time': list(exp_info['1'][:,1]),
-    #        'prediction': {
-    #            'inv_res_sq': list(exp_info['2'][:,0]),
-    #            'time': list(exp_info['2'][:,1]),
-    #        }
-    #    }
 
     return info
 

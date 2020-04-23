@@ -1,16 +1,11 @@
-#!/usr/bin/env python
-
 import os
 import sys
-import warnings
-
-warnings.simplefilter("ignore")  # ignore deprecation warnings
 
 from autoprocess.engine.process import Manager
 from autoprocess.utils import log
 from autoprocess.utils import misc
 
-_logger = log.get_module_logger('auto.process')
+logger = log.get_module_logger('auto.process')
 
 
 def main(args):
@@ -20,7 +15,7 @@ def main(args):
             'anomalous': bool(args.anom),
             'mode': 'simple',
             'backup': args.backup,
-            'chiral': not(args.nonchiral),
+            'chiral': (not args.nonchiral),
             'solve-small': args.formula,
             'directory': args.dir,
             'prefix': [] if not args.prefix else args.prefix.split(',')
@@ -70,7 +65,7 @@ def main(args):
             else:
                 app.run(resume_from=chkpt['run_position'])
         except IOError:
-            _logger.error('Either specify a dataset, or run within a data processing directory.')
+            logger.error('Either specify a dataset, or run within a data processing directory.')
             sys.exit(1)
 
 

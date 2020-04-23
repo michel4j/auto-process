@@ -53,8 +53,11 @@ def get_number(sg_name):
 
 
 def get_pg_list(lattices, chiral=True):
-    """Takes a list of lattice characters and returns a unique list of the
-    names of the lowest symmetry pointgroup."""
+    """
+    Takes a list of lattice characters and returns a unique list of the
+    names of the lowest symmetry pointgroup.
+    """
+
     pgset = set(
         [SG_NUMBERS[v['point_group']] for v in list(XTAL_TABLES.values()) if v['lattice_character'] in lattices])
     if chiral:
@@ -69,9 +72,9 @@ def get_sg_table(chiral=True):
     for k, v in list(XTAL_TABLES.items()):
         if (chiral and not v['chiral']): continue
         if v['lattice_character'] in list(tab.keys()):
-            tab[v['lattice_character']].append("%d:%s" % (k, v['symbol']))
+            tab[v['lattice_character']].append(f"{k}:{v['symbol']}")
         else:
-            tab[v['lattice_character']] = ["%d:%s" % (k, v['symbol'])]
+            tab[v['lattice_character']] = [f"{k}:{v['symbol']}"]
     txt = 'Table of space group numbers for each Bravais lattice type\n'
     txt += '-------------------------------------------------------------------------------\n'
     for k in ['aP', 'mP', 'mC', 'oP', 'oC', 'oA', 'oF', 'oI', 'tP', 'tI', 'hP', 'hR', 'cP', 'cF', 'cI']:
@@ -83,7 +86,7 @@ def get_sg_table(chiral=True):
                     lchr = k
                 else:
                     lchr = ""
-                txt += ' %4s \t%s\n' % (lchr, ', '.join(chunk))
+                txt += f' {lchr:>4} \t{", ".join(chunk)}\n'
     txt += '-------------------------------------------------------------------------------\n'
     return txt
 
@@ -249,21 +252,6 @@ def average_cell(cell_and_weights):
     new_cell = (cells.transpose() * weights).sum(1) / weights.sum()
     cell_esd = numpy.sqrt(numpy.dot(weights, (cells - new_cell) ** 2) / weights.sum())
     return (new_cell, cell_esd)
-
-
-# Determine twinning fraction from L statistic
-def _calc_L(a):
-    return (((1 - 2 * a) ** 2) * (1 - 6 * a + 6 * a ** 2) - 8 * ((1 - a) ** 2) * (a ** 2) * numpy.log(
-        4 * a * (1 - a))) / (2 * (1 - 2 * a) ** 4)
-
-
-_a_array = numpy.linspace(0.4999, 0.001, 1000)
-_l_array = _calc_L(_a_array)
-
-
-def L2twin(l):
-    idx = bisect.bisect_left(_l_array, l)
-    return _a_array[idx]
 
 
 def dist_to_resol(distance, pixel_size, detector_size, wavelength, two_theta=0):

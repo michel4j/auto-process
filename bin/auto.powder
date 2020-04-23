@@ -8,7 +8,7 @@ log.log_to_console()
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Perform azimuthal integration of powder pattern')
     parser.add_argument('files', nargs='+', help='Files to integrate or calibrate')
-    parser.add_argument('--calib', help='Perform calibrationi using clear rings reference', action="store_true")
+    parser.add_argument('-c', '--calib', help='Perform calibrationi using clear rings reference', action="store_true")
 
     args = parser.parse_args()
     if args.calib:

@@ -10,10 +10,10 @@ from autoprocess.engine import symmetry
 from autoprocess.parsers import xds, pointless, phenix
 from autoprocess.utils import log, misc, programs, xdsio, xtal
 
-_logger = log.get_module_logger(__name__)
+logger = log.get_module_logger(__name__)
 
 
-def _check_chisq(result):
+def check_chisq(result):
     # check correction factors
     if result.get('correction_factors') is not None:
         for f in result['correction_factors'].get('factors', []):
@@ -30,9 +30,9 @@ def scale_datasets(dsets, options=None, message="Scaling"):
     suffix = []
     suffix_txt = ""
     if options.get('resolution'):
-        suffix.append("res=%0.2f" % options.get('resolution'))
+        suffix.append(f"res={options['resolution']:0.2f}")
     if len(suffix) > 0:
-        suffix_txt = "with [%s]" % ",".join(suffix)
+        suffix_txt = f"with [{','.join(suffix)}]"
     sg_name = xtal.SG_SYMBOLS[list(dsets.values())[0].results['correction']['summary']['spacegroup']]
 
     # Check Requirements
@@ -51,7 +51,7 @@ def scale_datasets(dsets, options=None, message="Scaling"):
             out_file = os.path.join(os.path.dirname(in_file), "XSCALE.HKL")
             sections.append(
                 {'anomalous': options.get('anomalous', False),
-                 'strict_absorption': _check_chisq(dres['correction']),
+                 'strict_absorption': check_chisq(dres['correction']),
                  'output_file': out_file,
                  'crystal': 'cryst1',
                  'inputs': [{'input_file': in_file, 'resolution': resol}],
@@ -62,20 +62,22 @@ def scale_datasets(dsets, options=None, message="Scaling"):
             dset.results['scaling'] = {'output_file': out_file}
     else:
         if options.get('mode') == 'merge':
-            step_descr = ("Merging {:d} datasets in `{}` {}".format(len(dsets), sg_name, suffix_txt))
+            step_descr = ("Merging {:d} datasets in '{}' {}".format(len(dsets), sg_name, suffix_txt))
         else:
-            step_descr = ("Scaling `{}` in `{}` {}".format(dset.name, sg_name, suffix_txt))
+            step_descr = ("Scaling dataset in '{}' {}".format(sg_name, suffix_txt))
         inputs = []
         resols = []
+        strict = False
         for dset in list(dsets.values()):
             dres = dset.results
             resol = options.get('resolution', dres['correction']['summary']['resolution'][0])
             resols.append(resol)
             in_file = dres['correction']['output_file']
             inputs.append({'input_file': in_file, 'resolution': resol})
+            strict = check_chisq(dres['correction']),
         sections = [{
             'anomalous': options.get('anomalous', False),
-            'strict_absorption': _check_chisq(dres['correction']),
+            'strict_absorption': strict,
             'shells': xtal.resolution_shells(min(resols)),
             'output_file': "XSCALE.HKL",
             'inputs': inputs, }]
@@ -138,7 +140,7 @@ def prepare_reference(dsets, options=None):
     reference_name = best[1]  # the most complete dataset of the lot
     minimum_correlation = 0.0
     if len(dsets) < 4 or best[0] >= 30.0:
-        _logger.info('Using the most complete dataset {} ({:0.1f}%) as reference.'.format(best[1], best[0]))
+        logger.info('Using the most complete dataset "{}" ({:0.1f}%) as reference.'.format(best[1], best[0]))
         reference_file = dsets[reference_name].results['correction']['output_file']
     else:
         dset_names = [dset.name for dset in list(dsets.values())]
@@ -160,17 +162,17 @@ def prepare_reference(dsets, options=None):
         xdsio.write_xscale_input(xscale_options)
         programs.xscale_par()
         misc.backup_special_file('XSCALE.LP', 'first')
-        _out = xds.parse_correlations('XSCALE.LP.first')
-        correlations = _out['correlations']
+        out = xds.parse_correlations('XSCALE.LP.first')
+        correlations = out['correlations']
         corr_table = misc.Table(correlations)
         minimum_correlation = min(corr_table['corr'])
         if minimum_correlation >= 0.95:
-            _logger.info('All datasets correlate to better than %0.3f.' % (min(corr_table['corr'])))
+            logger.info(f'All datasets correlate to better than {min(corr_table["corr"]):0.3f}.')
             reference_file = 'REF1.HKL'
         else:
-            _logger.info('Some correlations are low %0.3f. Reference dataset needed ...' % min(corr_table['corr']))
+            logger.info(f'Some correlations are low {min(corr_table["corr"]):0.3f}. Reference dataset needed ...')
             # cluster datasets by correlation
-            _distance_dict = dict([(tuple(sorted((v['i'], v['j']))), (v['corr'], v['num'])) for v in correlations])
+            distance_dict = dict([(tuple(sorted((v['i'], v['j']))), (v['corr'], v['num'])) for v in correlations])
 
             def _get_dist(x, y):
                 xn = x['name']
@@ -178,7 +180,7 @@ def prepare_reference(dsets, options=None):
                 i = 1 + dset_names.index(xn)
                 j = 1 + dset_names.index(yn)
                 key = tuple(sorted((i, j)))
-                c, d = _distance_dict[key]
+                c, d = distance_dict[key]
                 return (1 - c)  # + 0.1/numpy.sqrt(d)
 
             cl = cluster.HierarchicalClustering(dset_options, _get_dist, linkage='complete')
@@ -192,7 +194,7 @@ def prepare_reference(dsets, options=None):
 
             if len(best_subtree) > 1:
                 # Merge the datasets and return
-                _logger.info('Creating reference from %d datasets ... ' % len(best_subtree))
+                logger.info(f'Creating reference from {len(best_subtree):d} datasets ... ')
                 xscale_options = {'sections': [{
                     'anomalous': options.get('anomalous', False),
                     'strict_absorption': False,
@@ -212,21 +214,21 @@ def prepare_reference(dsets, options=None):
                 _best_num = max(set(_good_corrs), key=_good_corrs.count)
                 _best_name = dset_names[_best_num - 1]
                 reference_file = dsets[_best_name].results['correction']['output_file']
-                _logger.info('Using single %s as reference ... ' % reference_file)
+                logger.info(f'Using single {reference_file} as reference ... ')
 
     # Verify Spacegroup of reference
-    _logger.info("Automaticaly Determining Symmetry of reference ...")
     programs.pointless(filename=reference_file, chiral=options.get('chiral', True))
     sg_info = pointless.parse_pointless()
 
-    _info = symmetry.get_symmetry_params(sg_info['sg_number'], dsets[reference_name])
-    sg_info.update(_info)
+    info = symmetry.get_symmetry_params(sg_info['sg_number'], dsets[reference_name])
+    sg_info.update(info)
     sg_info['reference_data'] = reference_file
-    cell_str = "%0.3f %0.3f %0.3f %0.3f %0.3f %0.3f" % tuple(sg_info['unit_cell'])
-    _logger.info('Reference %s: %s (#%d) - %s' % (sg_info['type'],
-                                                  xtal.SG_SYMBOLS[sg_info['sg_number']],
-                                                  sg_info['sg_number'],
-                                                  cell_str))
+    cell_str = "{:0.2f} {:0.2f} {:0.2f} {:0.1f} {:0.1f} {:0.1f}".format(*sg_info['unit_cell'])
+    logger.info(log.log_value(
+        f'Reference {sg_info["type"]}:',
+        '{} (#{})'.format(xtal.SG_SYMBOLS[sg_info['sg_number']], sg_info['sg_number'])
+    ))
+    logger.info(log.log_value('Reference Unit Cell:', cell_str))
 
     # now rescale reference data and transform to above spacegroup
     xscale_options = {'sections': [{
@@ -250,17 +252,18 @@ def prepare_reference(dsets, options=None):
     return sg_info
 
 
-def data_quality(filename, options=None):
+def data_quality(dset, options=None):
+    filename = dset.results['scaling']['output_file']
     options = options or {}
     os.chdir(options.get('directory', '.'))
 
-    _LAW_TYPE = {'PM': 'Pseudo-merohedral', 'M': 'Merohedral'}
+    law_type = {'PM': 'Pseudo-merohedral', 'M': 'Merohedral'}
     # Check Requirements
     if not misc.file_requirements(filename):
         return {'step': 'data_quality', 'success': False, 'reason': 'Required files missing'}
 
     try:
-        programs.xtriage(filename)
+        programs.xtriage(filename, label=f'Checking quality of dataset "{dset.name}"')
         info = phenix.parse_xtriage()
     except autoprocess.errors.ProcessError as e:
         return {'step': 'data_quality', 'success': False, 'reason': str(e)}
@@ -268,29 +271,29 @@ def data_quality(filename, options=None):
     statistics_deviate = False
     if info['twinning_l_zscore'] > 3.5:
         statistics_deviate = True
-        _logger.warning('Intensity statistics deviate significantly from expected.')
+        logger.warning('Intensity statistics deviate significantly from expected.')
 
     if len(info['twin_laws']) > 0:
         if statistics_deviate:
-            _logger.warning('Possible twin laws which may explain the deviation:')
+            logger.warning('Possible twin laws which may explain the deviation:')
         else:
-            _logger.info('Possible twin laws:')
+            logger.info('Possible twin laws:')
         max_fraction = 0.0
         for law in info['twin_laws']:
             fraction = 100.0 * max([law['britton_alpha'], law['ML_alpha'], law['H_alpha']])
-            txt = ".. %s operator: [%s], Max twin-fraction: %0.1f%%" % (
-                _LAW_TYPE[law['type'].strip()],
+            txt = ".. {} operator: [{}], Max twin-fraction: {:0.1f}%".format(
+                law_type[law['type'].strip()],
                 law['operator'].strip(),
                 fraction,
             )
             max_fraction = max(max_fraction, fraction)
             if statistics_deviate:
-                _logger.warning(txt)
+                logger.warning(txt)
             else:
-                _logger.info(txt)
+                logger.info(txt)
         if not statistics_deviate and max_fraction > 10.0:
-            _logger.warning('Despite reasonable intensity statistics, high twin-fraction suggests wrong symmetry.')
+            logger.warning('Despite reasonable intensity statistics, high twin-fraction suggests wrong symmetry.')
     if statistics_deviate and len(info['twin_laws']) == 0:
-        _logger.warning('No pseudo/merohedral twin laws possible in this lattice.')
+        logger.warning('No pseudo/merohedral twin laws possible in this lattice.')
 
     return {'step': 'data_quality', 'success': True, 'data': info}

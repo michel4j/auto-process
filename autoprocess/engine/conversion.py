@@ -57,7 +57,8 @@ def convert_formats(dataset, options=None):
                 out_format = opt['format']
 
             xdsio.write_xdsconv_input(opt)
-            programs.xdsconv(label=f'Preparing {out_format} output file', final=log.TermColor.bold(out_file))
+            label = f'Preparing {out_format} output file'
+            programs.xdsconv(label=f'{label:<27}', final=log.TermColor.bold(out_file))
 
             # Special formatting for MTZ
             if opt['format'] == 'CCP4_I':
@@ -68,7 +69,7 @@ def convert_formats(dataset, options=None):
                 output_files.append(opt['output_file'])
 
         except autoprocess.errors.ProcessError as e:
-            logger.warning('Error creating %s file: %s' % (opt['format'], e))
+            logger.warning(f'Error creating {opt["format"]} file: {e}')
 
     if len(output_files) == 0:
         return {'step': 'conversion', 'success': False, 'reason': 'No output files generated'}

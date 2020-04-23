@@ -211,9 +211,11 @@ class Manager(object):
         
         """
 
-        info = {'options': self.options,
-                'run_position': self.run_position,
-                'datasets': [d.get_info() for d in list(self.datasets.values())]}
+        info = {
+            'options': self.options,
+            'run_position': self.run_position,
+            'datasets': [d.get_info() for d in list(self.datasets.values())]
+        }
 
         # Checkpoint file is saved in top-level processing directory
         fname = os.path.join(self.options['directory'], 'process.chkpt')
@@ -237,24 +239,24 @@ class Manager(object):
         step_parameters.update(overwrite)
 
         if colonize and step in HARVEST_FUNCTIONS:
-            _out = HARVEST_FUNCTIONS[step]
+            out = HARVEST_FUNCTIONS[step]
         else:
             # symmetry needs an extra parameter
             if step == 'symmetry':
-                _out = STEP_FUNCTIONS[step](step_parameters, dset, self.options)
+                out = STEP_FUNCTIONS[step](step_parameters, dset, self.options)
             else:
-                _out = STEP_FUNCTIONS[step](step_parameters, self.options)
+                out = STEP_FUNCTIONS[step](step_parameters, self.options)
 
-        dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-        if _out.get('data') is not None:
-            dset.results[step] = _out.get('data')
+        dset.log.append((time.time(), out['step'], out['success'], out.get('reason', None)))
+        if out.get('data') is not None:
+            dset.results[step] = out.get('data')
         self.save_checkpoint()
 
-        if not _out['success']:
+        if not out['success']:
             if optional:
-                logger.warning('Failed (%s): %s' % (_out['step'], _out['reason']))
+                logger.warning('Failed ({}): {}'.format(out['step'], out['reason']))
             else:
-                logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
+                logger.error('Failed ({}): {}'.format(out['step'], out['reason']))
                 sys.exit(1)
 
     def screen(self, resume_from=None, single=False, overwrite=None):
@@ -286,10 +288,7 @@ class Manager(object):
         logger.info(f'{sub_header:^79}')
 
         env_hosts = os.environ.get('DPS_NODES', 'localhost')
-        num_nodes = len(env_hosts.split(' '))
-
-        logger.debug(f'Computer system: {num_nodes:d} nodes')
-        logger.debug(f'Computer nodes: "{env_hosts}"')
+        logger.debug('{:^79}'.format(f'Computer systems: {env_hosts}'))
 
         if resume_from is not None:
             cur_pos, next_step = resume_from
@@ -307,10 +306,10 @@ class Manager(object):
                 if i < cur_pos: continue  # skip all datasets earlier than specified one
                 logger.info(THIN_LINE)
                 logger.info(
-                    'Auto-Indexing dataset "{}". Directory: "{}"'.format(
-                        log.TermColor.italics(dset.name),
-                        log.TermColor.bold(dset.parameters['working_directory'])
-                    )
+                    log.log_value('Processing dataset', dset.name, style=log.TermColor.normal)
+                )
+                logger.info(
+                    log.log_value('Working directory:', dset.parameters["working_directory"])
                 )
 
                 for j, step in enumerate(sub_steps):
@@ -330,16 +329,13 @@ class Manager(object):
                         dset.parameters.update({
                             'unit_cell': dset.results['indexing']['parameters']['unit_cell'],
                             'space_group': dset.results['indexing']['parameters']['sg_number']})
-
-                        logger.log(
-                            log.IMPORTANT,
-                            "Reduced Cell: {:0.2f} {:0.2f} {:0.2f} {:0.2f} {:0.2f} {:0.2f}".format(
-                                *dset.results['indexing']['parameters']['unit_cell']
-                            )
+                        r_cell = "{:0.2f} {:0.2f} {:0.2f} {:0.2f} {:0.2f} {:0.2f}".format(
+                            *dset.results['indexing']['parameters']['unit_cell']
                         )
                         xter_list = [v['character'] for v in dset.results['indexing']['lattices']]
-                        pg_txt = ", ".join(xtal.get_pg_list(xter_list, chiral=self.options.get('chiral', True)))
-                        logger.log(log.IMPORTANT, f"Possible Point Groups: {pg_txt}")
+                        p_groups = ", ".join(xtal.get_pg_list(xter_list, chiral=self.options.get('chiral', True)))
+                        logger.info(log.log_value('Reduced Cell:',r_cell))
+                        logger.info(log.log_value('Point Groups:', p_groups))
 
             next_step = 'integration'
 
@@ -365,19 +361,20 @@ class Manager(object):
                     # special pre-step handling  for correction
                     if step == 'correction' and i > 0 and self.options.get('mode') in ['merge', 'mad']:
                         # update parameters with reference after correction
-                        ref_file = os.path.join('..',
-                                                 list(self.datasets.values())[i - 1].results['correction'][
-                                                     'output_file'])
+                        ref_file = os.path.join(
+                            '..', list(self.datasets.values())[i - 1].results['correction']['output_file']
+                        )
                         ref_sg = list(self.datasets.values())[0].results['correction']['summary']['spacegroup']
                         step_ovw.update({'reference_data': ref_file, 'reference_spacegroup': ref_sg})
 
                     self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
                     if step == 'correction':
                         ISa = dset.results['correction']['correction_factors']['parameters'].get('ISa', -1)
-                        logger.info('Dataset {}: I/Sigma(I) Asymptote [ISa]: {}'.format(
-                            log.TermColor.italics(dset.name),
-                            log.TermColor.bold(f'{ISa:0.1f}')
-                        ))
+                        if ISa >= 0:
+                            logger.info(log.log_value(
+                                'I/Sigma(I) Asymptote [ISa] for dataset "{}":'.format(dset.name),
+                                f'{ISa:0.1f}'
+                            ))
                         dset.results['integration']['statistics'] = copy.deepcopy(dset.results['correction'])
 
             next_step = 'symmetry'
@@ -423,20 +420,15 @@ class Manager(object):
                     'message': 'Reindexing & refining',
                 })
                 self.run_step('correction', dset, overwrite=step_ovw, colonize=colonize)
-                cell_str = log.TermColor.bold(
-                    "{:0.6g} {:0.6g} {:0.6g} {:0.6g} {:0.6g} {:0.6g}".format(
-                        *dset.results['correction']['summary']['unit_cell']
-                    )
+                cell_str = "{:0.6g} {:0.6g} {:0.6g} {:0.6g} {:0.6g} {:0.6g}".format(
+                    *dset.results['correction']['summary']['unit_cell']
                 )
-                logger.info('Refined for {} cell: {}'.format(log.TermColor.italics(dset.name), cell_str))
+                logger.info(log.log_value(
+                    f'Refined unit cell for for "{dset.name}":', cell_str
+                ))
 
                 if self.options.get('mode') in ['merge']:
-                    _score = dset.score()
-
-                    logger.info('Dataset {}: Initial Score: {}'.format(
-                        log.TermColor.italics(dset.name),
-                        log.TermColor.bold(f"{_score:0.2f}"),
-                    ))
+                    logger.info(log.log_value(f'Initial Score for dataset "{dset.name}"', f"{dset.score():0.2f}"))
 
             self.save_checkpoint()
             next_step = 'strategy' if self.options.get('mode') == 'screen' else 'scaling'
@@ -454,7 +446,7 @@ class Manager(object):
             self.save_checkpoint()
 
             if not out['success']:
-                logger.error('Failed (%s): %s' % (out['step'], out['reason']))
+                logger.error(f'Failed ({out["step"]}): {out["reason"]}')
                 sys.exit()
             next_step = 'strategy'
 
@@ -491,22 +483,20 @@ class Manager(object):
             # Run Data Quality Step:
             if self.options.get('mode') != 'screen':
                 logger.info(THIN_LINE)
+                logger.info(f'Data processing of dataset "{dset.name}" complete.')
                 self.run_position = (i, 'data_quality')
-                logger.info('Checking quality of dataset {} ...'.format(log.TermColor.italics(dset.name)))
-                out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
+
+                out = scaling.data_quality(dset, self.options)
                 dset.log.append((time.time(), out['step'], out['success'], out.get('reason', None)))
                 if not out['success']:
-                    logger.error('Failed (%s): %s' % ("data quality", out['reason']))
+                    logger.error(f'Failed ({"data quality"}): {out["reason"]}')
                     sys.exit()
                 else:
                     dset.results['data_quality'] = out.get('data')
                 self.save_checkpoint()
 
             # Scoring
-            logger.info('Dataset {}: Final Score: {}'.format(
-                log.TermColor.italics(dset.name),
-                log.TermColor.bold('{:0.2f}'.format(dset.score()))
-            ))
+            logger.info(log.log_value(f'Final Score for dataset "{dset.name}"', f"{dset.score():0.2f}"))
 
             # file format conversions
             self.run_position = (i, 'conversion')
@@ -520,7 +510,7 @@ class Manager(object):
                 dset.log.append((time.time(), out['step'], out['success'], out.get('reason', None)))
                 if not out['success']:
                     dset.log.append((time.time(), out['step'], out['success'], out.get('reason', None)))
-                    logger.error('Failed (%s): %s' % ("conversion", out['reason']))
+                    logger.error(f'Failed ({"conversion"}): {out["reason"]}')
                 else:
                     dset.results['output_files'] = out.get('data')
                 self.save_checkpoint()
@@ -550,7 +540,7 @@ class Manager(object):
 
         used_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - self.start_time))
         out = subprocess.check_output(['sync'])
-        footer = "AutoProcess done. Total time: {}".format(used_time)
+        footer = f"AutoProcess done. Total time: {used_time}"
         logger.info(THICK_LINE)
         logger.info(f"{footer:^79}")
         logger.info(THICK_LINE)

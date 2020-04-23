@@ -35,6 +35,9 @@ def main(args):
         app.run()
 
     else:
+        if args.dir:
+            os.chdir(args.dir)
+
         try:
             if args.load:
                 chkpt = None
@@ -48,16 +51,10 @@ def main(args):
                 'directory': args.dir,
                 'zap': args.zap,
                 'import': args.load,
-                'prefix': args.prefix.split(',')
             }
 
             if args.load:
                 options['directory'] = args.dir or os.getcwd()
-            if len(options['prefix']) != len(args.images):
-                del options['prefix']
-
-            if len(args.images) > 1 and options['mode'] == 'simple':
-                options['mode'] = 'merge'
 
             app = Manager(checkpoint=chkpt, options=options)
             if args.zap or args.load:

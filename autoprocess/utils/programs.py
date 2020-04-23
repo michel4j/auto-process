@@ -109,7 +109,8 @@ def pointless(retry=False, chiral=True, filename="INTEGRATE.HKL"):
     ).format(chiral_setting[chiral], filename)
     with open('pointless.com', 'w') as fobj:
         fobj.write(txt)
-    command = Command('sh', 'pointless.com', spinner=False)
+    label = "Automatically determining Symmetry of {}".format(filename)
+    command = Command('sh', 'pointless.com', label=label, spinner=False)
     command.start()
 
 
@@ -136,14 +137,14 @@ def best(data_info, options=None):
     command.start()
 
 
-def xtriage(filename, options=None):
+def xtriage(filename, label="Checking quality of dataset", options=None):
     options = options or {}
     command = "#!/bin/csh \n"
     command += "pointless -c xdsin %s hklout UNMERGED.mtz > unmerged.log \n" % (filename)
     command += "phenix.xtriage UNMERGED.mtz log=xtriage.log loggraphs=True\n"
     with open('xtriage.com', 'w') as fobj:
         fobj.write(command)
-    command = Command('sh', 'xtriage.com', outfile='xtriage.log', spinner=False)
+    command = Command('sh', 'xtriage.com', outfile='xtriage.log', label=label)
     command.start()
 
 

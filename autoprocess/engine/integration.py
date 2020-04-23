@@ -85,8 +85,6 @@ def harvest_correct():
         programs.xdsstat('XDS_ASCII.HKL')
         stat_info = xds.parse_xdsstat()
         info.update(stat_info)
-        ISa = info['correction_factors']['parameters'].get('ISa', -1)
-        logger.info('I/Sigma(I) Asymptote [ISa]: %0.1f' % (ISa))
 
     if info.get('failure') is None:
         info['output_file'] = 'XDS_ASCII.HKL'
@@ -102,9 +100,9 @@ def correct(data_info, options=None):
     options = options or {}
     os.chdir(data_info['working_directory'])
     message = options.get('message', "Applying corrections to")
-    step_descr = '{} dataset {} for space-group {}'.format(
+    step_descr = '{} dataset "{}" for space-group {}'.format(
         message,
-        log.TermColor.italics(data_info['name']),
+        data_info['name'],
         xtal.SG_SYMBOLS[data_info['space_group']]
     )
     run_info = {'mode': options.get('mode')}

@@ -1,7 +1,7 @@
 """This module implements utility classes and functions for logging."""
 
 import logging
-import repr as reprlib
+import reprlib as reprlib
 from logging.handlers import RotatingFileHandler
 
 LOG_LEVEL = logging.INFO
@@ -19,6 +19,7 @@ class TermColor(object):
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+    ITALICS = '\033[3m'
 
     @classmethod
     def bold(cls, text):
@@ -52,6 +53,9 @@ class TermColor(object):
     def underline(cls, text):
         return '{}{}{}'.format(cls.UNDERLINE, text, cls.ENDC)
 
+    @classmethod
+    def italics(cls, text):
+        return '{}{}{}'.format(cls.ITALICS, text, cls.ENDC)
 
 class NullHandler(logging.Handler):
     """A do-nothing log handler."""
@@ -73,7 +77,9 @@ class ColoredConsoleHandler(logging.StreamHandler):
 
 
 def get_module_logger(name):
-    """A factory which creates loggers with the given name and returns it."""
+    """
+    A factory which creates loggers with the given name and returns it.
+    """
     name = name.split('.')[-1]
     logger = logging.getLogger(name)
     logger.setLevel(LOG_LEVEL)
@@ -82,23 +88,27 @@ def get_module_logger(name):
 
 
 def log_to_console(level=LOG_LEVEL):
-    """Add a log handler which logs to the console."""
+    """
+    Add a log handler which logs to the console.
+    """
 
     console = ColoredConsoleHandler()
     console.setLevel(level)
     if DEBUGGING:
-        formatter = logging.Formatter('%(asctime)s [%(name)s] %(message)s', '%b/%d %H:%M:%S')
+        formatter = logging.Formatter(' %(message)s', '%b/%d %H:%M:%S')
     else:
-        formatter = logging.Formatter('%(asctime)s - %(message)s', '%b/%d %H:%M:%S')
+        formatter = logging.Formatter(' %(message)s', '%b/%d %H:%M:%S')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
 
 def log_to_file(filename, level=logging.DEBUG):
-    """Add a log handler which logs to the console."""
-    logfile = RotatingFileHandler(filename, maxBytes=1e6, backupCount=10)
+    """
+    Add a log handler which logs to the console.
+    """
+    logfile = RotatingFileHandler(filename, maxBytes=1000000, backupCount=10)
     logfile.setLevel(level)
-    formatter = logging.Formatter('%(asctime)s [%(name)s] %(message)s', '%b/%d %H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s %(message)s', '%H:%M:%S')
     logfile.setFormatter(formatter)
     logging.getLogger('').addHandler(logfile)
 
@@ -114,10 +124,25 @@ def log_call(f):
 
     def new_f(*args, **kwargs):
         params = ['{}'.format(reprlib.repr(a)) for a in args[1:]]
-        params.extend(['{}={}'.format(p[0], repr(p[1])) for p in kwargs.items()])
+        params.extend(['{}={}'.format(p[0], repr(p[1])) for p in list(kwargs.items())])
         params = ', '.join(params)
         logger.debug('<{}({})>'.format(f.__name__, params))
         return f(*args, **kwargs)
 
     new_f.__name__ = f.__name__
     return new_f
+
+
+def log_value(descr, value, style=TermColor.bold, width=79, spacer='.'):
+    """
+    Format a log line of the form ' Description: ............... value '
+
+    :param descr: description text
+    :param value: value text
+    :param style: further style function to apply default is TermColor.bold
+    :param width: total width of line
+    :param spacer: spacer character, default '.'
+    :returns: formatted text
+    """
+
+    return '{} {} {}'.format(descr, spacer * (width - len(descr) - len(value) - 2), style(value))

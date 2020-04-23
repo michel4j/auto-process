@@ -1,60 +1,77 @@
-
-import subprocess
-import autoprocess.errors
-import time
+import asyncio
 import os
+import subprocess
+import time
+
+from progress.spinner import Spinner
 
 
-if "check_output" not in dir( subprocess ): # duck punch it in!
-    def f(*popenargs, **kwargs):
-        r"""Run command with arguments and return its output as a byte string.
 
-        Backported from Python 2.7 as it's implemented as pure python on stdlib.
+class BlankSpinner(object):
+    """A spinner which does nothing"""
 
-        >>> check_output(['/usr/bin/python', '--version'])
-        Python 2.6.2
-        """
-        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
-        output, unused_err = process.communicate()
-        retcode = process.poll()
-        if retcode:
-            cmd = kwargs.get("args")
-            if cmd is None:
-                cmd = popenargs[0]
-            error = subprocess.CalledProcessError(retcode, cmd)
-            error.output = output
-            raise error
-        return output
-    subprocess.check_output = f
+    def __init__(self, *args, **kwargs):
+        pass
 
-def _execute_command(args, out_file=None):
-    if out_file is None:
-        std_out = open('commands.log', 'a')
-    else:
-        std_out = open(out_file, 'a')
-    try:    
-        output = subprocess.check_output(args, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        raise autoprocess.errors.ProcessError(e.output.strip())
-    
-    std_out.write(output)
-    std_out.close()
-        
+    def next(self):
+        pass
 
-def xds():
-    _execute_command('xds')
+    def finish(self):
+        pass
 
-def xds_par():
-    _execute_command('xds_par')
-    
-def xscale():
-    _execute_command('xscale')
+    def write(self, *args):
+        pass
 
-def xscale_par():
-    _execute_command('xscale_par')
 
-def xdsconv():
-    _execute_command('xdsconv')
+class Command(object):
+    def __init__(self, *args, outfile="commands.log", label="Processing", spinner=True, final='done'):
+        self.show_spinner = spinner
+        self.outfile = outfile
+        self.args = " ".join(args)
+        self.final = final
+        self.label = label
+        self.proc = None
+        if spinner:
+            self.spinner = Spinner(f' - {self.label} ... ')
+        else:
+            self.spinner = BlankSpinner()
+
+    async def run(self):
+        with open(self.outfile, 'a') as stdout:
+            proc = await asyncio.create_subprocess_shell(self.args, stdout=stdout, stderr=stdout)
+            while proc.returncode is None:
+                self.spinner.next()
+                await asyncio.sleep(.1)
+            self.spinner.write(self.final)
+            self.spinner.finish()
+
+    def start(self):
+        asyncio.run(self.run())
+
+
+def xds(label='Processing'):
+    command = Command('xds', label=label)
+    command.start()
+
+
+def xds_par(label='Processing'):
+    command = Command('xds_par', label=label)
+    command.start()
+
+
+def xscale(label='Scaling'):
+    command = Command('xscale', label=label)
+    command.start()
+
+
+def xscale_par(label='Scaling'):
+    command = Command('xscale_par', label=label)
+    command.start()
+
+
+def xdsconv(label='Converting', final='done'):
+    command = Command('xdsconv', label=label, final=final)
+    command.start()
 
 
 def f2mtz(filename):
@@ -65,50 +82,42 @@ def f2mtz(filename):
     file_text += "END\n"
     file_text += "EOF\n"
     file_text += "/bin/rm temp.mtz\n"
-    try:
-        outfile = open('f2mtz.com','w')
+    with open('f2mtz.com', 'w') as outfile:
         outfile.write(file_text)
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-    outfile.close()
-    _execute_command(["sh", "f2mtz.com"])
+    subprocess.check_output(['sh', 'f2mtz.com'])
+
 
 def xdsstat(filename):
     file_text = "#!/bin/csh \n"
-    file_text += "xdsstat 100 3 <<EOF > XDSSTAT.LP\n" 
-    file_text += "%s\n" % filename 
+    file_text += "xdsstat <<EOF > XDSSTAT.LP\n"
+    file_text += "%s\n" % filename
     file_text += "EOF\n"
-    try:
-        outfile = open('xdsstat.com','w')
+    with open('xdsstat.com', 'w') as outfile:
         outfile.write(file_text)
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-    outfile.close()
-    try:
-        _execute_command(["sh", "xdsstat.com"])
-    except:
-        pass
+    command = Command('sh', 'xdsstat.com', spinner=False, label='Calculating extra statistics')
+    command.start()
 
-       
+
 def pointless(retry=False, chiral=True, filename="INTEGRATE.HKL"):
     chiral_setting = {True: "", False: "chirality nonchiral"}
-    f = open('pointless.com', 'w')
-    txt = """pointless << eof
-%s
-xdsin %s
-xmlout pointless.xml
-choose solution 1
-eof
-"""  % (chiral_setting[chiral], filename)
-    try:
-        f.write(txt)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-    _execute_command(["sh", "pointless.com"], out_file="pointless.log")
+    txt = (
+        "pointless << eof\n"
+        "{}\n"
+        "xdsin {}\n"
+        "xmlout pointless.xml\n"
+        "choose solution 1\n"
+        "eof\n"
+    ).format(chiral_setting[chiral], filename)
+    with open('pointless.com', 'w') as fobj:
+        fobj.write(txt)
+    label = "Automatically determining Symmetry of {}".format(filename)
+    command = Command('sh', 'pointless.com', label=label, spinner=False)
+    command.start()
 
-def best(data_info, options={}):
-    anom_flag = ''
+
+def best(data_info, options=None):
+    options = options or {}
+
     if options.get('anomalous', False):
         anom_flag = '-a'
     else:
@@ -118,66 +127,49 @@ def best(data_info, options={}):
     else:
         det_flag = ''
 
-    command  = "best %s -t %f -i2s 1.0 -q" % (det_flag, data_info['exposure_time'])
+    command = "best %s -t %f -i2s 1.0 -q" % (det_flag, data_info['exposure_time'])
     command += " -e none -M 0.2 -w 0.2 %s -o best.plot -dna best.xml" % (anom_flag)
     command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL"
-    
-    try:
-        f = open('best.com', 'w')
-        f.write(command)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-    _execute_command(["sh", "best.com"], out_file="best.log")
+
+    with open('best.com', 'w') as fobj:
+        fobj.write(command)
+
+    command = Command('sh', 'best.com', outfile="best.log", spinner=False)
+    command.start()
 
 
-def xtriage(filename, options={}):
-    command  = "#!/bin/csh \n"
+def xtriage(filename, label="Checking quality of dataset", options=None):
+    options = options or {}
+    command = "#!/bin/csh \n"
     command += "pointless -c xdsin %s hklout UNMERGED.mtz > unmerged.log \n" % (filename)
     command += "phenix.xtriage UNMERGED.mtz log=xtriage.log loggraphs=True\n"
-    try:
-        f = open('xtriage.com', 'w')
-        f.write(command)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-    _execute_command(["sh", "xtriage.com"])
-    
+    with open('xtriage.com', 'w') as fobj:
+        fobj.write(command)
+    command = Command('sh', 'xtriage.com', outfile='xtriage.log', label=label)
+    command.start()
+
 
 def distl(filename):
-    _execute_command(["labelit.distl", filename], out_file="distl.log")
+    command = Command('labelit.distl', outfile="distl.log", spinner=False)
+    command.start()
 
-def ccp4check(filename):
-    command  = "#!/bin/csh \n"
-    command += "pointless -c xdsin %s hklout UNMERGED.mtz > unmerged.log \n" % (filename)
-    command += "ctruncate -hklin UNMERGED.mtz -colin '/*/*/[I,SIGI]' > ctruncate.log \n"
-    command += "sfcheck -f UNMERGED.mtz > sfcheck.log \n"
-    
-    try:
-        f = open('ccp4check.com', 'w')
-        f.write(command)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-    _execute_command(["sh", "ccp4check.com"])
 
 def shelx_sm(name, unit_cell, formula):
     if not os.path.exists("shelx-sm"):
         os.mkdir("shelx-sm")
     os.chdir("shelx-sm")
     xprep(name, unit_cell, formula)
-    command  = "#!/bin/csh \n"
+    command = "#!/bin/csh \n"
     command += "shelxd %s \n" % (name)
     command += "/bin/cp -f %s.res %s.ins\n" % (name, name)
     command += "shelxl %s \n" % (name,)
-    
-    try:
-        f = open('shelx-sm.com', 'w')
-        f.write(command)
-        f.close()
-    except IOError:
-        raise autoprocess.errors.ProcessError('Could not create command file')
-    _execute_command(["sh", "shelx-sm.com"])
+
+    with open('shelx-sm.com', 'w') as fobj:
+        fobj.write(command)
+
+    command = Command('sh', 'shelx-sm.com', spinner=False)
+    command.start()
+
 
 def xprep(name, unit_cell, formula):
     import pexpect
@@ -186,22 +178,22 @@ def xprep(name, unit_cell, formula):
     log = ""
     commands = [
         ('Enter cell .+:\r\n\s', ' '.join(["%s" % v for v in unit_cell])),
-        ('Lattice type \[.+Select option\s\[.+\]:\s',''),
-        ('Select option\s\[.+\]:\s',''),
-        ('Determination of reduced .+Select option\s\[.+\]:\s',''), 
-        ('Select option\s\[.+\]:\s',''),
-        ('Select option\s\[.+\]:\s',''),
-        ('Select option\s\[.+\]:\s',''),
-        ('Select option\s\[.+\]:\s',''),
-        ('Select option\s\[.+\]:\s',''),
-        ('Select option\s\[.+\]:\s','C'),
-        ('Enter formula; .+:\r\n\r\n', formula), 
-        ('Tentative Z .+Select option\s\[.+\]:\s',''),
-        ('Select option\s\[.+\]:\s','F'),
-        ('Output file name .+:\s', name), 
-        ('format\s\[.+\]:\s','M'),  
-        ('Do you wish to .+\s\[.+\]:\s',''), 
-        ('Select option\s\[.+\]:\s','Q')
+        ('Lattice type \[.+Select option\s\[.+\]:\s', ''),
+        ('Select option\s\[.+\]:\s', ''),
+        ('Determination of reduced .+Select option\s\[.+\]:\s', ''),
+        ('Select option\s\[.+\]:\s', ''),
+        ('Select option\s\[.+\]:\s', ''),
+        ('Select option\s\[.+\]:\s', ''),
+        ('Select option\s\[.+\]:\s', ''),
+        ('Select option\s\[.+\]:\s', ''),
+        ('Select option\s\[.+\]:\s', 'C'),
+        ('Enter formula; .+:\r\n\r\n', formula),
+        ('Tentative Z .+Select option\s\[.+\]:\s', ''),
+        ('Select option\s\[.+\]:\s', 'F'),
+        ('Output file name .+:\s', name),
+        ('format\s\[.+\]:\s', 'M'),
+        ('Do you wish to .+\s\[.+\]:\s', ''),
+        ('Select option\s\[.+\]:\s', 'Q')
     ]
     for exp, cmd in commands:
         log += client.read_nonblocking(size=2000)
@@ -210,5 +202,3 @@ def xprep(name, unit_cell, formula):
             time.sleep(.1)
     if client.isalive():
         client.wait()
-    
-

@@ -1,0 +1,20 @@
+root:
+  fields:
+    - "  Mean |L|   :<float:twinning_l_statistic> (untwinned: <float:twinning_l_statistic>; perfect twin: <float:twinning_l_statistic>)"
+    - "Multivariate Z score L-test: <float:twinning_l_zscore>"
+    - "Anisotropic ratio p-value :  <float:anisotropic_pvalue>"
+    - "Completeness with d_max=infinity: <float:completeness>"
+    - "Best guess :<int:asu_guess> residues in the asu"
+
+  sections:
+    twin_laws:
+      domain: "Twinning and intensity statistics summary(.+?)Patterson analyses"
+      table:  "| <char:operator:8> | <char:type:4> | <float:r_obs> | <float:britton_alpha> | <float:H_alpha> | <float:ML_alpha> |"
+
+    twinning_l_test:
+      domain: "TABLE: L test(.+?)\n\n"
+      table: "<float:abs_l> <float:observed> <float:untwinned> <float:twinned>"
+
+    intensity_plots:
+      domain: "TABLE: Intensity plots(.+?)\n\n"
+      table: "<float:inv_res_sq> <float:mean_i> <float:mean_i_binned> <float:expected_i>"

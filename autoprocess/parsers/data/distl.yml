@@ -1,0 +1,16 @@
+root:
+  sections:
+    summary:
+      fields:
+        - "File : <slug:file>"
+        - "Spot Total : <int:total_spots>"
+        - "Remove Ice : <int:nonice_spots>"
+        - "In-Resolution Total : <int:resolution_spots>"
+        - "Good Bragg Candidates : <int:bragg_spots>"
+        - "Ice Rings : <int:ice_rings>"
+        - "Method 2 Resolution : <float:alt_resolution>"
+        - "Method 1 Resolution : <float:resolution>"
+        - "Maximum unit cell : <float:max_cell>"
+        - "Saturation, Top <int:top_saturation> Peaks : <float:top_saturation>"
+        - "with mean integrated signal<float:signal>"
+        - "with mean saturation<float:saturation>"

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # dpserver:   Data Processing Server
 #
@@ -10,9 +10,9 @@
 . /etc/rc.d/init.d/functions
 
 # Prepare environment
-for i in /cmcf_apps/profile.d/*.sh; do
-	if [ -r "$i" ]; then
-	    . $i
+for profile in /cmcf_apps/profile.d/*.sh; do
+	if [ -r "$profile" ]; then
+	    source ${profile}
 	fi
 done
 unset i
@@ -21,7 +21,7 @@ unset i
 servicename='dpserver'
 pidfile='/var/run/dpserver.pid'
 logfile='/var/log/dpserver.log'
-appfile=$DPS_PATH/autoprocess/services/pb-server.py
+appfile=/path/to/auto.tac
 umask=022
 
 export MPLCONFIGDIR=/tmp

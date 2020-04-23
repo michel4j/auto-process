@@ -8,7 +8,8 @@ import shutil
 
 import msgpack
 import numpy
-from autoprocess.utils import msgpack_numpy
+import msgpack_numpy
+
 from prettytable import PrettyTable
 
 # Physical Constants
@@ -96,7 +97,7 @@ def combine_names(names):
     Return a combined name to represent a set of names
     """
 
-    return '-'.join(filter(None, [os.path.commonprefix(names), 'combined']))
+    return '-'.join([_f for _f in [os.path.commonprefix(names), 'combined'] if _f])
 
 
 def prepare_dir(workdir, backup=False):
@@ -180,7 +181,7 @@ def optimize_xtal_offset(info, kappa_axis=KAPPA_AXIS):
     STEP = 5  # How coarse should the brute force search be in degrees?
 
     axis_names = ['cell_a_axis', 'cell_b_axis', 'cell_c_axis']
-    longest_axis = max(zip(info['unit_cell'], axis_names))[1]
+    longest_axis = max(list(zip(info['unit_cell'], axis_names)))[1]
     kmat = make_rot_matrix(kappa_axis, STEP)
     orig_offset = abs(calc_angle(info[longest_axis], info['rotation_axis'])) * 180.0 / numpy.pi
     offsets = []
@@ -200,8 +201,8 @@ def optimize_xtal_offset(info, kappa_axis=KAPPA_AXIS):
             offsets.append((offset, kappa, phi, chi_offset))
 
     # offset dimensions
-    ks = len(range(0, 180, STEP))
-    ps = len(range(0, 360, STEP))
+    ks = len(list(range(0, 180, STEP)))
+    ps = len(list(range(0, 360, STEP)))
 
     opt_offset, opt_kappa, opt_phi, chi_offset = min(offsets)
     _out = {
@@ -230,20 +231,20 @@ class Table(object):
         return self.get_text()
 
     def get_text(self, full=False):
-        x = PrettyTable(self.keys())
+        x = PrettyTable(list(self.keys()))
         if self.size < 7 or full:
             for i in range(self.size):
                 x.add_row(self.row(i))
         else:
             for i in range(3):
                 x.add_row(self.row(i))
-            x.add_row(['...'] * len(self.keys()))
+            x.add_row(['...'] * len(list(self.keys())))
             for i in range(self.size - 3, self.size):
                 x.add_row(self.row(i))
         return x.get_string()
 
     def keys(self):
-        return [k for k in self._table[0].keys() if k not in self.hidden_columns]
+        return [k for k in list(self._table[0].keys()) if k not in self.hidden_columns]
 
     def hide(self, *args):
         self.hidden_columns.extend(args)
@@ -253,7 +254,7 @@ class Table(object):
 
     def row(self, i):
         if i < len(self._table):
-            return [v for k, v in self._table[i].items() if k not in self.hidden_columns]
+            return [v for k, v in list(self._table[i].items()) if k not in self.hidden_columns]
 
     def rows(self, slice=":"):
         pre, post = slice.split(':')
@@ -285,7 +286,7 @@ class Table(object):
 class rTable(Table):
     def __init__(self, t):
         self._table = []
-        keys = t.keys()
+        keys = list(t.keys())
         for i in range(len(t[keys[0]])):
             d = {}
             for k in keys:
@@ -324,7 +325,7 @@ class SortedDict(dict):
             data = {}
         super(SortedDict, self).__init__(data)
         if isinstance(data, dict):
-            self.keyOrder = data.keys()
+            self.keyOrder = list(data.keys())
         else:
             self.keyOrder = []
             for key, value in data:
@@ -334,7 +335,7 @@ class SortedDict(dict):
     def __deepcopy__(self, memo):
         from copy import deepcopy
         return self.__class__([(key, deepcopy(value, memo))
-                               for key, value in self.iteritems()])
+                               for key, value in self.items()])
 
     def __setitem__(self, key, value):
         super(SortedDict, self).__setitem__(key, value)
@@ -364,7 +365,7 @@ class SortedDict(dict):
         return result
 
     def items(self):
-        return zip(self.keyOrder, self.values())
+        return list(zip(self.keyOrder, list(self.values())))
 
     def iteritems(self):
         for key in self.keyOrder:
@@ -377,14 +378,14 @@ class SortedDict(dict):
         return iter(self.keyOrder)
 
     def values(self):
-        return map(super(SortedDict, self).__getitem__, self.keyOrder)
+        return list(map(super(SortedDict, self).__getitem__, self.keyOrder))
 
     def itervalues(self):
         for key in self.keyOrder:
             yield super(SortedDict, self).__getitem__(key)
 
     def update(self, dict_):
-        for k, v in dict_.items():
+        for k, v in list(dict_.items()):
             self.__setitem__(k, v)
 
     def setdefault(self, key, default):
@@ -418,7 +419,7 @@ class SortedDict(dict):
         Replaces the normal dict.__repr__ with a version that returns the keys
         in their sorted order.
         """
-        return '{%s}' % ', '.join(['%r: %r' % (k, v) for k, v in self.items()])
+        return '{%s}' % ', '.join(['%r: %r' % (k, v) for k, v in list(self.items())])
 
     def clear(self):
         super(SortedDict, self).clear()
@@ -475,7 +476,7 @@ def savgol_filter(data, window_length, polyorder, deriv=0):
         raise TypeError("kernel is to small for the polynomals\nshould be > order + 2")
 
     # a second order polynomal has 3 coefficients
-    order_range = range(polyorder + 1)
+    order_range = list(range(polyorder + 1))
     half_window = (window_length - 1) // 2
     b = numpy.mat([[k ** i for i in order_range] for k in range(-half_window, half_window + 1)])
     # since we don't want the derivative, else choose [1] or [2], respectively
@@ -485,8 +486,8 @@ def savgol_filter(data, window_length, polyorder, deriv=0):
     half_window = (window_size - 1) // 2
 
     # precompute the offset values for better performance
-    offsets = range(-half_window, half_window + 1)
-    offset_data = zip(offsets, m)
+    offsets = list(range(-half_window, half_window + 1))
+    offset_data = list(zip(offsets, m))
 
     smooth_data = list()
 

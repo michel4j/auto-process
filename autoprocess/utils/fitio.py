@@ -1,5 +1,6 @@
-import numpy
 import copy
+
+import numpy
 
 CALIB_TEMPLATE = """POWDER DIFFRACTION (2-D)
 INPUT
@@ -88,6 +89,7 @@ EXIT FIT2D
 YES
 """
 
+
 def write_calib_macro(parameters, macro_file='macro.mac'):
     """
     Create calib macro file for fit2d
@@ -126,22 +128,23 @@ def write_calib_macro(parameters, macro_file='macro.mac'):
         'beam_y': params['detector_size'][1] - params['beam_center'][1],
         'rings': [(x, params['detector_size'][1] - y) for x, y in params['rings']],
         'ellipse': [(x, params['detector_size'][1] - y) for x, y in params['ellipse']],
-        'pixel_size': 1000*params['pixel_size'],
+        'pixel_size': 1000 * params['pixel_size'],
         'intensity': 'YES' if params.get('intensity') else 'NO',
         'max_angle': max_angle
     })
 
     coords_text = [
-        '{:12d}'.format(len(params['ellipse']))
-    ] + [
-        '{:14.7E}\n{:14.7E}'.format(x, y) for x, y in params['ellipse']
-    ] + [
-         '{:12d}'.format(1),
-         '{:14.7E}\n{:14.7E}'.format(params['ellipse'][0][0]+params['ring_width'], params['ellipse'][0][1]+params['ring_width']),
-         '{}'.format(len(params['rings'])),
-    ] + [
-        '{:14.7E}\n{:14.7E}'.format(x, y) for x, y in params['rings']
-    ]
+                      '{:12d}'.format(len(params['ellipse']))
+                  ] + [
+                      '{:14.7E}\n{:14.7E}'.format(x, y) for x, y in params['ellipse']
+                  ] + [
+                      '{:12d}'.format(1),
+                      '{:14.7E}\n{:14.7E}'.format(params['ellipse'][0][0] + params['ring_width'],
+                                                  params['ellipse'][0][1] + params['ring_width']),
+                      '{}'.format(len(params['rings'])),
+                  ] + [
+                      '{:14.7E}\n{:14.7E}'.format(x, y) for x, y in params['rings']
+                  ]
 
     params['coordinates'] = '\n'.join(coords_text)
     macro = CALIB_TEMPLATE.format(**params)
@@ -187,7 +190,7 @@ def write_integrate_macro(parameters, macro_file='integrate.mac'):
     params.update({
         'beam_x': params['beam_center'][0],
         'beam_y': params['detector_size'][1] - params['beam_center'][1],
-        'pixel_size': 1000*params['pixel_size'],
+        'pixel_size': 1000 * params['pixel_size'],
         'intensity': 'YES' if params.get('intensity') else 'NO',
         'max_angle': max_angle
     })

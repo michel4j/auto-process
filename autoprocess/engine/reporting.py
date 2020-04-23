@@ -1,19 +1,17 @@
-# coding=utf-8
-from __future__ import unicode_literals
-
 import inspect
 import os
 import shutil
 
 import numpy
 from prettytable import PrettyTable
+
 from autoprocess.utils import gnuplot
 from autoprocess.utils import xtal, misc, log
 from autoprocess.utils.misc import json
 
 _logger = log.get_module_logger(__name__)
 
-SHARE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'share')
+SHARE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'share')
 
 
 def save_report(datasets, options):
@@ -98,7 +96,7 @@ def get_strategy(results):
         'exposure_rate': -1,
     }
     if run.get('exposure_time', 0) > 0:
-        info['exposure_rate'] = float(round(run['phi_width'], 1))/round(run['exposure_time'],1)
+        info['exposure_rate'] = float(round(run['phi_width'], 1)) / round(run['exposure_time'], 1)
     return info
 
 
@@ -175,7 +173,7 @@ def summary_table(datasets, options):
         report['data'][8].append('{:0.1f}'.format(multiplicity))
         report['data'][9].append('{:0.1f} %'.format(analysis['summary']['completeness']))
         report['data'][10].append(
-            'N/A' if dataset['parameters']['name'] =='combined' else '{:0.2f}'.format(
+            'N/A' if dataset['parameters']['name'] == 'combined' else '{:0.2f}'.format(
                 results['correction']['summary']['mosaicity']
             )
         )
@@ -183,7 +181,7 @@ def summary_table(datasets, options):
         report['data'][12].append('{:0.1f}'.format(analysis['summary']['r_meas']))
         report['data'][13].append('{:0.1f} %'.format(analysis['summary']['cc_half']))
         report['data'][14].append(
-            'N/A' if dataset['parameters']['name'] =='combined' else'{:0.1f}'.format(
+            'N/A' if dataset['parameters']['name'] == 'combined' else '{:0.1f}'.format(
                 results['integration']['statistics']['summary']['ISa']
             )
         )
@@ -218,7 +216,7 @@ def screening_summary_table(dataset, options):
                 "{:0.2f} {:0.2f} {:0.2f} {:0.4g} {:0.4g} {:0.4g}".format(*results['correction']['summary']['unit_cell'])
             ],
             ['Mosaicity', '{:0.2f}'.format(results['correction']['summary']['mosaicity'])],
-            ['ISa', results['correction']['correction_factors']['parameters'][0].get('ISa', -1)],
+            ['ISa', results['correction']['correction_factors']['parameters'].get('ISa', -1)],
             ['Expected Quality³', ''],
             ['Resolution (Å)⁴', '{:0.1f} '.format(results['strategy']['resolution'])],
             ['Multiplicity', '{:0.1f}'.format(results['strategy']['redundancy'])],
@@ -269,7 +267,6 @@ def lattice_table(dataset, options):
                         '{:0.1f}'.format(xtal.cell_volume(lattice['unit_cell']))
                     ] for lattice in
                     sorted(results['correction']['symmetry']['lattices'], key=lambda d: d['id'][0])
-                    if lattice['star'] == '*'
                 ],
         'header': 'row',
         'notes': (
@@ -317,7 +314,8 @@ def standard_error_report(dataset, options):
                 'style': 'half-height',
                 'data': {
                     'x': ['Resolution Shell'] + [
-                        round(numpy.mean(row['resol_range']), 2) for row in results['correction']['standard_errors'][:-1]
+                        round(numpy.mean(row['resol_range']), 2) for row in
+                        results['correction']['standard_errors'][:-1]
                     ],
                     'y1': [
                         ['Chi²'] + [row['chi_sq'] for row in results['correction']['standard_errors'][:-1]]
@@ -335,7 +333,8 @@ def standard_error_report(dataset, options):
                 'data':
                     {
                         'x': ['Resolution Shell'] + [
-                            round(numpy.mean(row['resol_range']), 2) for row in results['correction']['standard_errors'][:-1]
+                            round(numpy.mean(row['resol_range']), 2) for row in
+                            results['correction']['standard_errors'][:-1]
                         ],
                         'y1': [
                             ['R-observed'] + [row['r_obs'] for row in results['correction']['standard_errors'][:-1]],
@@ -356,7 +355,7 @@ def standard_error_report(dataset, options):
     }
 
 
-def shell_statistics_report(dataset, options,):
+def shell_statistics_report(dataset, options, ):
     results = dataset['results']
     analysis = results['correction'] if not 'scaling' in results else results['scaling']
     return {
@@ -415,7 +414,7 @@ def shell_statistics_report(dataset, options,):
                        (|F(+)-F(-)|/Sigma). F(+), F(-) are structure factor estimates obtained from the merged 
                        intensity observations in each parity class.
                     3. Percentage of correlation between random half-sets of anomalous intensity differences. """
-                )
+                                          )
             }
         ]
     }
@@ -436,7 +435,7 @@ def frame_statistics_report(dataset, options):
                     ],
                     'y2': [
                         ['Mosaicity'] + [row['mosaicity'] for row in results['integration']['scale_factors']],
-                        #['Divergence'] + [row['divergence'] for row in results['integration']['scale_factors']],
+                        # ['Divergence'] + [row['divergence'] for row in results['integration']['scale_factors']],
                     ],
                 }
             },
@@ -459,7 +458,7 @@ def frame_statistics_report(dataset, options):
                 'data': {
                     'x': ['Frame Number'] + [row['frame'] for row in results['integration']['scale_factors']],
                     'y1': [
-                        ['Reflections'] + [row['reflections'] for row in results['integration']['scale_factors']]
+                        ['Reflections'] + [row['ewald'] for row in results['integration']['scale_factors']]
                     ],
                     'y2': [
                         ['Unique'] + [row['unique'] for row in results['correction']['frame_statistics']]
@@ -492,7 +491,7 @@ def frame_statistics_report(dataset, options):
 
 def wilson_report(dataset, options):
     results = dataset['results']
-    analysis = results['correction'] if not 'scaling' in results else results['scaling']
+    analysis = results['correction']
     if results.get('data_quality') and results['data_quality'].get('intensity_plots'):
         plot = {
             'kind': 'lineplot',
@@ -556,7 +555,7 @@ def twinning_report(dataset, options):
                given spread in intensities. Good to reasonable data are expected to have a Z score 
                lower than 3.5.  Large values can indicate twinning, but small values 
                do not necessarily exclude it""".format(quality['twinning_l_zscore'], *quality['twinning_l_statistic'])
-            )
+                                  )
     }
 
     if results['data_quality'].get('twin_laws'):
@@ -620,7 +619,7 @@ def strategy_table(dataset, options):
                angle, divide the selected delta angle by this number. When adjusting the delta angle, the exposure time 
                should be adjusted accordingly to keep the total does the same.
              """
-        )
+                                  )
     }
 
 
@@ -646,7 +645,7 @@ def kappa_analysis_table(dataset, options):
 def predicted_quality_report(dataset, options):
     strategy = dataset['results']['strategy']
     statistics = strategy['details']['shell_statistics']
-    resolution = map(numpy.mean, zip(statistics['max_resolution'], statistics['min_resolution']))
+    resolution = list(map(numpy.mean, list(zip(statistics['max_resolution'], statistics['min_resolution']))))
     return {
         'title': 'Predicted Statistics for Suggested Strategy by Resolution',
         'content': [
@@ -735,9 +734,10 @@ def screening_analysis_report(dataset, options):
         ]
     }
 
+
 def alt_screening_analysis_report(dataset, options):
     strategy = dataset['results']['strategy']
-    total_angles = strategy['details']['completeness_statistics'].keys()[:]
+    total_angles = list(strategy['details']['completeness_statistics'].keys())[:]
     total_angles.remove('start_angle')
     total_angles = sorted(total_angles, key=lambda x: float(x))
     return {
@@ -759,6 +759,7 @@ def alt_screening_analysis_report(dataset, options):
             },
         ]
     }
+
 
 def single_report(dataset, options):
     if options.get('anomalous'):
@@ -862,7 +863,7 @@ def screening_report(dataset, options):
             'content': [
                 screening_summary_table(dataset, options),
                 strategy_table(dataset, options),
-                #kappa_analysis_table(dataset, options),
+                # kappa_analysis_table(dataset, options),
                 lattice_table(dataset, options),
                 spacegroup_table(dataset, options),
             ]
@@ -884,19 +885,18 @@ def screening_report(dataset, options):
 
 
 def heading(text, level):
-
     if level in [1, 2]:
         underline = {1: '=', 2: '-'}[level]
-        return '\n{}\n{}'.format(text.title(), underline*len(text))
+        return '\n{}\n{}'.format(text.title(), underline * len(text))
     else:
-        return '\n{} {}'.format('#'*level, text)
+        return '\n{} {}'.format('#' * level, text)
 
 
 def text_report(report):
     output = []
     for i, section in enumerate(report):
         if i != 0:
-            output.append('\n\n{}\n\n'.format('-'*79))
+            output.append('\n\n{}\n\n'.format('-' * 79))
         output.append(heading(section['title'], 1))
         if 'description' in section:
             output.append(section['description'])
@@ -904,7 +904,7 @@ def text_report(report):
             for content in section['content']:
                 if 'title' in content:
                     output.append(heading(content['title'], 2))
-                output.append(content.get('description', '') )
+                output.append(content.get('description', ''))
                 if content.get('kind') == 'table':
                     table = PrettyTable()
                     if content.get('header') == 'row':
@@ -919,17 +919,16 @@ def text_report(report):
                             table.add_row(row)
                             table.align['{}'.format(j)] = 'l' if j == 0 else 'r'
 
-
                     output.append(table.get_string())
                 elif content.get('kind') in ['lineplot', 'scatterplot']:
                     plot_type = {'lineplot': 'linespoints', 'scatterplot': 'points'}[content['kind']]
-                    output.append(gnuplot.plot(content['data'], plot_type=plot_type, style=content.get('style', 'full-height')))
+                    plot_text = gnuplot.plot(content['data'], plot_type=plot_type, style=content.get('style', 'full-height'))
+                    output.append(plot_text.decode('utf8'))
                 if 'notes' in content:
                     output.append(heading('NOTES', 4))
-                    output.append(content['notes']+'\n')
+                    output.append(content['notes'] + '\n')
         if 'notes' in section:
             output.append(heading('NOTES', 3))
-            output.append(section['notes']+'\n')
+            output.append(section['notes'] + '\n')
 
-    return '\n'.join(output).encode('utf-8')
-
+    return '\n'.join(output)

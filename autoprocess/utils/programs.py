@@ -6,6 +6,7 @@ import time
 from progress.spinner import Spinner
 
 
+
 class BlankSpinner(object):
     """A spinner which does nothing"""
 

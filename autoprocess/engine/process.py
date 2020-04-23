@@ -370,6 +370,16 @@ class Manager(object):
                     self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
                     if step == 'correction':
                         ISa = dset.results['correction']['correction_factors']['parameters'].get('ISa', -1)
+                        r_meas = dset.results['correction']['summary']['inner_shell']['r_meas']
+                        i_sigma = dset.results['correction']['summary']['inner_shell']['i_sigma']
+                        logger.info(log.log_value(
+                            'Low-res R-meas for "{}"'.format(dset.name),
+                            f'{r_meas:0.1f} %'
+                        ))
+                        logger.info(log.log_value(
+                            'Low-res I/Sigma for "{}"'.format(dset.name),
+                            f'{i_sigma:0.1f}'
+                        ))
                         if ISa >= 0:
                             logger.info(log.log_value(
                                 'I/Sigma(I) Asymptote [ISa] for dataset "{}":'.format(dset.name),

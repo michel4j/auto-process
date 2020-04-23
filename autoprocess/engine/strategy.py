@@ -13,15 +13,16 @@ def calc_strategy(data_info, options=None):
     os.chdir(data_info['working_directory'])
 
     # indicate overwritten parameters
-    _suffix = []
+    suffix = []
     if options.get('resolution'):
-        _suffix.append("res=%0.2f" % options.get('resolution'))
-    if options.get('anomalous', None) is not None:
-        _suffix.append("anom=%s" % options.get('anomalous'))
-    if len(_suffix) > 0:
-        _logger.info("Calculating strategy ... (%s)" % ",".join(_suffix))
+        suffix.append("res=%0.2f" % options.get('resolution'))
+    if options.get('anomalous'):
+        suffix.append("anomalous")
+
+    if len(suffix) > 0:
+        step_descr = "Calculating strategy [{}]".format(", ".join(suffix))
     else:
-        _logger.info('Calculating strategy ...')
+        step_descr = 'Calculating strategy'
 
     if not misc.file_requirements('CORRECT.LP', 'BKGPIX.cbf', 'XDS_ASCII.HKL', 'GXPARM.XDS'):
         return {'step': 'strategy', 'success': False, 'reason': 'Required files from integration missing'}
@@ -34,7 +35,7 @@ def calc_strategy(data_info, options=None):
     xdsio.write_xds_input("XPLAN", run_info)
 
     try:
-        programs.xds_par()
+        programs.xds_par(step_descr)
         info = xds.parse_xplan()
 
         programs.best(data_info, options)

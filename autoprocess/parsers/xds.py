@@ -100,6 +100,7 @@ def parse_correct(filename='CORRECT.LP'):
 
 def parse_xplan(filename='XPLAN.LP'):
     raw_info = parser.parse(filename, 'xplan')
+
     index_info = parse_idxref()
     correct_info = parse_correct('CORRECT.LP.first')
 

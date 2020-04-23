@@ -331,11 +331,15 @@ class Manager(object):
                             'unit_cell': dset.results['indexing']['parameters']['unit_cell'],
                             'space_group': dset.results['indexing']['parameters']['sg_number']})
 
-                        logger.log(log.IMPORTANT, "Reduced Cell: %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f" % tuple(
-                            dset.results['indexing']['parameters']['unit_cell']))
-                        _xter_list = [v['character'] for v in dset.results['indexing']['lattices']]
-                        _pg_txt = ", ".join(xtal.get_pg_list(_xter_list, chiral=self.options.get('chiral', True)))
-                        logger.log(log.IMPORTANT, "Possible Point Groups: %s" % _pg_txt)
+                        logger.log(
+                            log.IMPORTANT,
+                            "Reduced Cell: {:0.2f} {:0.2f} {:0.2f} {:0.2f} {:0.2f} {:0.2f}".format(
+                                *dset.results['indexing']['parameters']['unit_cell']
+                            )
+                        )
+                        xter_list = [v['character'] for v in dset.results['indexing']['lattices']]
+                        pg_txt = ", ".join(xtal.get_pg_list(xter_list, chiral=self.options.get('chiral', True)))
+                        logger.log(log.IMPORTANT, f"Possible Point Groups: {pg_txt}")
 
             next_step = 'integration'
 
@@ -361,11 +365,11 @@ class Manager(object):
                     # special pre-step handling  for correction
                     if step == 'correction' and i > 0 and self.options.get('mode') in ['merge', 'mad']:
                         # update parameters with reference after correction
-                        _ref_file = os.path.join('..',
+                        ref_file = os.path.join('..',
                                                  list(self.datasets.values())[i - 1].results['correction'][
                                                      'output_file'])
-                        _ref_sg = list(self.datasets.values())[0].results['correction']['summary']['spacegroup']
-                        step_ovw.update({'reference_data': _ref_file, 'reference_spacegroup': _ref_sg})
+                        ref_sg = list(self.datasets.values())[0].results['correction']['summary']['spacegroup']
+                        step_ovw.update({'reference_data': ref_file, 'reference_spacegroup': ref_sg})
 
                     self.run_step(step, dset, overwrite=step_ovw, colonize=colonize)
                     if step == 'correction':
@@ -383,16 +387,16 @@ class Manager(object):
             logger.info(THIN_LINE)
             self.run_position = (0, 'symmetry')
             ref_info = None
-            _sg_number = 0
+            sg_number = 0
             if overwrite.get('sg_overwrite') is not None:
-                _sg_number = overwrite['sg_overwrite']
+                sg_number = overwrite['sg_overwrite']
                 ref_info = None
             elif self.options.get('mode') in ['merge', 'mad']:
                 ref_opts = {}
                 ref_opts.update(self.options)
                 ref_opts.update(overwrite)
                 ref_info = scaling.prepare_reference(self.datasets, ref_opts)
-                _sg_number = ref_info['sg_number']
+                sg_number = ref_info['sg_number']
 
             for dset in list(self.datasets.values()):
                 if dset.name == 'combined' and self.options.get('mode') == 'merge':
@@ -406,7 +410,7 @@ class Manager(object):
                     # tranfer symmetry info from reference to this dataset and update with specific reindex matrix
                     if ref_info is not None:
                         dset.results['symmetry'] = ref_info
-                    ref_sginfo = symmetry.get_symmetry_params(_sg_number, dset)
+                    ref_sginfo = symmetry.get_symmetry_params(sg_number, dset)
                     dset.results['symmetry'].update(ref_sginfo)
 
                 step_ovw = {}
@@ -424,7 +428,7 @@ class Manager(object):
                         *dset.results['correction']['summary']['unit_cell']
                     )
                 )
-                logger.info('Refined cell: {}'.format(cell_str))
+                logger.info('Refined for {} cell: {}'.format(log.TermColor.italics(dset.name), cell_str))
 
                 if self.options.get('mode') in ['merge']:
                     _score = dset.score()
@@ -446,11 +450,11 @@ class Manager(object):
             if self.options.get('mode') == 'merge' and 'combined' in self.datasets:
                 # 'combined' merged dataset is special remove it before scaling
                 self.datasets.pop('combined', None)
-            _out = scaling.scale_datasets(self.datasets, step_ovw)
+            out = scaling.scale_datasets(self.datasets, step_ovw)
             self.save_checkpoint()
 
-            if not _out['success']:
-                logger.error('Failed (%s): %s' % (_out['step'], _out['reason']))
+            if not out['success']:
+                logger.error('Failed (%s): %s' % (out['step'], out['reason']))
                 sys.exit()
             next_step = 'strategy'
 
@@ -473,28 +477,29 @@ class Manager(object):
                     ['Exposure Rate (deg/sec)', '{:0.2f}'.format(strategy['exposure_rate'])],
                     ['Overlaps?', strategy['overlaps']],
                 ])
+                strategy_table.table.align[''] = 'r'
                 for line in str(strategy_table).splitlines():
                     logger.info(line)
 
             self.save_checkpoint()
 
         # check quality and covert formats
-        logger.info(THIN_LINE)
         for i, dset in enumerate(self.datasets.values()):
             # Only calculate for 'combined' dataset when merging.
             if self.options['mode'] == 'merge' and dset.name != 'combined': continue
 
             # Run Data Quality Step:
             if self.options.get('mode') != 'screen':
+                logger.info(THIN_LINE)
                 self.run_position = (i, 'data_quality')
                 logger.info('Checking quality of dataset {} ...'.format(log.TermColor.italics(dset.name)))
-                _out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
-                dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-                if not _out['success']:
-                    logger.error('Failed (%s): %s' % ("data quality", _out['reason']))
+                out = scaling.data_quality(dset.results['scaling']['output_file'], self.options)
+                dset.log.append((time.time(), out['step'], out['success'], out.get('reason', None)))
+                if not out['success']:
+                    logger.error('Failed (%s): %s' % ("data quality", out['reason']))
                     sys.exit()
                 else:
-                    dset.results['data_quality'] = _out.get('data')
+                    dset.results['data_quality'] = out.get('data')
                 self.save_checkpoint()
 
             # Scoring
@@ -507,17 +512,17 @@ class Manager(object):
             self.run_position = (i, 'conversion')
             if self.options.get('mode') != 'screen':
                 if self.options.get('mode') == 'merge' and dset.name != 'combined': continue
-                _step_options = {}
-                _step_options.update(self.options)
-                _step_options['file_root'] = dset.name
+                step_options = {}
+                step_options.update(self.options)
+                step_options['file_root'] = dset.name
 
-                _out = conversion.convert_formats(dset, _step_options)
-                dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-                if not _out['success']:
-                    dset.log.append((time.time(), _out['step'], _out['success'], _out.get('reason', None)))
-                    logger.error('Failed (%s): %s' % ("conversion", _out['reason']))
+                out = conversion.convert_formats(dset, step_options)
+                dset.log.append((time.time(), out['step'], out['success'], out.get('reason', None)))
+                if not out['success']:
+                    dset.log.append((time.time(), out['step'], out['success'], out.get('reason', None)))
+                    logger.error('Failed (%s): %s' % ("conversion", out['reason']))
                 else:
-                    dset.results['output_files'] = _out.get('data')
+                    dset.results['output_files'] = out.get('data')
                 self.save_checkpoint()
 
             if self.options.get('solve-small'):
@@ -525,12 +530,12 @@ class Manager(object):
                 if self.options.get('mode') == 'merge' and i > 0:
                     pass  # do not solve
                 else:
-                    _step_info = {
+                    step_info = {
                         'unit_cell': dset.results['correction']['summary']['unit_cell'],
                         'name': dset.name,
                         'formula': self.options.get('solve-small'),
                     }
-                    _out = solver.solve_small_molecule(_step_info, self.options)
+                    out = solver.solve_small_molecule(step_info, self.options)
                 self.save_checkpoint()
 
         # reporting

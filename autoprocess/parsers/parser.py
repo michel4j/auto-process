@@ -222,11 +222,11 @@ def parse_section(section, data):
                     output.update(parse_fields(spec, sub_data))
         elif 'lines' in section:
             if isinstance(section['lines'], list):
-                spec = '\\n'.join(section['lines'])
+                spec = '\\n' +'\\n'.join(section['lines'])
                 output.update(parse_fields(spec, sub_data))
         elif 'table' in section:
             if isinstance(section['table'], list):
-                spec = '\\n'.join(section['table'])
+                spec = '\\n' + '\\n'.join(section['table'])
             else:
                 spec = section['table']
             return parse_fields(spec, sub_data, table=True)

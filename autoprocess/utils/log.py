@@ -100,9 +100,9 @@ def log_to_console(level=LOG_LEVEL):
 
 def log_to_file(filename, level=logging.DEBUG):
     """Add a log handler which logs to the console."""
-    logfile = RotatingFileHandler(filename, maxBytes=1e6, backupCount=10)
+    logfile = RotatingFileHandler(filename, maxBytes=1000000, backupCount=10)
     logfile.setLevel(level)
-    formatter = logging.Formatter('%(asctime)s [%(name)s] %(message)s', '%b/%d %H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s %(message)s', '%H:%M:%S')
     logfile.setFormatter(formatter)
     logging.getLogger('').addHandler(logfile)
 

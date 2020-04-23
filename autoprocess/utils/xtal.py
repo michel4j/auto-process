@@ -1,25 +1,23 @@
-from __future__ import unicode_literals, print_function
-
 import bisect
 import gzip
 import math
 import os
 
-import msgpack
+import json
 import numpy
 
 from autoprocess.utils.misc import Table
 
 DEBUG = False
-XTAL_TABLE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'xtal_tables.dat')
+XTAL_TABLE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'xtal_tables.jsonz')
 with gzip.open(XTAL_TABLE_FILE, 'rb') as handle:
-    XTAL_TABLES = msgpack.load(handle)
+    XTAL_TABLES = json.load(handle)
 
-SG_SYMBOLS = {k: v['name'] for k, v in XTAL_TABLES.items()}
-SG_NAMES = {k: v['symbol'] for k, v in XTAL_TABLES.items()}
-SG_NUMBERS = {v['name']: k for k, v in XTAL_TABLES.items()}
-CHIRAL_SPACE_GROUPS = [k for k, v in XTAL_TABLES.items() if v['chiral']]
-CENTRO_SYMETRIC = {k: '-X,-Y,-Z' in v['symmetry'] for k, v in XTAL_TABLES.items()}
+SG_SYMBOLS = {int(k): v['name'] for k, v in list(XTAL_TABLES.items())}
+SG_NAMES = {int(k): v['symbol'] for k, v in list(XTAL_TABLES.items())}
+SG_NUMBERS = {v['name']: int(k) for k, v in list(XTAL_TABLES.items())}
+CHIRAL_SPACE_GROUPS = [int(k) for k, v in list(XTAL_TABLES.items()) if v['chiral']]
+CENTRO_SYMETRIC = {int(k): '-X,-Y,-Z' in v['symmetry'] for k, v in list(XTAL_TABLES.items())}
 
 # each rule is a list of 9 boolean values representing
 # a=b, a=c, b=c, a=b=c, alpha=90, beta=90, gamma=90, alpha=120, beta=120, gamma=120
@@ -35,19 +33,19 @@ _lattice_rules = {
 
 def resolution_shells(resolution, num=12):
     def _angle(resol):
-        return 2*numpy.arcsin(0.5 * 1.0 / resol)
+        return 2 * numpy.arcsin(0.5 * 1.0 / resol)
 
     def _resol(angl):
-        return round(0.5 * 1.0 / numpy.sin(0.5*angl), 2)
+        return round(0.5 * 1.0 / numpy.sin(0.5 * angl), 2)
 
     max_angle = _angle(resolution)
     min_angle = _angle(5.0)
     angles = numpy.linspace(min_angle, max_angle, num)
-    return map(_resol, angles)
+    return list(map(_resol, angles))
 
 
 def get_character(sg_number=1):
-    return XTAL_TABLES[sg_number]['lattice_character']
+    return XTAL_TABLES[str(sg_number)]['lattice_character']
 
 
 def get_number(sg_name):
@@ -55,9 +53,13 @@ def get_number(sg_name):
 
 
 def get_pg_list(lattices, chiral=True):
-    """Takes a list of lattice characters and returns a unique list of the
-    names of the lowest symmetry pointgroup."""
-    pgset = set([SG_NUMBERS[v['point_group']] for v in XTAL_TABLES.values() if v['lattice_character'] in lattices])
+    """
+    Takes a list of lattice characters and returns a unique list of the
+    names of the lowest symmetry pointgroup.
+    """
+
+    pgset = set(
+        [SG_NUMBERS[v['point_group']] for v in list(XTAL_TABLES.values()) if v['lattice_character'] in lattices])
     if chiral:
         pgset = pgset.intersection(set(CHIRAL_SPACE_GROUPS))
     pgnums = sorted(pgset)
@@ -67,12 +69,12 @@ def get_pg_list(lattices, chiral=True):
 def get_sg_table(chiral=True):
     """Generate a table of all spacegroups for each given crystal system."""
     tab = {}
-    for k, v in XTAL_TABLES.items():
+    for k, v in list(XTAL_TABLES.items()):
         if (chiral and not v['chiral']): continue
-        if v['lattice_character'] in tab.keys():
-            tab[v['lattice_character']].append("%d:%s" % (k, v['symbol']))
+        if v['lattice_character'] in list(tab.keys()):
+            tab[v['lattice_character']].append(f"{k}:{v['symbol']}")
         else:
-            tab[v['lattice_character']] = ["%d:%s" % (k, v['symbol'])]
+            tab[v['lattice_character']] = [f"{k}:{v['symbol']}"]
     txt = 'Table of space group numbers for each Bravais lattice type\n'
     txt += '-------------------------------------------------------------------------------\n'
     for k in ['aP', 'mP', 'mC', 'oP', 'oC', 'oA', 'oF', 'oI', 'tP', 'tI', 'hP', 'hR', 'cP', 'cF', 'cI']:
@@ -84,7 +86,7 @@ def get_sg_table(chiral=True):
                     lchr = k
                 else:
                     lchr = ""
-                txt += ' %4s \t%s\n' % (lchr, ', '.join(chunk))
+                txt += f' {lchr:>4} \t{", ".join(chunk)}\n'
     txt += '-------------------------------------------------------------------------------\n'
     return txt
 
@@ -165,7 +167,7 @@ def select_resolution(table, method=2, optimistic=False):
     """
 
     data = Table(table[:-1])
-    if 'shell' in data.keys():
+    if 'shell' in list(data.keys()):
         resol = [float(v) for v in data['shell']]
     else:
         resol = [float(v[1]) for v in data['resol_range']]
@@ -214,7 +216,7 @@ def logistic_score(x, best=1, fair=0.5):
 
 def logistic(x, x0=0.0, weight=1.0, width=1.0, invert=False):
     mult = 1 if invert else -1
-    return weight / (1 + numpy.exp(mult*width*(x - x0)))
+    return weight / (1 + numpy.exp(mult * width * (x - x0)))
 
 
 def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, rejected_fraction):
@@ -226,12 +228,12 @@ def score_crystal(resolution, completeness, r_meas, i_sigma, mosaicity, std_spot
         logistic(mosaicity, x0=0.3, weight=0.1, width=30, invert=True),
         logistic(std_spindle, x0=1.0, weight=0.05, width=2, invert=True),
         logistic(std_spot, x0=2.0, weight=0.05, width=2, invert=True),
-        logistic(rejected_fraction, x0=0.1, weight=0.1,  width=6, invert=True),
+        logistic(rejected_fraction, x0=0.1, weight=0.1, width=6, invert=True),
     ])
     weights = numpy.array([0.2, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05, 0.1])
     names = ['Resolution', 'Completeness', 'R_meas', 'I/Sigma', 'Mosaicity', 'Std_spindle', 'Std_spot', 'Rejected']
     values = [resolution, completeness, r_meas, i_sigma, mosaicity, std_spot, std_spindle, rejected_fraction]
-    return scores.sum(), zip(names, scores/weights, values)
+    return scores.sum(), list(zip(names, scores / weights, values))
 
 
 def average_cell(cell_and_weights):
@@ -250,21 +252,6 @@ def average_cell(cell_and_weights):
     new_cell = (cells.transpose() * weights).sum(1) / weights.sum()
     cell_esd = numpy.sqrt(numpy.dot(weights, (cells - new_cell) ** 2) / weights.sum())
     return (new_cell, cell_esd)
-
-
-# Determine twinning fraction from L statistic
-def _calc_L(a):
-    return (((1 - 2 * a) ** 2) * (1 - 6 * a + 6 * a ** 2) - 8 * ((1 - a) ** 2) * (a ** 2) * numpy.log(
-        4 * a * (1 - a))) / (2 * (1 - 2 * a) ** 4)
-
-
-_a_array = numpy.linspace(0.4999, 0.001, 1000)
-_l_array = _calc_L(_a_array)
-
-
-def L2twin(l):
-    idx = bisect.bisect_left(_l_array, l)
-    return _a_array[idx]
 
 
 def dist_to_resol(distance, pixel_size, detector_size, wavelength, two_theta=0):

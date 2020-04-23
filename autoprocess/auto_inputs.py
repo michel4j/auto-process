@@ -1,31 +1,19 @@
-#!/usr/bin/env python
-from __future__ import print_function
-
 import sys
-import warnings
-warnings.simplefilter("ignore") # ignore deprecation warnings
-    
 from autoprocess.engine.process import DataSet
-from autoprocess.utils import options, log, xdsio
+from autoprocess.utils import log, xdsio
 
-_logger = log.get_module_logger('auto.process')
+logger = log.get_module_logger('auto.process')
 
-def main():
-    # Parse options
-    opt = options.process_options(sys.argv[1:], options.INPUTS_USAGE)
-    
-    if len(opt['images']) >= 1:
-        dataset = DataSet(filename=opt['images'][0])
-        _logger.info('Creating XDS.INP ...')
-        xdsio.write_xds_input('ALL !XYCORR INIT COLSPOT IDXREF DEFPIX INTEGRATE CORRECT', dataset.parameters)
-    else:
-        _logger.error('No image specified.')
-        print(options.INPUTS_USAGE)
-        sys.exit(1)
-          
-def run():
+
+def main(args):
+    dataset = DataSet(filename=args.image)
+    logger.info('Creating XDS.INP ...')
+    xdsio.write_xds_input('ALL !XYCORR INIT COLSPOT IDXREF DEFPIX INTEGRATE CORRECT', dataset.parameters)
+
+
+def run(args):
     try:
         log.log_to_console()
-        main()
+        main(args)
     except KeyboardInterrupt:
         sys.exit(1)

@@ -1,42 +1,45 @@
-#!/usr/bin/env python
-
-
-import sys
 import os
-import warnings
-warnings.simplefilter("ignore") # ignore deprecation warnings
-    
+import sys
+
 from autoprocess.engine.process import Manager
 from autoprocess.utils import log
-from autoprocess.utils.options import integrate_options
 from autoprocess.utils import misc
 
-_logger = log.get_module_logger('auto.integrate')
+logger = log.get_module_logger('auto.integrate')
 
-def main():
-    # Parse options
-    options = integrate_options(sys.argv[1:])
+
+def main(args):
+    if args.dir:
+        os.chdir(args.dir)
     try:
-        chkpt = misc.load_chkpt()
+        checkpoint = misc.load_chkpt()
     except IOError:
-        _logger.error('This command must be run within a data processing directory.')
+        logger.error('Must be in, or provide a valid directory from previous session.')
         sys.exit(1)
-    app = Manager(checkpoint=chkpt)
-    
+
+    app = Manager(checkpoint=checkpoint)
+
     # update app and overwrite options
-    ow = {}
-    if options.get('anomalous') is not None:
-        app.options['anomalous'] = options.get('anomalous')
-    if options.get('frames'):
-        ow.update(data_range=options.get('frames'), skip_frames=options.get('skip_frames'))
-    if options.get('exclude'):
-        ow.update(skip_range=options.get('exclude'))
-    app.options['backup'] = options.get('backup', False)
-    app.run(resume_from=(chkpt['run_position'][0],'integration'), overwrite=ow)
-     
-def run():
+    overwrite = {
+        'optimize': args.opt,
+        'backup': args.backup
+    }
+
+    if args.anom != app.options['anomalous']:
+        overwrite['anomalous'] = args.anom
+    if args.frames:
+        overwrite['data_range'] = tuple(map(int, args.frames.split('-')))
+    if args.exclude:
+        overwrite['skip_frames'] = [tuple(map(int, x.split('-'))) for x in args.exclude.split(',')]
+    if args.res:
+        overwrite['resolution'] = args.res
+
+    app.run(resume_from=(checkpoint['run_position'][0], 'integration'), overwrite=overwrite)
+
+
+def run(args):
     try:
         log.log_to_console()
-        main()
+        main(args)
     except KeyboardInterrupt:
         sys.exit(1)

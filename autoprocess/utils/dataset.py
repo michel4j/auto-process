@@ -1,15 +1,13 @@
-import fnmatch
+import glob
 import os
 import re
-import sys
-import glob
 
 import numpy
+from mxio import read_image
 from scipy.ndimage import filters
 from scipy.ndimage import measurements
 
 import autoprocess.errors
-from autoprocess.libs.imageio import read_image
 from autoprocess.utils import misc
 from autoprocess.utils.log import get_module_logger
 
@@ -36,6 +34,7 @@ def detect_beam_peak(filename):
         good = True
 
     return beam_x, beam_y, good
+
 
 def import_parameters(inp_file):
     with open(inp_file, 'r') as handle:

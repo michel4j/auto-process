@@ -1,3 +1,0 @@
-[submodule "autoprocess/libs/imageio"]
-	path = autoprocess/libs/imageio
-	url = git@srv-cmcf-dp4.clsi.ca:cmcf/imageio.git

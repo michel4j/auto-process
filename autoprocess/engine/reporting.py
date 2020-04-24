@@ -537,26 +537,32 @@ def wilson_report(dataset, options):
 def twinning_report(dataset, options):
     results = dataset['results']
     quality = results['data_quality']
-    l_test = {
-        'title': 'L Test for twinning',
-        'kind': 'lineplot',
-        'data': {
-            'x': ['|L|'] + [row['abs_l'] for row in quality['twinning_l_test']],
-            'y1': [
-                ['Observed'] + [row['observed'] for row in quality['twinning_l_test']],
-                ['Twinned'] + [row['twinned'] for row in quality['twinning_l_test']],
-                ['Untwinned'] + [row['untwinned'] for row in quality['twinning_l_test']],
-            ],
-            'y1-label': 'P(L>=1)',
-        },
-        'notes': inspect.cleandoc("""
-            *  <|L|>: {1:0.3f}  [untwinned: {2:0.3f}, perfect twin: {3:0.3f}]
-            *  Multivariate Z-Score: {0:0.3f}.  The multivariate Z score is a quality measure of the 
-               given spread in intensities. Good to reasonable data are expected to have a Z score 
-               lower than 3.5.  Large values can indicate twinning, but small values 
-               do not necessarily exclude it""".format(quality['twinning_l_zscore'], *quality['twinning_l_statistic'])
-                                  )
-    }
+    if quality.get('twinning_l_zscore'):
+        l_test = {
+            'title': 'L Test for twinning',
+            'kind': 'lineplot',
+            'data': {
+                'x': ['|L|'] + [row['abs_l'] for row in quality['twinning_l_test']],
+                'y1': [
+                    ['Observed'] + [row['observed'] for row in quality['twinning_l_test']],
+                    ['Twinned'] + [row['twinned'] for row in quality['twinning_l_test']],
+                    ['Untwinned'] + [row['untwinned'] for row in quality['twinning_l_test']],
+                ],
+                'y1-label': 'P(L>=1)',
+            },
+            'notes': inspect.cleandoc("""
+                *  <|L|>: {1:0.3f}  [untwinned: {2:0.3f}, perfect twin: {3:0.3f}]
+                *  Multivariate Z-Score: {0:0.3f}.  The multivariate Z score is a quality measure of the 
+                   given spread in intensities. Good to reasonable data are expected to have a Z score 
+                   lower than 3.5.  Large values can indicate twinning, but small values 
+                   do not necessarily exclude it""".format(quality['twinning_l_zscore'], *quality['twinning_l_statistic'])
+                                      )
+        }
+    else:
+        return {
+            'title': 'Twinning Analysis',
+            'description': 'Twinning analysis could not be performed.'
+        }
 
     if results['data_quality'].get('twin_laws'):
         laws = results['data_quality']['twin_laws']

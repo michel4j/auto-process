@@ -23,7 +23,7 @@ setup(
     package_data={
         'autoprocess': [
             'share/*.*',
-            'parser/data/*.*',
+            'parsers/data/*.*',
             'utils/data/*.*',
         ]
     },

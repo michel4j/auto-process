@@ -269,11 +269,11 @@ def data_quality(dset, options=None):
         return {'step': 'data_quality', 'success': False, 'reason': str(e)}
 
     statistics_deviate = False
-    if info['twinning_l_zscore'] > 3.5:
+    if info.get('twinning_l_zscore', 0) > 3.5:
         statistics_deviate = True
         logger.warning('Intensity statistics deviate significantly from expected.')
 
-    if len(info['twin_laws']) > 0:
+    if len(info.get('twin_laws',[])) > 0:
         if statistics_deviate:
             logger.warning('Possible twin laws which may explain the deviation:')
         else:
@@ -293,7 +293,7 @@ def data_quality(dset, options=None):
                 logger.info(txt)
         if not statistics_deviate and max_fraction > 10.0:
             logger.warning('Despite reasonable intensity statistics, high twin-fraction suggests wrong symmetry.')
-    if statistics_deviate and len(info['twin_laws']) == 0:
+    if statistics_deviate and len(info.get('twin_laws', [])) == 0:
         logger.warning('No pseudo/merohedral twin laws possible in this lattice.')
 
     return {'step': 'data_quality', 'success': True, 'data': info}

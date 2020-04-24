@@ -41,8 +41,6 @@ def log_to_twisted(level=logging.DEBUG):
     """
     console = TwistedLogger()
     console.setLevel(level)
-    formatter = logging.Formatter('%(message)s')
-    console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
 
@@ -113,7 +111,7 @@ class CommandProtocol(protocol.ProcessProtocol):
             failure = Failure(
                 RuntimeError('Command {} died [code {}]: {}, {}'.format(self.command, rc, self.output, self.errors))
             )
-            logger.info(self.output)
+            logger.error('Error:')
             logger.error(self.errors)
             self.deferred.errback(failure)
 

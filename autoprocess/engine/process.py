@@ -491,7 +491,7 @@ class Manager(object):
             if self.options['mode'] == 'merge' and dset.name != 'combined': continue
 
             # Run Data Quality Step:
-            if self.options.get('mode') != 'screen':
+            if self.options['mode'] != 'screen':
                 logger.info(THIN_LINE)
                 logger.info(f'Data processing of dataset "{dset.name}" complete.')
                 self.run_position = (i, 'data_quality')

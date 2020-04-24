@@ -67,7 +67,7 @@ root:
       sections:
         lattices:
           domain: "DETERMINATION OF LATTICE CHARACTER AND BRAVAIS LATTICE(.+?)LATTICE SYMMETRY IMPLICATED BY SPACE GROUP SYMMETRY"
-          table: " \\* <int:id:3> <slug:id> <float:quality> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix>"
+          table: " * <int:id:3> <slug:id> <float:quality> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix> <int:reindex_matrix>"
 
         space_group:
           domain: "SELECTED SPACE GROUP AND UNIT CELL FOR THIS DATA SET(.+?)MEAN DISCREPANCIES BETWEEN OBSERVED AND CALCULATED SPOT LOCATIONS"

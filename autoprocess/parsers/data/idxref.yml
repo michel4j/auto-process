@@ -42,7 +42,7 @@ root:
 
     lattices:
       domain: "DETERMINATION OF LATTICE CHARACTER AND BRAVAIS LATTICE(.+?)LATTICE SYMMETRY IMPLICATED BY SPACE GROUP SYMMETRY"
-      table: " * <int:index> <slug:character> <float:quality> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell>"
+      table: " \\* <int:index> <slug:character> <float:quality> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell>"
 
     subtrees:
       domain: "SUBTREE    POPULATION(.+?)NUMBER OF ACCEPTED SPOTS FROM LARGEST SUBTREE"

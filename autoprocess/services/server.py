@@ -5,6 +5,8 @@ import logging
 import os
 import pwd
 import subprocess
+import atexit
+
 from distutils.spawn import find_executable
 from twisted.application import service, internet
 from twisted.internet import protocol, reactor, defer
@@ -15,7 +17,7 @@ from twisted.python import components
 
 from zope.interface import implementer, Interface
 
-from autoprocess.utils import log
+from autoprocess.utils import log, mdns
 from autoprocess.parsers.distl import parse_distl_string
 
 logger = log.get_module_logger(__name__)
@@ -78,10 +80,10 @@ class CommandProtocol(protocol.ProcessProtocol):
         self.directory = directory
 
     def outReceived(self, output):
-        self.output += output
+        self.output += output.decode('utf8')
 
     def errReceived(self, error):
-        self.errors += error
+        self.errors += error.decode('utf8')
 
     def outConnectionLost(self):
         pass
@@ -91,7 +93,6 @@ class CommandProtocol(protocol.ProcessProtocol):
 
     def processEnded(self, reason):
         rc = reason.value.exitCode
-        # subprocess.check_call(['sync'])
         if rc == 0:
             try:
                 if self.json_file:
@@ -121,6 +122,7 @@ def async_command(command, args, directory='/tmp', user_name='root', json_file=N
     """
     Run a command asynchronously as a given user and return a deferred. The final result can be
     either read from a json file or json formatted standard output, or regular text output
+
     :param command: name of command to execute
     :param args: list of arguments to pass
     :param directory: directory in which to run the command
@@ -130,17 +132,28 @@ def async_command(command, args, directory='/tmp', user_name='root', json_file=N
     :param parser: function, optional parser to converting command output into return value
     :return: [str|list|dict]
     """
-    pwdb = pwd.getpwnam(user_name)
-    uid = pwdb.pw_uid
-    gid = pwdb.pw_gid
 
-    if not os.path.exists(directory):
-        subprocess.check_call(['mkdir', '-p', directory], preexec_fn=demote(user_name))
+    try:
+        pwdb = pwd.getpwnam(user_name)
+        uid = pwdb.pw_uid
+        gid = pwdb.pw_gid
+        if not os.path.exists(directory):
+            subprocess.check_call(['mkdir', '-p', directory], preexec_fn=demote(user_name))
+        impersonate = True
+    except:
+        uid = os.getuid()
+        gid = os.getgid()
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        impersonate = False
 
     prot = CommandProtocol(command, directory, json_file=json_file, json_out=json_output, parser=parser)
     prot.deferred = defer.Deferred()
     args = [find_executable(command)] + args
-    reactor.spawnProcess(prot, args[0], args, env=os.environ, path=directory, uid=uid, gid=gid, usePTY=True)
+    if impersonate:
+        reactor.spawnProcess(prot, args[0], args, env=os.environ, path=directory, uid=uid, gid=gid, usePTY=True)
+    else:
+        reactor.spawnProcess(prot, args[0], args, env=os.environ, path=directory, usePTY=True)
     return prot.deferred
 
 
@@ -222,6 +235,18 @@ def _distl_output(text):
 
 @implementer(IDPService)
 class DPService(service.Service):
+
+    def __init__(self):
+        super().__init__()
+        reactor.callLater(2, self.publishService)
+
+    def publishService(self):
+        self.provider = mdns.Provider('AutoProcess Server', '_autoprocess._tcp.local.', 9991)
+        reactor.addSystemEventTrigger('before', 'shutdown', self.stopService)
+
+    def stopService(self):
+        del self.provider
+        super().stopService()
 
     @log.log_call
     def analyse_frame(self, frame_path, user_name, rastering=False):

@@ -4,6 +4,7 @@ Pillow
 zeroconf
 matplotlib
 msgpack
+msgpack_numpy
 numpy
 pexpect
 scipy
@@ -12,3 +13,4 @@ xvfbwrapper
 PyYAML
 prettytable
 mxio
+progress

@@ -22,14 +22,16 @@ class Provider(object):
         - unique: bool, only one permitted, collisoin if more than one
     """
 
-    def __init__(self, name, service_type, port, data=None, unique=False):
+    def __init__(self, name, service_type, port, data=None, unique=False, delay=1):
         super().__init__()
+        self.name = name
+        data = data or {}
         self.info = ServiceInfo(
             service_type,
             "{}.{}".format(name, service_type),
             addresses=[ipaddress.ip_address("127.0.0.1").packed],
             port=port,
-            properties={} if not data else data
+            properties=data
         )
         self.add_service(unique)
 

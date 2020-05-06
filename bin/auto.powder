@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-import argparse
 from autoprocess.engine import powder
-from autoprocess.utils import log
+from autoprocess.utils import log, options
 log.log_to_console()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Perform azimuthal integration of powder pattern')
-    parser.add_argument('files', nargs='+', help='Files to integrate or calibrate')
-    parser.add_argument('-c', '--calib', help='Perform calibrationi using clear rings reference', action="store_true")
+    parser = options.powder_parser()
 
     args = parser.parse_args()
     if args.calib:

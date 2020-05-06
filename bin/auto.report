@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-import argparse
+from autoprocess.utils import options
 from autoprocess import auto_report as command_step
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Regenerate reports.')
-    parser.add_argument('-d', '--dir', help="Directory containing previous processing. Default is current directory.", type=str)
-
+    parser = options.report_parser()
     args = parser.parse_args()
     command_step.run(args)

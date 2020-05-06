@@ -1,32 +1,10 @@
 #!/usr/bin/env python
 
-import argparse
-from argparse import RawDescriptionHelpFormatter
-
+from autoprocess.utils import options
 from autoprocess import auto_scale as command_step
-
-EXAMPLES = """
-Examples:
-    auto.scale -r 2.0
-        scale with high-resolution limit of 2.0 A
-        
-    auto.scale --anom
-        scale with Friedel's law False
-"""
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description='Resume/repeat/optimize a previous processing from the scaling step',
-        epilog=EXAMPLES,
-        formatter_class=RawDescriptionHelpFormatter
-    )
-    parser.add_argument('-a', '--anom', help="Process with Friedel's law False", action="store_true")
-    parser.add_argument('-b', '--backup', help="Backup existing directory", action="store_true")
-    parser.add_argument(
-        '-d', '--dir', help="Directory containing previous processing. Default is current directory.", type=str
-    )
-    parser.add_argument('-r', '--res', help="Force high resolution limit", type=float)
-
+    parser = options.scale_parser()
     args = parser.parse_args()
     command_step.run(args)

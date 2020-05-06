@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 
-import argparse
+from autoprocess.utils import options
 from autoprocess import auto_strategy as command_step
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Resume/repeat a previous screening from the strategy step')
-    parser.add_argument('-a', '--anom', help="Process with Friedel's law False", action="store_true")
-    parser.add_argument('-b', '--backup', help="Backup existing directory", action="store_true")
-    parser.add_argument('-d', '--dir', help="Directory containing previous processing. Default is current directory.", type=str)
-    parser.add_argument('-r', '--res', help="Force high resolution limit", type=float)
-
+    parser = options.strategy_parser()
     args = parser.parse_args()
     command_step.run(args)

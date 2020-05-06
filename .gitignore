@@ -9,7 +9,6 @@
 .project
 *.log
 *.pid
-autoprocess/VERSION
 /docs/build/
 venv/
 etc/

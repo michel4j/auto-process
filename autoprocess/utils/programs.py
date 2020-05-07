@@ -46,7 +46,9 @@ class Command(object):
             self.spinner.finish()
 
     def start(self):
-        asyncio.run_until_complete(self.run())
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.run())
+        loop.close()
 
 
 def xds(label='Processing'):

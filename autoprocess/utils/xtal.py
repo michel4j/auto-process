@@ -76,7 +76,6 @@ def get_sg_table(chiral=True):
         else:
             tab[v['lattice_character']] = [f"{k}:{v['symbol']}"]
     txt = 'Table of space group numbers for each Bravais lattice type\n'
-    txt += '-------------------------------------------------------------------------------\n'
     for k in ['aP', 'mP', 'mC', 'oP', 'oC', 'oA', 'oF', 'oI', 'tP', 'tI', 'hP', 'hR', 'cP', 'cF', 'cI']:
         if k in tab:
             v = tab[k]
@@ -86,8 +85,7 @@ def get_sg_table(chiral=True):
                     lchr = k
                 else:
                     lchr = ""
-                txt += f' {lchr:>4} \t{", ".join(chunk)}\n'
-    txt += '-------------------------------------------------------------------------------\n'
+                txt += f'    {lchr:>4} \t{", ".join(chunk)}\n'
     return txt
 
 

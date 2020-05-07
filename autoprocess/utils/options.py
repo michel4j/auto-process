@@ -3,12 +3,14 @@ from argparse import RawDescriptionHelpFormatter
 
 PROCESS_EXAMPLES = """
 Data sets:
+
     Each data set can be represented by any frame from that set.
     If multiple frames are provided but no MAD modifier options (-m, --mad) is provided, 
     each set will be processed, and at the end all the datasets will be scaled together 
     and merge into a single output reflection file.
 
 Examples:
+
     auto.process --mad /path/to/dataset_{peak,infl,remo}_001.img
         process a 3-dataset MAD  
 
@@ -20,6 +22,7 @@ Examples:
 
     auto.process --screen /foo/bar/test_001.img --dir /foo/screen_output
         Screen dataset and place the output in the given directory
+
 """
 
 
@@ -72,6 +75,7 @@ def inputs_parser():
 
 INTEGRATE_EXAMPLES = """
 Examples:
+
     auto.integrate -r 2.2 -f 5-180 -o
         Optimize the integration, restring to resolution 2.2, and only process
         frames 5 to 180
@@ -79,6 +83,7 @@ Examples:
     auto.integrate --frames 20-120 --exclude 1-2,310-220 --anom
         Repeat the integration considering only frames 20 to 120 with Friedel's 
         law False for all remainig steps. Also skip frames 1-2 and 310-220
+
 """
 
 
@@ -117,11 +122,13 @@ def report_parser():
 
 SCALE_EXAMPLES = """
 Examples:
+
     auto.scale -r 2.0
         scale with high-resolution limit of 2.0 A
 
     auto.scale --anom
         scale with Friedel's law False
+
 """
 
 

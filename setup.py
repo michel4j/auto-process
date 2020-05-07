@@ -37,6 +37,7 @@ setup(
         'bin/auto.powder',
         'bin/auto.scale',
         'bin/auto.strategy',
+        'bin/auto.symmetry',
         'bin/auto.server',
     ],
     classifiers=[

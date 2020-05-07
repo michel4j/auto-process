@@ -2,10 +2,11 @@ import bisect
 import gzip
 import math
 import os
+import itertools
 
 import json
 import numpy
-
+from collections import defaultdict
 from autoprocess.utils.misc import Table
 
 DEBUG = False
@@ -68,24 +69,20 @@ def get_pg_list(lattices, chiral=True):
 
 def get_sg_table(chiral=True):
     """Generate a table of all spacegroups for each given crystal system."""
-    tab = {}
+    tab = defaultdict(list)
     for k, v in list(XTAL_TABLES.items()):
         if (chiral and not v['chiral']): continue
-        if v['lattice_character'] in list(tab.keys()):
-            tab[v['lattice_character']].append(f"{k}:{v['symbol']}")
-        else:
-            tab[v['lattice_character']] = [f"{k}:{v['symbol']}"]
-    txt = 'Table of space group numbers for each Bravais lattice type\n'
+        tab[v['lattice_character']].append(f"{v['symbol']}(#{k})")
+
+    txt = 'Space group numbers for Bravais lattice types:\n\n'
     for k in ['aP', 'mP', 'mC', 'oP', 'oC', 'oA', 'oF', 'oI', 'tP', 'tI', 'hP', 'hR', 'cP', 'cF', 'cI']:
         if k in tab:
             v = tab[k]
             chunks = [v[i:i + 5] for i in range(0, len(v), 5)]
-            for i, chunk in enumerate(chunks):
-                if i == 0:
-                    lchr = k
-                else:
-                    lchr = ""
-                txt += f'    {lchr:>4} \t{", ".join(chunk)}\n'
+            sg_text = '\n\t'.join(', '.join(sg for sg in chunk) for chunk in chunks)
+
+
+            txt += f':{k}:\n\t{sg_text}\n\n'
     return txt
 
 

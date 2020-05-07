@@ -6,5 +6,5 @@ auto.powder
 
 .. argparse::
    :module: autoprocess.utils.options
-   :func: analyse_parser
-   :prog: auto.analyse
+   :func: powder_parser
+   :prog: auto.powder

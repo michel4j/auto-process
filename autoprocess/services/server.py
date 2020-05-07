@@ -147,6 +147,7 @@ def async_command(command, args, directory='/tmp', user_name='root', json_file=N
     prot = CommandProtocol(command, directory, json_file=json_file, json_out=json_output, parser=parser)
     prot.deferred = defer.Deferred()
     args = [find_executable(command)] + args
+
     if impersonate:
         reactor.spawnProcess(prot, args[0], args, env=os.environ, path=directory, uid=uid, gid=gid, usePTY=True)
     else:

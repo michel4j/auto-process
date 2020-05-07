@@ -1,9 +1,10 @@
+cluster
 scipy
 Twisted
 matplotlib
 numpy
 setuptools
-msgpack
+msgpack_python
 msgpack_numpy
 mxio
 pexpect

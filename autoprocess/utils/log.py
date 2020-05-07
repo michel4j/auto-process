@@ -1,5 +1,6 @@
 """This module implements utility classes and functions for logging."""
 
+from functools import wraps
 import logging
 from reprlib import aRepr
 from logging.handlers import RotatingFileHandler
@@ -122,7 +123,8 @@ def log_call(f):
     @param f: function or method
     """
 
-    def new_f(*args, **kwargs):
+    @wraps(f)
+    def _decorator(*args, **kwargs):
         params = [
             aRepr.repr1(arg, 1) for arg in args[1:]
         ] + [
@@ -131,8 +133,7 @@ def log_call(f):
         logger.info('<{}({})>'.format(f.__name__, ', '.join(params)))
         return f(*args, **kwargs)
 
-    new_f.__name__ = f.__name__
-    return new_f
+    return _decorator
 
 
 def log_value(descr, value, style=TermColor.bold, width=79, spacer='.'):

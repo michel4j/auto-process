@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 User=root
-ExecStart=twistd -ny auto.tac --umask=022
+ExecStart=auto.server
 Restart=always
 
 [Install]

@@ -5,9 +5,15 @@ An Automated Data Processing Pipeline for processing Macromolecular Crystallogra
 Data based on the XDS Package.
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+    :caption: Setup
+    :maxdepth: 1
 
-   process
-   misc
-   powder
+    install
+
+.. toctree::
+    :caption: Usage
+    :maxdepth: 1
+
+    process
+    misc
+    powder

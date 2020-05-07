@@ -5,7 +5,6 @@ import logging
 import os
 import pwd
 import subprocess
-import atexit
 
 from distutils.spawn import find_executable
 from twisted.application import service, internet
@@ -159,6 +158,7 @@ class IDPService(Interface):
     def analyse_frame(frame_path, user_name, rastering=False):
         """
         Analyse diffraction frame
+
         :param frame_path: full path to frame
         :param user_name: user name to run as
         :params rastering: If True, perform scoring for rastering
@@ -168,6 +168,7 @@ class IDPService(Interface):
     def process_mx(info, directory, user_name):
         """
         Process an MX dataset
+
         :param info: dictionary containing parameters
         :param directory: directory for output
         :param user_name: user name to run as
@@ -177,6 +178,7 @@ class IDPService(Interface):
     def process_misc(info, directory, user_name):
         """
         Process an MX dataset
+
         :param info: dictionary containing parameters
         :param directory: directory for output
         :param user_name: user name to run as
@@ -186,6 +188,7 @@ class IDPService(Interface):
     def process_xrd(info, directory, user_name):
         """
         Process an XRD dataset
+
         :param info: dictionary containing parameters
         :param directory: directory for output
         :param user_name: user name to run as
@@ -233,7 +236,10 @@ def _distl_output(text):
 
 @implementer(IDPService)
 class DPService(service.Service):
+    """
+    Data Processing Service using Twisted Perspective Broker.
 
+    """
     def __init__(self):
         super().__init__()
         reactor.callLater(2, self.publishService)
@@ -248,6 +254,15 @@ class DPService(service.Service):
 
     @log.log_call
     def analyse_frame(self, frame_path, user_name, rastering=False):
+        """
+        Analyse diffraction frame
+
+        :param frame_path: full path to frame
+        :param user_name: user name to run as
+        :params rastering: If True, perform scoring for rastering
+        :return: a dictionary representing the processing report
+        """
+
         directory = os.path.dirname(frame_path)
         args = [
             'distl.res.outer={}'.format(3.0 if rastering else 1.0),
@@ -258,6 +273,15 @@ class DPService(service.Service):
 
     @log.log_call
     def process_mx(self, info, directory, user_name):
+        """
+        Process an MX dataset
+
+        :param info: dictionary containing parameters
+        :param directory: directory for output
+        :param user_name: user name to run as
+        :return: dictionary containing the report
+        """
+
         args = [
             '--dir={}'.format(directory)
         ]
@@ -278,6 +302,15 @@ class DPService(service.Service):
 
     @log.log_call
     def process_xrd(self, info, directory, user_name):
+        """
+        Process an XRD dataset
+
+        :param info: dictionary containing parameters
+        :param directory: directory for output
+        :param user_name: user name to run as
+        :return: a dictionary of the report
+        """
+
         args = []
         args += ['--calib'] if info.get('calib') else []
         args += info['file_names']

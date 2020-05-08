@@ -27,7 +27,9 @@ setup(
             'utils/data/*.*',
         ]
     },
-    install_requires=requirements,
+    install_requires=requirements + [
+        'importlib-metadata ~= 1.0 ; python_version < "3.8"',
+    ],
     scripts=[
         'bin/auto.analyse',
         'bin/auto.inputs',

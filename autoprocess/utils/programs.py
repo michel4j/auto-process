@@ -48,7 +48,6 @@ class Command(object):
     def start(self):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.run())
-        loop.close()
 
 
 def xds(label='Processing'):

@@ -10,13 +10,13 @@ import msgpack
 
 
 import autoprocess.errors
+from autoprocess import version
 from autoprocess.engine import indexing, spots, integration, scaling, solver, reporting
 from autoprocess.engine import symmetry, strategy, conversion
 from autoprocess.utils import dataset, misc, log, xtal
 
 logger = log.get_module_logger(__name__)
 
-VERSION = '4.0 RC'
 
 MAX_RMEAS_FACTOR = 2
 
@@ -276,7 +276,7 @@ class Manager(object):
         log.log_to_file(os.path.join(self.options['directory'], 'auto.log'))
         self.start_time = time.time()
         date_time = datetime.now().isoformat()
-        header = f'AutoProcess (VERSION {VERSION})'
+        header = f'AutoProcess (VERSION {version.get_version()})'
         sub_header = "{} on {} - {} [{:d} dataset(s)]".format(
             misc.get_project_name(),
             date_time, self.options['mode'].upper(),

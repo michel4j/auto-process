@@ -175,3 +175,11 @@ def symmetry_parser():
     parser.add_argument('-x', '--nonchiral', help="Non-chiral spacegroups. Default assumes only chiral molecules",
                         action="store_true")
     return parser
+
+
+def server_parser():
+    parser = argparse.ArgumentParser("AutoProcess Server")
+    parser.add_argument('-p', '--pidfile', help="Name of the pidfile [default: twistd.pid]",  type=str)
+    parser.add_argument('-l', '--logfile', help="log to a specified file, - for stdout",  type=str)
+    parser.add_argument('-n', '--nodaemon', help="don't daemonize",  action="store_true")
+    return parser

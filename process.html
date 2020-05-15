@@ -1,0 +1,540 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Main Command Line Programs &mdash; AutoProcess 2020.5.12 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/styles.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Miscelaneous Commands" href="misc.html" />
+    <link rel="prev" title="Installation" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> AutoProcess
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2020.5.12
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#data-processing-server">Data Processing Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#clusters">Clusters</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Usage</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Main Command Line Programs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#auto-process">auto.process</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#auto-integrate">auto.integrate</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#auto-scale">auto.scale</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#auto-strategy">auto.strategy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#auto-symmetry">auto.symmetry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="misc.html">Miscelaneous Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="powder.html">Powder Diffraction Analysis</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">AutoProcess</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Main Command Line Programs</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="main-command-line-programs">
+<h1>Main Command Line Programs<a class="headerlink" href="#main-command-line-programs" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="auto-process">
+<h2>auto.process<a class="headerlink" href="#auto-process" title="Permalink to this headline">¶</a></h2>
+<p><p>Automatically Process a dataset</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">auto</span><span class="o">.</span><span class="n">process</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">PREFIX</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span> <span class="n">DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">z</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">l</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">x</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">formula</span> <span class="n">FORMULA</span><span class="p">]</span> <span class="p">[</span><span class="n">images</span> <span class="p">[</span><span class="n">images</span> <span class="o">...</span><span class="p">]]</span>
+</pre></div>
+</div>
+<div class="section" id="Positional Arguments">
+<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>images</kbd></dt>
+<dd><p>Data sets to process. Each data set can be represented by any frame from that set. If no datasets are provided, attempt to resume from a previous checkpoint file</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>-m, --mad</kbd></dt>
+<dd><p>Process each set, scale together and generate separate outputs.</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-s, --screen</kbd></dt>
+<dd><p>Process a few frames to characterize crystal</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-a, --anom</kbd></dt>
+<dd><p>Process with Friedel’s law False</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-b, --backup</kbd></dt>
+<dd><p>Backup existing directory</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-p, --prefix</kbd></dt>
+<dd><p>comma separated list of prefixes to use for output files</p>
+</dd>
+<dt><kbd>-d, --dir</kbd></dt>
+<dd><p>Directory to store output files. If not provided a new one is created</p>
+</dd>
+<dt><kbd>-z, --zap</kbd></dt>
+<dd><p>Abandon saved state and start all over. Must be in a results directory.</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-l, --load</kbd></dt>
+<dd><p>Load manually processed dataset</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-x, --nonchiral</kbd></dt>
+<dd><p>Non-chiral spacegroups. Default assumes only chiral molecules</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--formula</kbd></dt>
+<dd><p>Solve small molecule with provided formula. Eg Mg1O6H12</p>
+</dd>
+</dl>
+</div>
+<p><p>Data sets:</p>
+<blockquote>
+<div><p>Each data set can be represented by any frame from that set.
+If multiple frames are provided but no MAD modifier options (-m, –mad) is provided, 
+each set will be processed, and at the end all the datasets will be scaled together 
+and merge into a single output reflection file.</p>
+</div></blockquote>
+<p>Examples:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>auto.process –mad /path/to/dataset_{peak,infl,remo}_001.img</dt><dd><p>process a 3-dataset MAD</p>
+</dd>
+<dt>auto.process /path/to/dataset_{hires,lores}_001.img</dt><dd><p>process and merge low-resolution and hi-resolution datasets</p>
+</dd>
+<dt>auto.process /path/to/dataset_hires_001.img /path/to/dataset_lores_001.img</dt><dd><p>process and merge low-resolution and hi-resolution datasets. Same as above.</p>
+</dd>
+<dt>auto.process –screen /foo/bar/test_001.img –dir /foo/screen_output</dt><dd><p>Screen dataset and place the output in the given directory</p>
+</dd>
+</dl>
+</div></blockquote>
+</p>
+</div>
+<div class="section" id="auto-integrate">
+<h2>auto.integrate<a class="headerlink" href="#auto-integrate" title="Permalink to this headline">¶</a></h2>
+<p><p>Resume/repeat/optimize a previous processing from the integration step</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">auto</span><span class="o">.</span><span class="n">integrate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="n">FRAMES</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">x</span> <span class="n">EXCLUDE</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span> <span class="n">DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">r</span> <span class="n">RES</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>-a, --anom</kbd></dt>
+<dd><p>Process with Friedel’s law False</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-b, --backup</kbd></dt>
+<dd><p>Backup existing directory</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-f, --frames</kbd></dt>
+<dd><p>Data range e.g. &lt;start&gt;-&lt;end&gt;</p>
+</dd>
+<dt><kbd>-x, --exclude</kbd></dt>
+<dd><p>Exclude frame ranges e.g. &lt;start&gt;-&lt;end&gt;,&lt;start&gt;-&lt;end&gt;,…</p>
+</dd>
+<dt><kbd>-d, --dir</kbd></dt>
+<dd><p>Directory containing previous processing. Default is current directory.</p>
+</dd>
+<dt><kbd>-o, --opt</kbd></dt>
+<dd><p>Optimize integration using refined parameters from previous run.</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-r, --res</kbd></dt>
+<dd><p>Force high resolution limit</p>
+</dd>
+</dl>
+</div>
+<p><p>Examples:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>auto.integrate -r 2.2 -f 5-180 -o</dt><dd><p>Optimize the integration, restring to resolution 2.2, and only process
+frames 5 to 180</p>
+</dd>
+<dt>auto.integrate –frames 20-120 –exclude 1-2,310-220 –anom</dt><dd><p>Repeat the integration considering only frames 20 to 120 with Friedel’s 
+law False for all remainig steps. Also skip frames 1-2 and 310-220</p>
+</dd>
+</dl>
+</div></blockquote>
+</p>
+</div>
+<div class="section" id="auto-scale">
+<h2>auto.scale<a class="headerlink" href="#auto-scale" title="Permalink to this headline">¶</a></h2>
+<p><p>Resume/repeat/optimize a previous processing from the scaling step</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">auto</span><span class="o">.</span><span class="n">scale</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span> <span class="n">DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">r</span> <span class="n">RES</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>-a, --anom</kbd></dt>
+<dd><p>Process with Friedel’s law False</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-b, --backup</kbd></dt>
+<dd><p>Backup existing directory</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-d, --dir</kbd></dt>
+<dd><p>Directory containing previous processing. Default is current directory.</p>
+</dd>
+<dt><kbd>-r, --res</kbd></dt>
+<dd><p>Force high resolution limit</p>
+</dd>
+</dl>
+</div>
+<p><p>Examples:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>auto.scale -r 2.0</dt><dd><p>scale with high-resolution limit of 2.0 A</p>
+</dd>
+<dt>auto.scale –anom</dt><dd><p>scale with Friedel’s law False</p>
+</dd>
+</dl>
+</div></blockquote>
+</p>
+</div>
+<div class="section" id="auto-strategy">
+<h2>auto.strategy<a class="headerlink" href="#auto-strategy" title="Permalink to this headline">¶</a></h2>
+<p><p>Resume/repeat a previous screening from the strategy step</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">auto</span><span class="o">.</span><span class="n">strategy</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span> <span class="n">DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">r</span> <span class="n">RES</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>-a, --anom</kbd></dt>
+<dd><p>Process with Friedel’s law False</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-b, --backup</kbd></dt>
+<dd><p>Backup existing directory</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-d, --dir</kbd></dt>
+<dd><p>Directory containing previous processing. Default is current directory.</p>
+</dd>
+<dt><kbd>-r, --res</kbd></dt>
+<dd><p>Force high resolution limit</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="auto-symmetry">
+<h2>auto.symmetry<a class="headerlink" href="#auto-symmetry" title="Permalink to this headline">¶</a></h2>
+<p><p>Resume/repeat/optimize a previous processing from the scaling step</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">auto</span><span class="o">.</span><span class="n">symmetry</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span> <span class="n">DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">r</span> <span class="n">RES</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">g</span> <span class="n">SPACEGROUP</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">x</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>-a, --anom</kbd></dt>
+<dd><p>Process with Friedel’s law False</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-b, --backup</kbd></dt>
+<dd><p>Backup existing directory</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-d, --dir</kbd></dt>
+<dd><p>Directory containing previous processing. Default is current directory.</p>
+</dd>
+<dt><kbd>-r, --res</kbd></dt>
+<dd><p>Force high resolution limit</p>
+</dd>
+<dt><kbd>-g, --spacegroup</kbd></dt>
+<dd><p>Manually set space group by number</p>
+</dd>
+<dt><kbd>-x, --nonchiral</kbd></dt>
+<dd><p>Non-chiral spacegroups. Default assumes only chiral molecules</p>
+<p>Default: False</p>
+</dd>
+</dl>
+</div>
+<p><p>Space group numbers for Bravais lattice types:</p>
+<dl class="field-list simple">
+<dt class="field-odd">aP</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	P1(#1)</p>
+<dl class="field-list simple">
+<dt class="field-odd">mP</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	P2(#3), P2₁(#4)</p>
+<dl class="field-list simple">
+<dt class="field-odd">mC</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	C2(#5)</p>
+<dl class="field-list simple">
+<dt class="field-odd">oP</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	P222(#16), P222₁(#17), P2₁2₁2(#18), P2₁2₁2₁(#19)</p>
+<dl class="field-list simple">
+<dt class="field-odd">oC</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	C222₁(#20), C222(#21)</p>
+<dl class="field-list simple">
+<dt class="field-odd">oF</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	F222(#22)</p>
+<dl class="field-list simple">
+<dt class="field-odd">oI</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	I222(#23), I2₁2₁2₁(#24)</p>
+<dl class="field-list simple">
+<dt class="field-odd">tP</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	P4(#75), P4₁(#76), P4₂(#77), P4₃(#78), P422(#89)
+	P42₁2(#90), P4₁22(#91), P4₁2₁2(#92), P4₂22(#93), P4₂2₁2(#94)
+	P4₃22(#95), P4₃2₁2(#96)</p>
+<dl class="field-list simple">
+<dt class="field-odd">tI</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	I4(#79), I4₁(#80), I422(#97), I4₁22(#98)</p>
+<dl class="field-list simple">
+<dt class="field-odd">hP</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	P3(#143), P3₁(#144), P3₂(#145), P312(#149), P321(#150)
+	P3₁12(#151), P3₁21(#152), P3₂12(#153), P3₂21(#154), P6(#168)
+	P6₁(#169), P6₅(#170), P6₂(#171), P6₄(#172), P6₃(#173)
+	P622(#177), P6₁22(#178), P6₅22(#179), P6₂22(#180), P6₄22(#181)
+	P6₃22(#182)</p>
+<dl class="field-list simple">
+<dt class="field-odd">hR</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	R3(#146), R32(#155)</p>
+<dl class="field-list simple">
+<dt class="field-odd">cP</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	P23(#195), P2₁3(#198), P432(#207), P4₂32(#208), P4₃32(#212)
+	P4₁32(#213)</p>
+<dl class="field-list simple">
+<dt class="field-odd">cF</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	F23(#196), F432(#209), F4₁32(#210)</p>
+<dl class="field-list simple">
+<dt class="field-odd">cI</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<p>	I23(#197), I2₁3(#199), I432(#211), I4₁32(#214)</p>
+</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="misc.html" class="btn btn-neutral float-right" title="Miscelaneous Commands" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="install.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2006-2020, Canadian Light Source, Inc
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

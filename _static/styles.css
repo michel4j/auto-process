@@ -75,26 +75,10 @@ dl.method > dd {
     margin: initial;
 }
 
-a.icon-home, a.icon-home:hover {
-    display: inline-block;
-    padding: 4px 4px 4px 21px;
-    background: transparent url(icon.svg) center left no-repeat;
-    background-size: 2em;
-    margin-top: 0.2em;
-    margin-bottom: 1em;
-}
-
 
 .fa-home::before, .icon-home::before {
     content: "";
     margin-right: 0.5rem;
-}
-
-.wy-nav-top a {
-    margin: -2em;
-    background: transparent url(icon.svg) center left no-repeat;
-    background-size: 2em;
-    padding: 4px 4px 4px 24px;
 }
 
 .rst-content dl:not(.docutils) dt {

@@ -10,8 +10,8 @@ It is recommended to install AutoProcess within a python virtual environment usi
     python setup.py install
 
 
-This will install all AutoProcess and all it's dependences within the python environment. Once installed,
-AutoProcess with be available the environment for command line based data processing. See the doc:`process` section
+This will install AutoProcess and it's dependences within the python environment. Once installed,
+AutoProcess with be available for command line based data processing. See the doc:`process` section
 for information help on how to use the individual commands.
 
 
@@ -51,7 +51,7 @@ speed up the data processing. The following requirements should be satisfied in 
 multiple computers/nodes of a cluster.
 
 1. SSH Key-Based Passwordless Authentication must be configured for each user wishing to use AutoProcess.
-   not already configured, it can be done using the following commands within a shell.
+   If not already configured, it can be done using the following commands within a shell.
 
 
 .. code-block:: bash

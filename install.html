@@ -165,8 +165,8 @@
 python setup.py install
 </pre></div>
 </div>
-<p>This will install all AutoProcess and all it’s dependences within the python environment. Once installed,
-AutoProcess with be available the environment for command line based data processing. See the doc:<cite>process</cite> section
+<p>This will install AutoProcess and it’s dependences within the python environment. Once installed,
+AutoProcess with be available for command line based data processing. See the doc:<cite>process</cite> section
 for information help on how to use the individual commands.</p>
 </div>
 <div class="section" id="data-processing-server">
@@ -312,7 +312,7 @@ speed up the data processing. The following requirements should be satisfied in 
 multiple computers/nodes of a cluster.</p>
 <ol class="arabic simple">
 <li><p>SSH Key-Based Passwordless Authentication must be configured for each user wishing to use AutoProcess.
-not already configured, it can be done using the following commands within a shell.</p></li>
+If not already configured, it can be done using the following commands within a shell.</p></li>
 </ol>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh-keygen -t rsa -N <span class="s2">&quot;&quot;</span> -f ~/.ssh/id_rsa
 cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys

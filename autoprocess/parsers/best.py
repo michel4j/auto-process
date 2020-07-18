@@ -13,38 +13,50 @@ osc_pattern = re.compile(
     r"DATA=CURVE2D",
     re.DOTALL
 )
+max_osc_patt = re.compile(
+    r"% linelabel\s+=\s+'resol\.\s+(?P<shell>[\d-]+\.[\d-]+)\s+'\n(?P<curve>(\s*\d+\s+[\d-]+\.[\d-]+\n)+)"
+)
+
+cmpl_pattern = re.compile(
+    r"DATA=CURVE2D.+?Minimal oscillation ranges for different completenesses.*?#\sCurve"
+    r"(.+?)"
+    r"DATA=CURVE2D",
+    re.DOTALL
+)
+compl_osc_patt = re.compile(
+    r"\s% linelabel\s+=\s+'compl\s+-(?P<percent>\d+\.)%'(?:^%.*?\n)*?(?P<curve>(\s*\d+\s+\d+\n)+)", re.MULTILINE
+)
+
+
 def parse_best_plot(filename):
     with open(filename, 'r', encoding='utf-8') as fobj:
         data = fobj.read()
     info = {}
     max_osc = {}
     max_osc_data = '\n'.join(osc_pattern.findall(data))
-    for m in re.finditer(r"\% linelabel\s+=\s+'resol\.\s+(?P<shell>[\d-]+\.[\d-]+)\s+'\n(?P<curve>(\s*\d+\s+[\d-]+\.[\d-]+\n)+)", max_osc_data):
+    for m in max_osc_patt.finditer(max_osc_data):
         max_osc[m.group('shell')] = numpy.fromstring(m.group('curve'), sep=' ').reshape((-1, 2))
-
     info['delta_statistics'] = {}
-    first = True
-    for shell, curve in list(max_osc.items()):
-        if first:
-            first = False
-            info['delta_statistics']['angle'] = list(curve[:, 0])
-        info['delta_statistics'][shell] = list(curve[:, 1])
 
-    compl_osc_data = '\n'.join(
-        re.findall(r'Minimal oscillation ranges for different completenesses.+?DATA=CURVE2D', data))
+    first = True
+    for shell, curve in max_osc.items():
+        info['delta_statistics'][shell] = curve[:, 1].tolist()
+        if first:
+            info['delta_statistics']['angle'] = curve[:, 0].tolist()
+        first = False
+
     compl_osc = {}
-    compl_patt = r"linelabel\s+=\s+'compl\s+-(?P<percent>\d+\.)%'\n(%.+\n)*(?P<curve>(\s*\d+\s+\d+\n)+)"
-    for m in re.finditer(compl_patt, compl_osc_data):
+    compl_osc_data = '\n'.join(cmpl_pattern.findall(data))
+    for m in compl_osc_patt.finditer(compl_osc_data):
         compl_osc[m.group('percent')] = numpy.fromstring(m.group('curve'), sep=' ').reshape((-1, 2))
 
     info['completeness_statistics'] = {}
     first = True
     for percent, curve in list(compl_osc.items()):
+        info['completeness_statistics'][percent] = curve[:, 1].tolist()
         if first:
-            first = False
-            info['completeness_statistics']['start_angle'] = list(curve[:, 0])
-        info['completeness_statistics'][percent] = list(curve[:, 1])
-
+            info['completeness_statistics']['start_angle'] = curve[:, 0].tolist()
+        first = False
     return info
 
 

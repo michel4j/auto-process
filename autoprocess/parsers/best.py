@@ -7,14 +7,19 @@ import numpy
 
 from autoprocess.utils.misc import Table
 
-
+osc_pattern = re.compile(
+    r"DATA=CURVE2D.+?Maximal oscillation width.*?\n\n"
+    r"(.+?)"
+    r"DATA=CURVE2D",
+    re.DOTALL
+)
 def parse_best_plot(filename):
-    with open(filename, 'r', encoding='utf8') as fobj:
+    with open(filename, 'r', encoding='utf-8') as fobj:
         data = fobj.read()
     info = {}
     max_osc = {}
-    max_osc_data = '\n'.join(re.findall(r"(Maximal oscillation width.+?DATA=CURVE2D)", data))
-    for m in re.finditer(r"(?P<shell>[\d-]+\.[\d-]+)\s+'\n(?P<curve>(\s*\d+\s+[\d-]+\.[\d-]+\n)+)", max_osc_data):
+    max_osc_data = '\n'.join(osc_pattern.findall(data))
+    for m in re.finditer(r"\% linelabel\s+=\s+'resol\.\s+(?P<shell>[\d-]+\.[\d-]+)\s+'\n(?P<curve>(\s*\d+\s+[\d-]+\.[\d-]+\n)+)", max_osc_data):
         max_osc[m.group('shell')] = numpy.fromstring(m.group('curve'), sep=' ').reshape((-1, 2))
 
     info['delta_statistics'] = {}

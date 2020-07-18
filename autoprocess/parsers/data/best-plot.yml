@@ -1,0 +1,13 @@
+root:
+  sections:
+    delta_statistics:
+      domain: "^\$ DATA=CURVE2D\n%\s .+?Maximal oscillation width.*?% linelabel\s+=\s+(.+?)\$ DATA=CURVE2D\n"
+      table:  "| <char:operator:8> | <char:type:4> | <float:r_obs> | <float:britton_alpha> | <float:H_alpha> | <float:ML_alpha> |"
+
+    twinning_l_test:
+      domain: "TABLE: L test(.+?)\n\n"
+      table: "<float:abs_l> <float:observed> <float:untwinned> <float:twinned>"
+
+    intensity_plots:
+      domain: "TABLE: Intensity plots(.+?)\n\n"
+      table: "<float:inv_res_sq> <float:mean_i> <float:mean_i_binned> <float:expected_i>"

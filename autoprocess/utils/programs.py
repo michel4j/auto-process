@@ -118,19 +118,31 @@ def pointless(retry=False, chiral=True, filename="INTEGRATE.HKL"):
 
 def best(data_info, options=None):
     options = options or {}
+    option_flags = {}
+    flags = {
+        '-f': data_info['detector_type'],
+        '-t': '{:0.2f}'.format(data_info['exposure_time']),
+    }
 
-    if options.get('anomalous', False):
-        anom_flag = '-a'
-    else:
-        anom_flag = ''
-    if data_info.get('detector_type') is not None:
-        det_flag = '-f %s' % data_info['detector_type']
-    else:
-        det_flag = ''
+    if options.get('anomalous'):
+        option_flags['-a'] = ''
+    if options.get('resolution'):
+        option_flags['-r'] = '{0.1f}'.format(options['resolution'])
 
-    command = "best %s -t %f -i2s 1.0 -q" % (det_flag, data_info['exposure_time'])
-    command += " -e none -M 0.2 -w 0.2 %s -o best.plot -dna best.xml" % (anom_flag)
-    command += " -xds CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL"
+    option_flags.update({
+        '-i2s': '1.0',
+        '-q': '',
+        '-e': 'none',
+        '-M': 0.1,
+        '-w': 0.05,
+        '-o': 'best.plot',
+        '-dna': 'best.xml',
+        '-xds': 'CORRECT.LP BKGPIX.cbf XDS_ASCII.HKL'
+    })
+
+    flags.update(option_flags)
+
+    command = "best {}".format(' '.join(['{key} {value}' for key, value in flags.items()]))
 
     with open('best.com', 'w') as fobj:
         fobj.write(command)

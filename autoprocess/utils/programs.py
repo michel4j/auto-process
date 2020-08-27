@@ -142,7 +142,7 @@ def best(data_info, options=None):
 
     flags.update(option_flags)
 
-    command = "best {}".format(' '.join(['{key} {value}' for key, value in flags.items()]))
+    command = "best {}".format(' '.join([f'{key} {value}' for key, value in flags.items()]))
 
     with open('best.com', 'w') as fobj:
         fobj.write(command)

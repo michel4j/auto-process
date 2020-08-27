@@ -66,7 +66,7 @@ def save_report(datasets, options):
     else:
         results = datasets[0]['results']
         name = datasets[0]['parameters']['name']
-        report['title'] = 'Native Processing of "{}"'.format(name)
+        report['title'] = '{}Analysis of "{}"'.format(options.get('anomalous') and 'Anomalous ' or '', name)
         report['kind'] = 'MX Native Analysis' if not options.get('anomalous') else 'MX Anomalous Analysis'
         report['details'] = single_report(datasets[0], options)
         report['score'] = results['crystal_score']

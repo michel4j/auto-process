@@ -79,8 +79,13 @@ def diagnose_index(info):
 
     # get spot deviation
     if info.get('summary') is not None:
-        if info['summary'].get('stdev_spot') > 3:
-            problems.append(PROBLEMS.spot_accuracy)
+        if 'stdev_spot' in info['summary']:
+            if info['summary'].get('stdev_spot') > 3:
+                problems.append(PROBLEMS.spot_accuracy)
+        else:
+            problems.append(PROBLEMS.poor_solution)
+    else:
+        problems.append(PROBLEMS.failed)
 
     # get rejects
     if info.get('cluster_dimension', 0) < 3:

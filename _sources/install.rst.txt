@@ -7,6 +7,14 @@ install your applications in the directory `/MyApps`, you can install as follows
 .. code-block:: bash
 
     cd /MyApps
+    curl -s https://raw.githubusercontent.com/michel4j/auto-process/master/deploy/install.sh | bash
+
+
+This is equivalent to running the following commands:
+
+.. code-block:: bash
+
+    cd /MyApps
     python3 -m venv auto-process
     source auto-process/bin/activate
     pip install --upgrade pip wheel
@@ -32,6 +40,13 @@ Upgrading
 =========
 If a previous version of AutoProcess is already installed, then the following commands can be used to upgrade it to the latest
 version.
+
+.. code-block:: bash
+
+    cd /MyApps
+    curl -s https://raw.githubusercontent.com/michel4j/auto-process/master/deploy/upgrade.sh | bash
+
+Which is equivalent to:
 
 .. code-block:: bash
 

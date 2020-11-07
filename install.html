@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation &mdash; AutoProcess 2020.5.23 documentation</title>
+  <title>Installation &mdash; AutoProcess 2020.5.24 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                2020.5.23
+                2020.5.24
               </div>
             
           
@@ -166,6 +166,11 @@
 <p>It is recommended to install AutoProcess within a python virtual environment using setuptools. Assuming you typically
 install your applications in the directory <cite>/MyApps</cite>, you can install as follows</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> /MyApps
+curl -s https://raw.githubusercontent.com/michel4j/auto-process/master/deploy/install.sh <span class="p">|</span> bash
+</pre></div>
+</div>
+<p>This is equivalent to running the following commands:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> /MyApps
 python3 -m venv auto-process
 <span class="nb">source</span> auto-process/bin/activate
 pip install --upgrade pip wheel
@@ -190,6 +195,11 @@ for information help on how to use the individual commands.</p>
 <h1>Upgrading<a class="headerlink" href="#upgrading" title="Permalink to this headline">¶</a></h1>
 <p>If a previous version of AutoProcess is already installed, then the following commands can be used to upgrade it to the latest
 version.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> /MyApps
+curl -s https://raw.githubusercontent.com/michel4j/auto-process/master/deploy/upgrade.sh <span class="p">|</span> bash
+</pre></div>
+</div>
+<p>Which is equivalent to:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> /MyApps
 <span class="nb">source</span> auto-process/bin/activate
 pip install --upgrade pip wheel

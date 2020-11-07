@@ -1,15 +1,18 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation &mdash; AutoProcess 2020.5.14 documentation</title>
+  <title>Installation &mdash; AutoProcess 2020.5.23 documentation</title>
   
+
+  
+  <link rel="stylesheet" href="_static/styles.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
   
@@ -17,7 +20,9 @@
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -29,10 +34,6 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/styles.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Main Command Line Programs" href="process.html" />
@@ -50,7 +51,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> AutoProcess
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> AutoProcess
           
 
           
@@ -60,7 +61,7 @@
             
             
               <div class="version">
-                2020.5.14
+                2020.5.23
               </div>
             
           
@@ -77,6 +78,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -87,6 +89,7 @@
               <p class="caption"><span class="caption-text">Setup</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#upgrading">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#data-processing-server">Data Processing Server</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#clusters">Clusters</a></li>
 </ul>
@@ -100,6 +103,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -138,7 +142,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>Installation</li>
     
@@ -159,15 +163,39 @@
             
   <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>It is recommended to install AutoProcess within a python virtual environment using setuptools.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3 -m venv venv
-<span class="nb">source</span> venv/bin/activate
-python setup.py install
+<p>It is recommended to install AutoProcess within a python virtual environment using setuptools. Assuming you typically
+install your applications in the directory <cite>/MyApps</cite>, you can install as follows</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> /MyApps
+python3 -m venv auto-process
+<span class="nb">source</span> auto-process/bin/activate
+pip install --upgrade pip wheel
+pip install --upgrade mx-autoprocess
 </pre></div>
 </div>
-<p>This will install AutoProcess and it’s dependences within the python environment. Once installed,
+<p>This will install AutoProcess and it’s dependences within the the directory <cite>/MyApps/auto-process</cite>. Once installed,
 AutoProcess with be available for command line based data processing. See the doc:<cite>process</cite> section
 for information help on how to use the individual commands.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>AutoProcess requires the following third-party packages to be propertly installed and available in your path</p>
+<ul class="simple">
+<li><p>XDS - <a class="reference external" href="http://xds.mpimf-heidelberg.mpg.de/html_doc/downloading.html">http://xds.mpimf-heidelberg.mpg.de/html_doc/downloading.html</a></p></li>
+<li><p>XDSSTAT - <a class="reference external" href="https://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/Xdsstat">https://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/Xdsstat</a></p></li>
+<li><p>CCP4 - <a class="reference external" href="https://www.ccp4.ac.uk/">https://www.ccp4.ac.uk/</a></p></li>
+<li><p>PHENIX - <a class="reference external" href="https://www.phenix-online.org/">https://www.phenix-online.org/</a></p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="upgrading">
+<h1>Upgrading<a class="headerlink" href="#upgrading" title="Permalink to this headline">¶</a></h1>
+<p>If a previous version of AutoProcess is already installed, then the following commands can be used to upgrade it to the latest
+version.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> /MyApps
+<span class="nb">source</span> auto-process/bin/activate
+pip install --upgrade pip wheel
+pip install --upgrade mx-autoprocess
+</pre></div>
+</div>
 </div>
 <div class="section" id="data-processing-server">
 <h1>Data Processing Server<a class="headerlink" href="#data-processing-server" title="Permalink to this headline">¶</a></h1>
@@ -352,6 +380,7 @@ The format of the envronment variable takes the form of</p></li>
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2006-2020, Canadian Light Source, Inc
 
     </p>
@@ -366,7 +395,6 @@ The format of the envronment variable takes the form of</p></li>
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

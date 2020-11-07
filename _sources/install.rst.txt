@@ -1,18 +1,44 @@
 Installation
 ============
 
-It is recommended to install AutoProcess within a python virtual environment using setuptools.
+It is recommended to install AutoProcess within a python virtual environment using setuptools. Assuming you typically
+install your applications in the directory `/MyApps`, you can install as follows
 
 .. code-block:: bash
 
-    python3 -m venv venv
-    source venv/bin/activate
-    python setup.py install
+    cd /MyApps
+    python3 -m venv auto-process
+    source auto-process/bin/activate
+    pip install --upgrade pip wheel
+    pip install --upgrade mx-autoprocess
 
 
-This will install AutoProcess and it's dependences within the python environment. Once installed,
+This will install AutoProcess and it's dependences within the the directory `/MyApps/auto-process`. Once installed,
 AutoProcess with be available for command line based data processing. See the doc:`process` section
 for information help on how to use the individual commands.
+
+.. note::
+
+    AutoProcess requires the following third-party packages to be propertly installed and available in your path
+
+    * XDS - http://xds.mpimf-heidelberg.mpg.de/html_doc/downloading.html
+    * XDSSTAT - https://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/Xdsstat
+    * CCP4 - https://www.ccp4.ac.uk/
+    * PHENIX - https://www.phenix-online.org/
+
+
+
+Upgrading
+=========
+If a previous version of AutoProcess is already installed, then the following commands can be used to upgrade it to the latest
+version.
+
+.. code-block:: bash
+
+    cd /MyApps
+    source auto-process/bin/activate
+    pip install --upgrade pip wheel
+    pip install --upgrade mx-autoprocess
 
 
 Data Processing Server

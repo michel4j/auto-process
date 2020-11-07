@@ -25,6 +25,7 @@ This will install AutoProcess and it's dependences within the the directory `/My
 AutoProcess with be available for command line based data processing. See the doc:`process` section
 for information help on how to use the individual commands.
 
+
 .. note::
 
     AutoProcess requires the following third-party packages to be properly installed and available in your path
@@ -34,6 +35,31 @@ for information help on how to use the individual commands.
     * CCP4 - https://www.ccp4.ac.uk/
     * PHENIX - https://www.phenix-online.org/
 
+
+To make the AutoProcess commands available within your shell, add `/MyApps/auto-process/bin` to your shell path.  The
+following shell startup script could be used as an example:
+
+.. code-block:: bash
+
+    #! /usr/bin/bash
+
+    # Format is "<host1-name>:<number of cores> <host2-name>:<number of cores> ..."
+    export DPS_NODES="localhost:16"
+
+    export DPS_PATH="/MyApps/auto-process"
+    export PATH=${PATH}:$DPS_PATH/bin
+
+
+Update the startup script to match your installation location. AutoProcess can submit jobs to other servers on your
+local network for faster distributed processing.
+
+Installing in a cluster environment
+-----------------------------------
+Update the `DPS_NODES` environment variable in your shell startup script to specify additional
+compute nodes and their corresponding number of cores. Note that this will work only if (1) password-less SSH public-key
+authentication is properly setup on all nodes, (2) all nodes are running ABI (application binary interface) - compatible
+operating systems, (4) the same version of XDS is installed on all nodes, and (4) all nodes can access the same files
+on the network using the same file system addresses.
 
 
 Upgrading

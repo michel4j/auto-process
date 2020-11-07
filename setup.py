@@ -8,7 +8,7 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='autoprocess',
+    name='mx-autoprocess',
     version=get_version(),
     url="https://github.com/michel4j/autoprocess",
     license='MIT',

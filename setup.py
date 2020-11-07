@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from autoprocess.version import get_version
+from autoprocess import version
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -8,8 +8,8 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='mx-autoprocess',
-    version=get_version(),
+    name=version.NAME,
+    version=version.get_version(),
     url="https://github.com/michel4j/autoprocess",
     license='MIT',
     author='Michel Fodje',

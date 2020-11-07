@@ -27,7 +27,7 @@ for information help on how to use the individual commands.
 
 .. note::
 
-    AutoProcess requires the following third-party packages to be propertly installed and available in your path
+    AutoProcess requires the following third-party packages to be properly installed and available in your path
 
     * XDS - http://xds.mpimf-heidelberg.mpg.de/html_doc/downloading.html
     * XDSSTAT - https://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/Xdsstat

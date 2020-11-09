@@ -88,13 +88,10 @@
             
               <p class="caption"><span class="caption-text">Setup</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installing-in-a-cluster-environment">Installing in a cluster environment</a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#clusters">Clusters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#upgrading">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#data-processing-server">Data Processing Server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#clusters">Clusters</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Usage</span></p>
 <ul>
@@ -206,13 +203,31 @@ following shell startup script could be used as an example:</p>
 </div>
 <p>Update the startup script to match your installation location. AutoProcess can submit jobs to other servers on your
 local network for faster distributed processing.</p>
-<div class="section" id="installing-in-a-cluster-environment">
-<h2>Installing in a cluster environment<a class="headerlink" href="#installing-in-a-cluster-environment" title="Permalink to this headline">¶</a></h2>
-<p>Update the <cite>DPS_NODES</cite> environment variable in your shell startup script to specify additional
-compute nodes and their corresponding number of cores. Note that this will work only if (1) password-less SSH public-key
-authentication is properly setup on all nodes, (2) all nodes are running ABI (application binary interface) - compatible
-operating systems, (4) the same version of XDS is installed on all nodes, and (4) all nodes can access the same files
-on the network using the same file system addresses.</p>
+</div>
+<div class="section" id="clusters">
+<h1>Clusters<a class="headerlink" href="#clusters" title="Permalink to this headline">¶</a></h1>
+<p>Installing AutoProcess in a cluster environment is recommended since XDS can run on multiple computers to
+speed up the data processing. The following requirements should be satisfied in order to use AutoProcess on
+multiple computers/nodes of a cluster.</p>
+<ol class="arabic simple">
+<li><p>SSH Key-Based Passwordless Authentication must be configured for each user wishing to use AutoProcess.
+If not already configured, it can be done using the following commands within a shell.</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh-keygen -t rsa -N <span class="s2">&quot;&quot;</span> -f ~/.ssh/id_rsa
+cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys
+chmod <span class="m">600</span> ~/.ssh/authorized_keys
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>The operating systems and all relevant libraries on all nodes should be ABI-compatible and preferably exactly the
+same version.</p></li>
+<li><p>File access and the shell environments should be identical on all nodes. This can be accomplished through network
+file systems such as NFS.</p></li>
+<li><p>Finally an environment variable <cite>DPS_NODES</cite> must be set which describes the cluster resources available.
+The format of the envronment variable takes the form of</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">DPS_NODES</span><span class="o">=</span><span class="s2">&quot;&lt;host1-name&gt;:&lt;number of cores&gt; &lt;host2-name&gt;:&lt;number of cores&gt; ...&quot;</span>
+</pre></div>
 </div>
 </div>
 <div class="section" id="upgrading">
@@ -366,32 +381,6 @@ code requires the use of a twisted reactor.</p>
 
 </dd></dl>
 
-</div>
-<div class="section" id="clusters">
-<h1>Clusters<a class="headerlink" href="#clusters" title="Permalink to this headline">¶</a></h1>
-<p>Installing AutoProcess in a cluster environment is recommended since XDS can run on multiple computers to
-speed up the data processing. The following requirements should be satisfied in order to use AutoProcess on
-multiple computers/nodes of a cluster.</p>
-<ol class="arabic simple">
-<li><p>SSH Key-Based Passwordless Authentication must be configured for each user wishing to use AutoProcess.
-If not already configured, it can be done using the following commands within a shell.</p></li>
-</ol>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh-keygen -t rsa -N <span class="s2">&quot;&quot;</span> -f ~/.ssh/id_rsa
-cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys
-chmod <span class="m">600</span> ~/.ssh/authorized_keys
-</pre></div>
-</div>
-<ol class="arabic simple" start="2">
-<li><p>The operating systems and all relevant libraries on all nodes should be ABI-compatible and preferably exactly the
-same version.</p></li>
-<li><p>File access and the shell environments should be identical on all nodes. This can be accomplished through network
-file systems such as NFS.</p></li>
-<li><p>Finally an environment variable <cite>DPS_NODES</cite> must be set which describes the cluster resources available.
-The format of the envronment variable takes the form of</p></li>
-</ol>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">DPS_NODES</span><span class="o">=</span><span class="s2">&quot;&lt;host1-name&gt;:&lt;number of cores&gt; &lt;host2-name&gt;:&lt;number of cores&gt; ...&quot;</span>
-</pre></div>
-</div>
 </div>
 
 

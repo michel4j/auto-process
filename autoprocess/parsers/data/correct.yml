@@ -17,7 +17,7 @@ root:
         - " SPACE GROUP NUMBER <int:spacegroup>"
         - " UNIT CELL PARAMETERS  <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell> <float:unit_cell>"
         - " E.S.D. OF CELL PARAMETERS  <float:unit_cell_esd> <float:unit_cell_esd> <float:unit_cell_esd> <float:unit_cell_esd> <float:unit_cell_esd> <float:unit_cell_esd>"
-        - "REC. CELL PARAMETERS  <float:rec_cell> <float:rec_cell> <float:rec_cell> <float:rec_cell> <float:rec_cell> <float:rec_cell>"
+        - " REC. CELL PARAMETERS  <float:rec_cell> <float:rec_cell> <float:rec_cell> <float:rec_cell> <float:rec_cell> <float:rec_cell>"
         - " COORDINATES OF UNIT CELL A-AXIS <float:cell_a_axis> <float:cell_a_axis> <float:cell_a_axis>"
         - " COORDINATES OF UNIT CELL B-AXIS <float:cell_b_axis> <float:cell_b_axis> <float:cell_b_axis>"
         - " COORDINATES OF UNIT CELL C-AXIS <float:cell_c_axis> <float:cell_c_axis> <float:cell_c_axis>"

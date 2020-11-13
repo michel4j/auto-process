@@ -3,7 +3,7 @@ root:
     - "RESULTS FROM LOCAL INDEXING OF <int:local_indexed_spots> OBSERVED SPOTS"
     - " DIMENSION OF SPACE SPANNED BY DIFFERENCE VECTOR CLUSTERS  <int:cluster_dimension>"
     - "SELECTED:     INDEX_ORIGIN= <int:selected_origin> <int:selected_origin> <int:selected_origin>"
-    - "!!! ERROR<str:error_code> !!! <str:failure_message>"
+    - "!!! ERROR !!! <str:failure_message>"
 
   sections:
     summary:

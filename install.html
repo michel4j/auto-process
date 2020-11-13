@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation &mdash; AutoProcess 2020.5.24 documentation</title>
+  <title>Installation &mdash; AutoProcess 2020.5.25 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                2020.5.24
+                2020.5.25
               </div>
             
           
@@ -254,7 +254,105 @@ such as MxDC.  The command to run the server is</p>
 </pre></div>
 </div>
 <p>However, it is preferable to start the server application from a systemd unit file or init script at startup to ensure
-that the server is always available. An example unit file (<cite>autoprocess.service</cite>) is included in the top-level deploy directory of the archive.</p>
+that the server is always available. An example unit file (<cite>autoprocess.service</cite>) is shown below:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>Unit<span class="o">]</span>
+<span class="nv">Description</span><span class="o">=</span>AutoProcess Server
+<span class="nv">After</span><span class="o">=</span>network.target network-online.target
+<span class="nv">Wants</span><span class="o">=</span>network-online.target
+
+<span class="o">[</span>Service<span class="o">]</span>
+<span class="nv">User</span><span class="o">=</span>root
+<span class="nv">ExecStart</span><span class="o">=</span>auto.server
+<span class="nv">Restart</span><span class="o">=</span>always
+
+<span class="o">[</span>Install<span class="o">]</span>
+<span class="nv">WantedBy</span><span class="o">=</span>multi-user.target
+</pre></div>
+</div>
+<p>An example Init-Script for starting the AutoProcess Server is shown below:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1">#</span>
+<span class="c1"># dpserver:   Data Processing Server</span>
+<span class="c1">#</span>
+<span class="c1"># chkconfig: 345 98 02</span>
+<span class="c1"># description:  This is a daemon listens for data processing commands and executes them \</span>
+<span class="c1">#               with the priviledges of the user requesting the action.</span>
+<span class="c1">#</span>
+<span class="c1"># Source function library.</span>
+. /etc/rc.d/init.d/functions
+
+<span class="c1"># Prepare environment by sourcing startup scripts for XDS, Phenix, CCP4 etc</span>
+<span class="c1"># update with</span>
+<span class="k">for</span> profile in /MyApps/startup/*.sh<span class="p">;</span> <span class="k">do</span>
+    <span class="k">if</span> <span class="o">[</span> -r <span class="s2">&quot;</span><span class="nv">$profile</span><span class="s2">&quot;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+        <span class="nb">source</span> <span class="si">${</span><span class="nv">profile</span><span class="si">}</span>
+    <span class="k">fi</span>
+<span class="k">done</span>
+<span class="nb">unset</span> i
+
+<span class="c1"># services parameters</span>
+<span class="nv">servicename</span><span class="o">=</span><span class="s1">&#39;dpserver&#39;</span>
+<span class="nv">pidfile</span><span class="o">=</span><span class="s1">&#39;/var/run/dpserver.pid&#39;</span>
+<span class="nv">logfile</span><span class="o">=</span><span class="s1">&#39;/var/log/dpserver.log&#39;</span>
+<span class="nv">appfile</span><span class="o">=</span>/path/to/auto.tac
+<span class="nv">umask</span><span class="o">=</span><span class="m">022</span>
+
+<span class="nb">export</span> <span class="nv">MPLCONFIGDIR</span><span class="o">=</span>/tmp
+
+<span class="c1"># Sanity checks.</span>
+<span class="o">[</span> -f <span class="nv">$appfile</span> <span class="o">]</span> <span class="o">||</span> <span class="nb">exit</span> <span class="m">0</span>
+
+start<span class="o">()</span> <span class="o">{</span>
+    <span class="nb">echo</span> -n <span class="s2">$&quot;Starting Data Processing Server: &quot;</span>
+    daemon /usr/bin/twistd -y <span class="nv">$appfile</span> --logfile<span class="o">=</span><span class="nv">$logfile</span> --umask<span class="o">=</span><span class="nv">$umask</span> --pidfile<span class="o">=</span><span class="nv">$pidfile</span>
+    <span class="nv">RETVAL</span><span class="o">=</span><span class="nv">$?</span>
+    <span class="nb">echo</span>
+    <span class="o">[</span> <span class="nv">$RETVAL</span> -eq <span class="m">0</span> <span class="o">]</span> <span class="o">&amp;&amp;</span> touch /var/lock/subsys/<span class="nv">$servicename</span>
+<span class="o">}</span>
+
+stop<span class="o">()</span> <span class="o">{</span>
+    <span class="nb">echo</span> -n <span class="s2">$&quot;Stopping Data Processing Server: &quot;</span>
+
+    killproc -p <span class="nv">$pidfile</span>
+    <span class="nv">RETVAL</span><span class="o">=</span><span class="nv">$?</span>
+    <span class="nb">echo</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="nv">$RETVAL</span> -eq <span class="m">0</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+        rm -f /var/lock/subsys/<span class="nv">$servicename</span>
+        rm -f /var/run/<span class="nv">$pidfile</span>
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+<span class="c1"># See how we were called.</span>
+<span class="k">case</span> <span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span> in
+    start<span class="o">)</span>
+        start
+        <span class="p">;;</span>
+    stop<span class="o">)</span>
+        stop
+        <span class="p">;;</span>
+    status<span class="o">)</span>
+        status -p <span class="nv">$pidfile</span> <span class="nv">$servicename</span>
+        <span class="nv">RETVAL</span><span class="o">=</span><span class="nv">$?</span>
+        <span class="p">;;</span>
+    restart<span class="o">)</span>
+        stop
+    sleep <span class="m">3</span>
+        start
+        <span class="p">;;</span>
+    condrestart<span class="o">)</span>
+        <span class="k">if</span> <span class="o">[</span> -f /var/lock/subsys/<span class="nv">$servicename</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+            stop
+        sleep <span class="m">3</span>
+            start
+        <span class="k">fi</span>
+        <span class="p">;;</span>
+    *<span class="o">)</span>
+        <span class="nb">echo</span> $<span class="s2">&quot;Usage: </span><span class="nv">$0</span><span class="s2"> {start|stop|status|restart|condrestart}&quot;</span>
+        <span class="p">;;</span>
+<span class="k">esac</span>
+<span class="nb">exit</span> <span class="nv">$RETVAL</span>
+</pre></div>
+</div>
 <dl class="py class">
 <dt id="autoprocess.services.server.DPService">
 <em class="property">class </em><code class="sig-prename descclassname">autoprocess.services.server.</code><code class="sig-name descname">DPService</code><a class="headerlink" href="#autoprocess.services.server.DPService" title="Permalink to this definition">¶</a></dt>

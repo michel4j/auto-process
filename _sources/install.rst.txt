@@ -83,7 +83,6 @@ multiple computers/nodes of a cluster.
     DPS_NODES="<host1-name>:<number of cores> <host2-name>:<number of cores> ..."
 
 
-
 Upgrading
 =========
 If a previous version of AutoProcess is already installed, then the following commands can be used to upgrade it to the latest
@@ -114,7 +113,110 @@ such as MxDC.  The command to run the server is
     auto.server
 
 However, it is preferable to start the server application from a systemd unit file or init script at startup to ensure
-that the server is always available. An example unit file (`autoprocess.service`) is included in the top-level deploy directory of the archive.
+that the server is always available. An example unit file (`autoprocess.service`) is shown below:
+
+
+.. code-block:: bash
+
+    [Unit]
+    Description=AutoProcess Server
+    After=network.target network-online.target
+    Wants=network-online.target
+
+    [Service]
+    User=root
+    ExecStart=auto.server
+    Restart=always
+
+    [Install]
+    WantedBy=multi-user.target
+
+
+An example Init-Script for starting the AutoProcess Server is shown below:
+
+.. code-block:: bash
+
+    #!/bin/bash
+    #
+    # dpserver:   Data Processing Server
+    #
+    # chkconfig: 345 98 02
+    # description:  This is a daemon listens for data processing commands and executes them \
+    #               with the priviledges of the user requesting the action.
+    #
+    # Source function library.
+    . /etc/rc.d/init.d/functions
+
+    # Prepare environment by sourcing startup scripts for XDS, Phenix, CCP4 etc
+    # update with 
+    for profile in /MyApps/startup/*.sh; do
+        if [ -r "$profile" ]; then
+            source ${profile}
+        fi
+    done
+    unset i
+
+    # services parameters
+    servicename='dpserver'
+    pidfile='/var/run/dpserver.pid'
+    logfile='/var/log/dpserver.log'
+    appfile=/path/to/auto.tac
+    umask=022
+
+    export MPLCONFIGDIR=/tmp
+
+    # Sanity checks.
+    [ -f $appfile ] || exit 0
+
+    start() {
+        echo -n $"Starting Data Processing Server: "
+        daemon /usr/bin/twistd -y $appfile --logfile=$logfile --umask=$umask --pidfile=$pidfile
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$servicename
+    }
+
+    stop() {
+        echo -n $"Stopping Data Processing Server: "
+
+        killproc -p $pidfile
+        RETVAL=$?
+        echo
+        if [ $RETVAL -eq 0 ]; then
+            rm -f /var/lock/subsys/$servicename
+            rm -f /var/run/$pidfile
+        fi
+    }
+
+    # See how we were called.
+    case "$1" in
+        start)
+            start
+            ;;
+        stop)
+            stop
+            ;;
+        status)
+            status -p $pidfile $servicename
+            RETVAL=$?
+            ;;
+        restart)
+            stop
+        sleep 3
+            start
+            ;;
+        condrestart)
+            if [ -f /var/lock/subsys/$servicename ]; then
+                stop
+            sleep 3
+                start
+            fi
+            ;;
+        *)
+            echo $"Usage: $0 {start|stop|status|restart|condrestart}"
+            ;;
+    esac
+    exit $RETVAL
 
 
 .. py:currentmodule:: autoprocess.services.server
